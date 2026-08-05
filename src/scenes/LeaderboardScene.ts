@@ -5,7 +5,6 @@ import { Leaderboard, LeaderboardEntry } from '../services/LeaderboardService';
 import { Button } from '../ui/Button';
 import { I18n } from '../services/I18nService';
 import { Save } from '../services/SaveService';
-import { Hammer } from '../objects/Hammer';
 import { AdBanner } from '../ui/AdBanner';
 
 export class LeaderboardScene extends Phaser.Scene {
@@ -30,7 +29,6 @@ export class LeaderboardScene extends Phaser.Scene {
     });
 
     new AdBanner(this).show();
-    new Hammer(this);
   }
 
   private render(entries: LeaderboardEntry[]): void {

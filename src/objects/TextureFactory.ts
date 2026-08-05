@@ -10,6 +10,7 @@ export const TX = {
   bgTreesFar: 'tx-bg-trees-far',
   bgTreesNear: 'tx-bg-trees-near',
   bgLeavesFg: 'tx-bg-leaves-fg',
+  bgGround: 'tx-bg-ground',
   leafParticle: 'tx-leaf-particle',
   logHole: 'tx-log-hole',
   logHoleShadow: 'tx-log-hole-shadow',
@@ -24,6 +25,7 @@ export const TX = {
   heartEmpty: 'tx-heart-empty',
   star: 'tx-star',
   panel: 'tx-panel',
+  close: 'tx-close',
   button: 'tx-button',
   buttonPressed: 'tx-button-pressed',
   buttonAd: 'tx-button-ad',
@@ -48,6 +50,7 @@ export function buildAllTextures(scene: Phaser.Scene): void {
   buildTreesFar(scene);
   buildTreesNear(scene);
   buildLeavesFg(scene);
+  buildGround(scene);
   buildLeafParticle(scene);
   buildLogHole(scene);
   buildLogHoleShadow(scene);
@@ -62,6 +65,7 @@ export function buildAllTextures(scene: Phaser.Scene): void {
   buildHeart(scene, TX.heartEmpty, COLORS.heartEmpty, 0.35);
   buildStar(scene);
   buildPanel(scene);
+  buildCloseButton(scene);
   buildButton(scene, TX.button, 0x66bb6a, 0x2e7d32);
   buildButton(scene, TX.buttonPressed, 0x2e7d32, 0x1b5e20);
   buildButton(scene, TX.buttonAd, 0xffb300, 0xe65100);
@@ -76,13 +80,33 @@ export function buildAllTextures(scene: Phaser.Scene): void {
 
 function buildSky(scene: Phaser.Scene) {
   makeTexture(scene, TX.bgSky, 720, 1280, g => {
-    g.fillGradientStyle(COLORS.skyTop, COLORS.skyTop, COLORS.skyBottom, COLORS.skyBottom, 1);
-    g.fillRect(0, 0, 720, 1280);
-    g.fillStyle(0xffffff, 0.35);
+    // Three-stop gradient: bright sky -> lighter -> warm horizon
+    g.fillGradientStyle(COLORS.skyTop, COLORS.skyTop, COLORS.skyMid, COLORS.skyMid, 1);
+    g.fillRect(0, 0, 720, 640);
+    g.fillGradientStyle(COLORS.skyMid, COLORS.skyMid, COLORS.skyBottom, COLORS.skyBottom, 1);
+    g.fillRect(0, 640, 720, 640);
+    // Sun disk
+    g.fillStyle(0xfff59d, 0.9);
+    g.fillCircle(560, 220, 80);
+    g.fillStyle(0xffffff, 0.6);
+    g.fillCircle(560, 220, 50);
+    // Sun rays (soft, radial)
+    g.fillStyle(0xfff8e1, 0.18);
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2;
+      const dx = Math.cos(a) * 260, dy = Math.sin(a) * 260;
+      g.fillTriangle(560, 220,
+        560 + dx - Math.sin(a) * 20, 220 + dy + Math.cos(a) * 20,
+        560 + dx + Math.sin(a) * 20, 220 + dy - Math.cos(a) * 20);
+    }
+    // Fluffy clouds
+    g.fillStyle(0xffffff, 0.55);
     for (let i = 0; i < 6; i++) {
       const x = 60 + i * 110;
-      const y = 120 + (i % 2) * 60;
-      g.fillEllipse(x, y, 130, 40);
+      const y = 140 + (i % 2) * 70;
+      g.fillEllipse(x, y, 140, 46);
+      g.fillEllipse(x - 30, y + 8, 90, 34);
+      g.fillEllipse(x + 30, y + 8, 90, 34);
     }
   });
 }
@@ -104,17 +128,23 @@ function buildTreesFar(scene: Phaser.Scene) {
 
 function buildTreesNear(scene: Phaser.Scene) {
   makeTexture(scene, TX.bgTreesNear, 720, 1280, g => {
-    // Trunks
+    // Trunks with subtle inner highlight for depth
     g.fillStyle(COLORS.woodDark, 1);
     g.fillRect(30, 0, 60, 1280);
     g.fillRect(630, 0, 60, 1280);
-    // Leaf canopy at top
+    g.fillStyle(COLORS.woodLight, 0.35);
+    g.fillRect(40, 0, 8, 1280);
+    g.fillRect(640, 0, 8, 1280);
+    // Leaf canopy at top — multiple clumps for depth
     g.fillStyle(COLORS.leafDark, 1);
-    g.fillCircle(60, 120, 130);
-    g.fillCircle(660, 120, 130);
+    g.fillCircle(60, 120, 140);
+    g.fillCircle(660, 120, 140);
     g.fillStyle(COLORS.leafMid, 1);
-    g.fillCircle(90, 180, 90);
-    g.fillCircle(630, 180, 90);
+    g.fillCircle(90, 180, 100);
+    g.fillCircle(630, 180, 100);
+    g.fillStyle(COLORS.leafLight, 0.9);
+    g.fillCircle(110, 150, 60);
+    g.fillCircle(610, 150, 60);
     // Vines
     g.lineStyle(6, COLORS.leafMid, 0.9);
     for (let i = 0; i < 4; i++) {
@@ -139,11 +169,42 @@ function buildLeavesFg(scene: Phaser.Scene) {
     g.fillStyle(COLORS.leafDark, 1);
     for (let x = -40; x < 760; x += 60) {
       const y = 40 + (x % 120) * 0.5;
-      g.fillEllipse(x, y, 90, 60);
+      g.fillEllipse(x, y, 100, 66);
     }
-    g.fillStyle(COLORS.leafMid, 0.9);
+    g.fillStyle(COLORS.leafMid, 0.95);
     for (let x = -20; x < 760; x += 60) {
-      g.fillEllipse(x, 90 + (x % 100) * 0.4, 100, 66);
+      g.fillEllipse(x, 90 + (x % 100) * 0.4, 110, 72);
+    }
+    // Light-catch highlights
+    g.fillStyle(COLORS.leafLight, 0.55);
+    for (let x = 0; x < 720; x += 90) {
+      g.fillEllipse(x, 40 + (x % 80) * 0.3, 44, 22);
+    }
+  });
+}
+
+function buildGround(scene: Phaser.Scene) {
+  makeTexture(scene, TX.bgGround, 720, 900, g => {
+    // Warm dirt gradient
+    g.fillGradientStyle(0x7cb342, 0x7cb342, 0x558b2f, 0x558b2f, 0.9);
+    g.fillRoundedRect(-60, 40, 840, 900, 200);
+    // Darker shadow patch around center
+    g.fillStyle(0x33691e, 0.25);
+    g.fillEllipse(360, 400, 700, 260);
+    // Grass tufts sprinkled
+    g.fillStyle(0x81c784, 1);
+    for (let i = 0; i < 30; i++) {
+      const x = 30 + Math.floor((i * 97) % 660);
+      const y = 60 + Math.floor((i * 53) % 820);
+      g.fillTriangle(x, y, x + 4, y - 10, x + 8, y);
+      g.fillTriangle(x - 6, y + 2, x - 2, y - 8, x + 2, y + 2);
+    }
+    // Pebble
+    g.fillStyle(0xbcaaa4, 1);
+    for (let i = 0; i < 8; i++) {
+      const x = 60 + (i * 89) % 620;
+      const y = 90 + (i * 73) % 800;
+      g.fillEllipse(x, y, 14, 8);
     }
   });
 }
@@ -336,24 +397,60 @@ function buildStar(scene: Phaser.Scene) {
 }
 
 function buildPanel(scene: Phaser.Scene) {
-  makeTexture(scene, TX.panel, 560, 460, g => {
-    g.fillStyle(COLORS.woodDark, 1);
-    g.fillRoundedRect(0, 0, 560, 460, 28);
-    g.fillStyle(COLORS.panelBg, 1);
-    g.fillRoundedRect(12, 12, 536, 436, 22);
-    g.lineStyle(6, COLORS.panelBorder, 1);
-    g.strokeRoundedRect(12, 12, 536, 436, 22);
+  makeTexture(scene, TX.panel, 620, 720, g => {
+    // Deep drop-shadow
+    g.fillStyle(0x000000, 0.35);
+    g.fillRoundedRect(6, 12, 614, 712, 34);
+    // Dark outer frame (wood look)
+    g.fillStyle(0x3e2723, 1);
+    g.fillRoundedRect(0, 0, 620, 720, 30);
+    // Golden inner border for pop
+    g.fillStyle(0xffb300, 1);
+    g.fillRoundedRect(10, 10, 600, 700, 26);
+    // Warm cream inner panel with subtle gradient
+    g.fillGradientStyle(0xfffde7, 0xfffde7, 0xffecb3, 0xffecb3, 1);
+    g.fillRoundedRect(18, 18, 584, 684, 22);
+    // Inner highlight strip
+    g.fillStyle(0xffffff, 0.45);
+    g.fillRoundedRect(30, 30, 560, 24, 12);
+  });
+}
+
+function buildCloseButton(scene: Phaser.Scene) {
+  makeTexture(scene, 'tx-close', 80, 80, g => {
+    g.fillStyle(0x000000, 0.3);
+    g.fillCircle(42, 44, 34);
+    g.fillStyle(0xef5350, 1);
+    g.fillCircle(40, 40, 32);
+    g.fillStyle(0xffffff, 0.5);
+    g.fillCircle(30, 30, 8);
+    g.lineStyle(7, 0xffffff, 1);
+    g.beginPath();
+    g.moveTo(24, 24); g.lineTo(56, 56);
+    g.moveTo(56, 24); g.lineTo(24, 56);
+    g.strokePath();
   });
 }
 
 function buildButton(scene: Phaser.Scene, key: string, top: number, shadow: number) {
-  makeTexture(scene, key, 360, 100, g => {
+  makeTexture(scene, key, 380, 108, g => {
+    // Outer glow
+    g.fillStyle(top, 0.28);
+    g.fillRoundedRect(-6, -4, 392, 116, 26);
+    // Dark shadow lip
+    g.fillStyle(0x000000, 0.35);
+    g.fillRoundedRect(4, 14, 372, 92, 22);
     g.fillStyle(shadow, 1);
-    g.fillRoundedRect(0, 8, 360, 92, 22);
+    g.fillRoundedRect(0, 10, 380, 92, 22);
+    // Top face
     g.fillStyle(top, 1);
-    g.fillRoundedRect(0, 0, 360, 84, 22);
-    g.fillStyle(0xffffff, 0.25);
-    g.fillRoundedRect(16, 8, 328, 24, 12);
+    g.fillRoundedRect(0, 0, 380, 88, 22);
+    // Rim highlight
+    g.fillStyle(0xffffff, 0.55);
+    g.fillRoundedRect(16, 8, 348, 22, 12);
+    // Bottom edge shadow inside
+    g.fillStyle(0x000000, 0.12);
+    g.fillRoundedRect(16, 64, 348, 18, 10);
   });
 }
 

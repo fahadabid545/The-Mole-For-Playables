@@ -9,7 +9,6 @@ import { TX } from '../objects/TextureFactory';
 import { AdBanner } from '../ui/AdBanner';
 import { I18n } from '../services/I18nService';
 import { WelcomePopup } from '../ui/popups/WelcomePopup';
-import { Hammer } from '../objects/Hammer';
 
 export class MenuScene extends Phaser.Scene {
   constructor() { super('Menu'); }
@@ -58,10 +57,9 @@ export class MenuScene extends Phaser.Scene {
     const langBtn = this.add.text(70, 70, (Save.get().lang ?? 'en').toUpperCase(), {
       fontFamily: 'Impact, sans-serif', fontSize: '32px', color: '#fffde7', stroke: '#1b5e20', strokeThickness: 4,
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-    langBtn.on('pointerdown', () => new WelcomePopup(this, () => this.scene.restart()));
+    langBtn.on('pointerdown', () => new WelcomePopup(this, { onDone: () => this.scene.restart(), closeable: true }));
 
     new AdBanner(this).show();
-    new Hammer(this);
 
     if (!Save.get().welcomed) {
       new WelcomePopup(this, () => this.scene.restart());

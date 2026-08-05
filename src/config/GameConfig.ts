@@ -2,11 +2,12 @@ export const GAME_WIDTH = 720;
 export const GAME_HEIGHT = 1280;
 
 export const COLORS = {
-  skyTop: 0x9be7c4,
-  skyBottom: 0xd7f5c8,
+  skyTop: 0x64c8e6,      // brighter sky blue
+  skyMid: 0xa5d8f0,
+  skyBottom: 0xffe082,   // warm sunlit horizon
   leafDark: 0x1b5e20,
   leafMid: 0x2e7d32,
-  leafLight: 0x66bb6a,
+  leafLight: 0x81c784,   // brighter foliage highlight
   wood: 0x6d4c41,
   woodDark: 0x4e342e,
   woodLight: 0x8d6e63,

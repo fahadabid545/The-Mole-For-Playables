@@ -8,7 +8,7 @@ import { I18n } from '../../services/I18nService';
 
 export class ExtraLifePopup extends Popup {
   constructor(scene: Phaser.Scene, onOk: () => void) {
-    super(scene);
+    super(scene, { closeable: true, onCloseX: onOk });
     Audio.play('extraLife');
 
     const title = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 160, I18n.t('extraLife'), {

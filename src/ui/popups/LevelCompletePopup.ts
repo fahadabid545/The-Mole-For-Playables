@@ -16,7 +16,7 @@ interface Opts {
 
 export class LevelCompletePopup extends Popup {
   constructor(scene: Phaser.Scene, o: Opts) {
-    super(scene);
+    super(scene, { closeable: true, onCloseX: o.onMenu });
     Audio.play('win');
 
     const title = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 170, I18n.t('levelComplete', { n: o.level }), {

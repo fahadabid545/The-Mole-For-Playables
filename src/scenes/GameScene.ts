@@ -55,6 +55,8 @@ export class GameScene extends Phaser.Scene {
 
     this.buildGrid();
     this.hammer = new Hammer(this);
+    document.body.classList.add('playing');
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => document.body.classList.remove('playing'));
 
     this.scene.launch('HUD', {
       level: this.level, quota: this.params.quota, timeLimitMs: this.params.timeLimitMs,

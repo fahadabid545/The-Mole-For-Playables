@@ -9,8 +9,12 @@
     <style>
       html, body { margin: 0; padding: 0; height: 100%; background: #0d1b0d; overflow: hidden; touch-action: none; overscroll-behavior: none; }
       #app { width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; }
-      canvas { display: block; cursor: none; }
-      html, body, #app { cursor: none; }
+      canvas { display: block; }
+      /* Hide the OS cursor only while a level is actually being played;
+         the Game scene toggles the `.playing` class on <body>.
+         On menus / popups the OS cursor stays visible so buttons are
+         obviously clickable. */
+      body.playing, body.playing canvas, body.playing #app { cursor: none; }
       * { -webkit-tap-highlight-color: transparent; user-select: none; }
     </style>
   </head>

@@ -13,7 +13,7 @@ interface Opts {
 
 export class PausePopup extends Popup {
   constructor(scene: Phaser.Scene, o: Opts) {
-    super(scene);
+    super(scene, { closeable: true, onCloseX: o.onResume });
     const title = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 170, I18n.t('paused'), {
       fontFamily: 'Impact, "Arial Black", sans-serif', fontSize: '52px', color: '#3e2723',
     }).setOrigin(0.5);

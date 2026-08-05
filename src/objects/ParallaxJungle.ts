@@ -8,9 +8,10 @@ export class ParallaxJungle extends Phaser.GameObjects.Container {
     const sky = scene.add.image(GAME_WIDTH / 2, GAME_HEIGHT / 2, TX.bgSky).setOrigin(0.5);
     const far = scene.add.image(GAME_WIDTH / 2, GAME_HEIGHT / 2, TX.bgTreesFar).setOrigin(0.5);
     const near = scene.add.image(GAME_WIDTH / 2, GAME_HEIGHT / 2, TX.bgTreesNear).setOrigin(0.5);
+    const ground = scene.add.image(GAME_WIDTH / 2, GAME_HEIGHT - 350, TX.bgGround).setOrigin(0.5);
     const fg = scene.add.image(GAME_WIDTH / 2, GAME_HEIGHT - 130, TX.bgLeavesFg).setOrigin(0.5);
 
-    this.add([sky, far, near, fg]);
+    this.add([sky, far, near, ground, fg]);
     scene.add.existing(this);
     this.setDepth(-1000);
 

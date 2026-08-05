@@ -7,7 +7,6 @@ import { TX } from '../objects/TextureFactory';
 import { Button } from '../ui/Button';
 import { Audio } from '../services/AudioService';
 import { AdBanner } from '../ui/AdBanner';
-import { Hammer } from '../objects/Hammer';
 import { I18n } from '../services/I18nService';
 
 export class LevelSelectScene extends Phaser.Scene {
@@ -69,6 +68,5 @@ export class LevelSelectScene extends Phaser.Scene {
     });
 
     new AdBanner(this).show();
-    new Hammer(this);
   }
 }
