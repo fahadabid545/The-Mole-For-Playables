@@ -6,6 +6,7 @@ import { MenuScene } from './scenes/MenuScene';
 import { LevelSelectScene } from './scenes/LevelSelectScene';
 import { GameScene } from './scenes/GameScene';
 import { HUDScene } from './scenes/HUDScene';
+import { LeaderboardScene } from './scenes/LeaderboardScene';
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -19,7 +20,7 @@ const config: Phaser.Types.Core.GameConfig = {
   },
   input: { activePointers: 2 },
   render: { antialias: true, pixelArt: false, roundPixels: false },
-  scene: [BootScene, PreloadScene, MenuScene, LevelSelectScene, GameScene, HUDScene],
+  scene: [BootScene, PreloadScene, MenuScene, LevelSelectScene, GameScene, HUDScene, LeaderboardScene],
 };
 
 new Phaser.Game(config);

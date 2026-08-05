@@ -7,6 +7,8 @@ import { TX } from '../objects/TextureFactory';
 import { Button } from '../ui/Button';
 import { Audio } from '../services/AudioService';
 import { AdBanner } from '../ui/AdBanner';
+import { Hammer } from '../objects/Hammer';
+import { I18n } from '../services/I18nService';
 
 export class LevelSelectScene extends Phaser.Scene {
   constructor() { super('LevelSelect'); }
@@ -14,7 +16,7 @@ export class LevelSelectScene extends Phaser.Scene {
   create(): void {
     new ParallaxJungle(this);
 
-    this.add.text(GAME_WIDTH / 2, 100, 'Select Level', {
+    this.add.text(GAME_WIDTH / 2, 100, I18n.t('levels'), {
       fontFamily: 'Impact, "Arial Black", sans-serif',
       fontSize: '56px',
       color: '#fff8e1',
@@ -63,9 +65,10 @@ export class LevelSelectScene extends Phaser.Scene {
     }
 
     new Button(this, GAME_WIDTH / 2, GAME_HEIGHT - 220, {
-      label: 'Back', onClick: () => this.scene.start('Menu'), scale: 0.8,
+      label: I18n.t('back'), onClick: () => this.scene.start('Menu'), scale: 0.8,
     });
 
     new AdBanner(this).show();
+    new Hammer(this);
   }
 }

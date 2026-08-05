@@ -27,6 +27,11 @@ npm run build:store       # standard chunked build for Capacitor wrap
 |---|---|
 | 50 levels, difficulty curve | `src/config/LevelConfig.ts` |
 | 5 lives, max 9, +1 every 10 lvl | `src/config/BuildFlags.ts`, `SaveService` |
+| **Life lost only on level fail** (not per miss) | `GameScene.endLevel` |
+| Bomb hit costs 3 seconds (no life) | `GameScene.applyBombPenalty` |
+| 5 languages (EN/FR/NL/HI/AR) + welcome popup | `I18nService`, `WelcomePopup` |
+| Global leaderboard (local seed + REST TODO) | `LeaderboardService`, `LeaderboardScene` |
+| Hammer replaces OS cursor everywhere | `index.html` cursor:none + `Hammer` |
 | Rewarded ad → +1 life | `OutOfLivesPopup`, `LevelFailedPopup` |
 | Rewarded ad → unlock next level when out of lives | `OutOfLivesPopup` |
 | Interstitial every 5 levels | `AdsService.shouldShowInterstitialForLevel` |

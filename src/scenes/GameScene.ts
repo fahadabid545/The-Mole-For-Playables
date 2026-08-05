@@ -12,6 +12,7 @@ import { EventBus, EVT } from '../utils/EventBus';
 import { Save } from '../services/SaveService';
 import { Audio } from '../services/AudioService';
 import { Ads } from '../services/AdsService';
+import { Leaderboard } from '../services/LeaderboardService';
 import { LevelCompletePopup } from '../ui/popups/LevelCompletePopup';
 import { LevelFailedPopup } from '../ui/popups/LevelFailedPopup';
 import { OutOfLivesPopup } from '../ui/popups/OutOfLivesPopup';
@@ -151,8 +152,9 @@ export class GameScene extends Phaser.Scene {
   private onRaccoonHit(rac: Raccoon, kind: RaccoonKind, points: number): void {
     if (!this.levelActive) return;
     if (kind === 'bomb') {
-      spawnScorePopup(this, rac.x, rac.y - 60, 'BOOM!', '#ff5252');
-      this.loseLife('bomb');
+      spawnScorePopup(this, rac.x, rac.y - 60, '-3s', '#ff5252');
+      Audio.play('lifeLost');
+      this.applyBombPenalty();
       return;
     }
     this.hits += points;
@@ -165,16 +167,15 @@ export class GameScene extends Phaser.Scene {
 
   private onRaccoonEscape(rac: Raccoon): void {
     if (!this.levelActive) return;
+    // No life penalty for a single miss — only failing the level costs a life.
     spawnScorePopup(this, rac.x, rac.y - 20, 'miss!', '#ffab91');
-    this.loseLife('escape');
   }
 
-  private loseLife(reason: 'escape' | 'bomb'): void {
-    Audio.play('lifeLost');
-    Save.loseLife();
-    EventBus.emit(EVT.LIFE_CHANGED);
-    void reason;
-    if (Save.get().lives <= 0) this.endLevel(false, true);
+  private applyBombPenalty(): void {
+    // Bombs give a small time penalty instead of a life, so lives stay
+    // strictly tied to level-fail as the player requested.
+    this.timeLeft = Math.max(0, this.timeLeft - 3000);
+    EventBus.emit(EVT.TIMER_TICK, this.timeLeft);
   }
 
   private endLevel(won: boolean, outOfLives = false): void {
@@ -183,10 +184,20 @@ export class GameScene extends Phaser.Scene {
     this.levelActive = false;
     this.raccoons.forEach(r => r.forceHide());
 
+    if (!won) {
+      // Level failed — deduct a life once, then decide fail vs out-of-lives.
+      Save.loseLife();
+      EventBus.emit(EVT.LIFE_CHANGED);
+      Audio.play('lifeLost');
+      if (Save.get().lives <= 0) outOfLives = true;
+    }
+
     if (won) {
       const stars = this.computeStars();
       Save.recordStars(this.level, stars);
       Save.unlockUpTo(this.level + 1);
+      Save.setBestScore(this.score);
+      void Leaderboard.submit(Save.get().playerName || 'You', this.score, this.level);
 
       const proceed = () => {
         if (this.level % FLAGS.extraLifeEveryNLevels === 0 && this.level < FLAGS.totalLevels) {

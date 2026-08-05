@@ -4,6 +4,7 @@ import { Button } from '../Button';
 import { TX } from '../../objects/TextureFactory';
 import { GAME_WIDTH, GAME_HEIGHT } from '../../config/GameConfig';
 import { Audio } from '../../services/AudioService';
+import { I18n } from '../../services/I18nService';
 
 interface Opts {
   level: number;
@@ -18,7 +19,7 @@ export class LevelCompletePopup extends Popup {
     super(scene);
     Audio.play('win');
 
-    const title = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 170, `Level ${o.level} Complete!`, {
+    const title = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 170, I18n.t('levelComplete', { n: o.level }), {
       fontFamily: 'Impact, "Arial Black", sans-serif', fontSize: '48px', color: '#3e2723',
     }).setOrigin(0.5);
 
@@ -35,15 +36,15 @@ export class LevelCompletePopup extends Popup {
       }
     }
 
-    const scoreText = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 40, `Score: ${o.score}`, {
+    const scoreText = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 40, I18n.t('score', { n: o.score }), {
       fontFamily: 'Arial, sans-serif', fontSize: '32px', color: '#3e2723',
     }).setOrigin(0.5);
 
     const nextBtn = new Button(scene, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 120, {
-      label: 'Next Level', onClick: () => this.close(o.onNext),
+      label: I18n.t('next'), onClick: () => this.close(o.onNext),
     });
     const menuBtn = new Button(scene, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 220, {
-      label: 'Menu', onClick: () => this.close(o.onMenu), scale: 0.8,
+      label: I18n.t('menu'), onClick: () => this.close(o.onMenu), scale: 0.8,
     });
 
     this.addContent(title, ...starObjs, scoreText, nextBtn, menuBtn);

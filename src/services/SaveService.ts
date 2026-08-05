@@ -1,4 +1,5 @@
 import { FLAGS } from '../config/BuildFlags';
+import type { Lang } from './I18nService';
 
 const KEY = 'mole.v1';
 
@@ -8,6 +9,10 @@ export interface SaveData {
   muted: boolean;
   perLevelStars: Record<number, number>;
   totalStars: number;
+  lang?: Lang;
+  playerName?: string;
+  bestScore: number;
+  welcomed: boolean;
 }
 
 const defaults = (): SaveData => ({
@@ -16,6 +21,8 @@ const defaults = (): SaveData => ({
   muted: false,
   perLevelStars: {},
   totalStars: 0,
+  bestScore: 0,
+  welcomed: false,
 });
 
 let cache: SaveData | null = null;
@@ -63,6 +70,14 @@ export const Save = {
   },
 
   setMuted(m: boolean): void { const d = read(); d.muted = m; write(); },
+
+  setLang(l: Lang): void { const d = read(); d.lang = l; write(); },
+  setPlayerName(n: string): void { const d = read(); d.playerName = n.slice(0, 16); write(); },
+  setBestScore(n: number): void {
+    const d = read();
+    if (n > d.bestScore) { d.bestScore = n; write(); }
+  },
+  setWelcomed(): void { const d = read(); d.welcomed = true; write(); },
 
   reset(): void { cache = defaults(); write(); },
 };

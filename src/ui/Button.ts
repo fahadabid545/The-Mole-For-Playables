@@ -25,7 +25,7 @@ export class Button extends Phaser.GameObjects.Container {
     this.add([bg, label]);
     if (opts.scale) this.setScale(opts.scale);
 
-    bg.setInteractive({ useHandCursor: true });
+    bg.setInteractive({ useHandCursor: false });
     bg.on('pointerdown', () => {
       Audio.play('click');
       scene.tweens.add({ targets: this, scale: (opts.scale ?? 1) * 0.95, duration: 60, yoyo: true });

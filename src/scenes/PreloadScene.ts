@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { buildAllTextures } from '../objects/TextureFactory';
 import { GAME_WIDTH, GAME_HEIGHT, COLORS } from '../config/GameConfig';
+import { I18n } from '../services/I18nService';
+import { Save } from '../services/SaveService';
 
 export class PreloadScene extends Phaser.Scene {
   constructor() { super('Preload'); }
@@ -13,7 +15,7 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   create(): void {
-    // Splash while textures build
+    I18n.init(Save.get().lang);
     this.cameras.main.setBackgroundColor('#0d1b0d');
     const label = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, 'Jungle Mole', {
       fontFamily: 'Impact, "Arial Black", sans-serif',
