@@ -12,8 +12,10 @@ import { EventBus, EVT } from '../utils/EventBus';
 import { Save } from '../services/SaveService';
 import { Audio } from '../services/AudioService';
 import { Ads } from '../services/AdsService';
+import { I18n } from '../services/I18nService';
 import { Leaderboard } from '../services/LeaderboardService';
 import { LevelCompletePopup } from '../ui/popups/LevelCompletePopup';
+import { NamePromptPopup } from '../ui/popups/NamePromptPopup';
 import { LevelFailedPopup } from '../ui/popups/LevelFailedPopup';
 import { OutOfLivesPopup } from '../ui/popups/OutOfLivesPopup';
 import { ExtraLifePopup } from '../ui/popups/ExtraLifePopup';
@@ -94,11 +96,22 @@ export class GameScene extends Phaser.Scene {
   }
 
   private runCountdown(onDone: () => void): void {
+    // Level intro banner slides in and out first
+    const banner = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 200, `LEVEL ${this.level}`, {
+      fontFamily: 'Impact, sans-serif', fontSize: '96px', color: '#fff8e1',
+      stroke: '#1b5e20', strokeThickness: 10,
+    }).setOrigin(0.5).setDepth(15000).setAlpha(0);
+    this.tweens.add({ targets: banner, alpha: 1, y: '+=40', duration: 350, ease: 'Back.Out' });
+    this.time.delayedCall(900, () => {
+      this.tweens.add({ targets: banner, alpha: 0, y: '-=40', duration: 250,
+        onComplete: () => banner.destroy() });
+    });
+
     const t = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, '3', {
       fontFamily: 'Impact, sans-serif', fontSize: '200px', color: '#fffde7',
       stroke: '#1b5e20', strokeThickness: 12,
     }).setOrigin(0.5).setDepth(15000);
-    const seq = ['3', '2', '1', 'GO!'];
+    const seq = ['3', '2', '1', I18n.t('go')];
     let i = 0;
     const step = () => {
       t.setText(seq[i]);
@@ -113,10 +126,32 @@ export class GameScene extends Phaser.Scene {
     step();
   }
 
+  private showTutorialHint(): void {
+    // Level-1 only, on first spawn: pulsing "TAP!" over the active raccoon.
+    if (this.level !== 1) return;
+    const findActive = () => this.raccoons.find(r => !r.isAvailable());
+    const timer = this.time.addEvent({
+      delay: 100, loop: true,
+      callback: () => {
+        const rac = findActive();
+        if (!rac) return;
+        timer.remove();
+        const hint = this.add.text(rac.x, rac.y - 160, 'TAP!', {
+          fontFamily: 'Impact, sans-serif', fontSize: '48px', color: '#fff176',
+          stroke: '#3e2723', strokeThickness: 6,
+        }).setOrigin(0.5).setDepth(9500);
+        this.tweens.add({ targets: hint, scale: 1.25, yoyo: true, repeat: 4, duration: 260, ease: 'Sine.InOut',
+          onComplete: () => hint.destroy() });
+        this.time.delayedCall(3000, () => hint.destroy());
+      },
+    });
+  }
+
   private startLevel(): void {
     this.levelActive = true;
     this.timerLast = this.time.now;
     this.nextSpawnAt = this.time.now + 300;
+    this.showTutorialHint();
   }
 
   update(time: number): void {
@@ -197,7 +232,13 @@ export class GameScene extends Phaser.Scene {
       Save.recordStars(this.level, stars);
       Save.unlockUpTo(this.level + 1);
       Save.setBestScore(this.score);
-      void Leaderboard.submit(Save.get().playerName || 'You', this.score, this.level);
+      const submit = () => void Leaderboard.submit(Save.get().playerName || 'Player', this.score, this.level);
+      if (!Save.get().playerName) {
+        // First win — ask for a name, then submit, then show the complete popup.
+        new NamePromptPopup(this, '', (n) => { Save.setPlayerName(n); submit(); });
+      } else {
+        submit();
+      }
 
       const proceed = () => {
         if (this.level % FLAGS.extraLifeEveryNLevels === 0 && this.level < FLAGS.totalLevels) {

@@ -11,6 +11,21 @@ npm install
 npm run dev        # http://localhost:5173
 ```
 
+To test on your phone in the same network:
+```bash
+npm run dev -- --host 0.0.0.0
+```
+Then open `http://<your-computer-ip>:5173` from the phone.
+
+To test the actual **Playables single-file build**:
+```bash
+npm run build:playables
+npm run preview    # http://localhost:5000
+```
+`dist/index.html` is the single self-contained file that ships to YouTube Playables.
+
+To reset all progress in the browser: DevTools → Application → Local Storage → delete `mole.v1` and `mole.leaderboard.v1` → reload.
+
 ## Builds
 
 ```bash

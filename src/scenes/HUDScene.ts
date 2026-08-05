@@ -16,10 +16,13 @@ export class HUDScene extends Phaser.Scene {
   private scoreText!: Phaser.GameObjects.Text;
   private timeText!: Phaser.GameObjects.Text;
   private quotaText!: Phaser.GameObjects.Text;
+  private timeBarFill!: Phaser.GameObjects.Rectangle;
+  private timeLimitMs = 1;
 
   constructor() { super('HUD'); }
 
   create(data: HUDData): void {
+    this.timeLimitMs = data.timeLimitMs;
     this.levelText = this.add.text(20, 20, `L ${data.level}`, {
       fontFamily: 'Impact, sans-serif', fontSize: '36px', color: '#fffde7', stroke: '#1b5e20', strokeThickness: 6,
     });
@@ -34,6 +37,11 @@ export class HUDScene extends Phaser.Scene {
     this.timeText = this.add.text(GAME_WIDTH - 20, 30, this.fmt(data.timeLimitMs), {
       fontFamily: 'Impact, sans-serif', fontSize: '40px', color: '#fffde7', stroke: '#b71c1c', strokeThickness: 6,
     }).setOrigin(1, 0);
+
+    // Timer bar
+    const barW = 240, barH = 12;
+    this.add.rectangle(GAME_WIDTH - 20 - barW, 90, barW, barH, 0x000000, 0.35).setOrigin(0, 0.5);
+    this.timeBarFill = this.add.rectangle(GAME_WIDTH - 20 - barW, 90, barW, barH, 0x66bb6a, 1).setOrigin(0, 0.5);
 
     new LivesBar(this, 24, 120);
 
@@ -55,6 +63,9 @@ export class HUDScene extends Phaser.Scene {
     EventBus.on(EVT.TIMER_TICK, (msLeft: number) => {
       this.timeText.setText(this.fmt(msLeft));
       this.timeText.setColor(msLeft < 5000 ? '#ff5252' : '#fffde7');
+      const frac = Math.max(0, Math.min(1, msLeft / this.timeLimitMs));
+      this.timeBarFill.width = 240 * frac;
+      this.timeBarFill.fillColor = msLeft < 5000 ? 0xef5350 : msLeft < 10000 ? 0xffb300 : 0x66bb6a;
     });
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
