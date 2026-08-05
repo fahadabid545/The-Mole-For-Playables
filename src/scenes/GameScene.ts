@@ -13,6 +13,7 @@ import { Save } from '../services/SaveService';
 import { Audio } from '../services/AudioService';
 import { Ads } from '../services/AdsService';
 import { I18n } from '../services/I18nService';
+import { TS } from '../config/TextStyles';
 import { Leaderboard } from '../services/LeaderboardService';
 import { LevelCompletePopup } from '../ui/popups/LevelCompletePopup';
 import { NamePromptPopup } from '../ui/popups/NamePromptPopup';
@@ -106,20 +107,16 @@ export class GameScene extends Phaser.Scene {
 
   private runCountdown(onDone: () => void): void {
     // Level intro banner slides in and out first
-    const banner = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 200, `LEVEL ${this.level}`, {
-      fontFamily: 'Impact, sans-serif', fontSize: '96px', color: '#fff8e1',
-      stroke: '#1b5e20', strokeThickness: 10,
-    }).setOrigin(0.5).setDepth(15000).setAlpha(0);
+    const banner = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 200, I18n.t('level', { n: this.level }), TS.banner())
+      .setOrigin(0.5).setDepth(15000).setAlpha(0);
     this.tweens.add({ targets: banner, alpha: 1, y: '+=40', duration: 350, ease: 'Back.Out' });
     this.time.delayedCall(900, () => {
       this.tweens.add({ targets: banner, alpha: 0, y: '-=40', duration: 250,
         onComplete: () => banner.destroy() });
     });
 
-    const t = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, '3', {
-      fontFamily: 'Impact, sans-serif', fontSize: '200px', color: '#fffde7',
-      stroke: '#1b5e20', strokeThickness: 12,
-    }).setOrigin(0.5).setDepth(15000);
+    const t = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, '3', TS.countdown())
+      .setOrigin(0.5).setDepth(15000);
     const seq = ['3', '2', '1', I18n.t('go')];
     let i = 0;
     const step = () => {
@@ -265,7 +262,7 @@ export class GameScene extends Phaser.Scene {
         EventBus.emit(EVT.LIFE_CHANGED);
         new LevelCompletePopup(this, {
           level: this.level, stars, score: this.score,
-          onNext: () => { this.scene.stop('HUD'); this.scene.start('Challenge', { kind: this.challenge!.kind }); },
+          onNext: () => { this.scene.stop('HUD'); this.scene.start('Challenges'); },
           onMenu: () => this.goMenu(),
         });
         return;

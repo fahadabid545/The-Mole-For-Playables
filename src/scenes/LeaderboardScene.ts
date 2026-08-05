@@ -6,6 +6,7 @@ import { Button } from '../ui/Button';
 import { I18n } from '../services/I18nService';
 import { Save } from '../services/SaveService';
 import { AdBanner } from '../ui/AdBanner';
+import { TS } from '../config/TextStyles';
 
 export class LeaderboardScene extends Phaser.Scene {
   constructor() { super('Leaderboard'); }
@@ -13,14 +14,9 @@ export class LeaderboardScene extends Phaser.Scene {
   create(): void {
     new ParallaxJungle(this);
 
-    this.add.text(GAME_WIDTH / 2, 100, I18n.t('world'), {
-      fontFamily: 'Impact, "Arial Black", sans-serif',
-      fontSize: '52px', color: '#fff8e1', stroke: '#1b5e20', strokeThickness: 8,
-    }).setOrigin(0.5);
-
-    this.add.text(GAME_WIDTH / 2, 170, I18n.t('yourBest', { n: Save.get().bestScore }), {
-      fontFamily: 'Arial, sans-serif', fontSize: '26px', color: '#fffde7', stroke: '#3e2723', strokeThickness: 4,
-    }).setOrigin(0.5);
+    this.add.text(GAME_WIDTH / 2, 100, I18n.t('world'), TS.title('#fff8e1')).setOrigin(0.5);
+    this.add.text(GAME_WIDTH / 2, 170, I18n.t('yourBest', { n: Save.get().bestScore }),
+      TS.hudSmall()).setOrigin(0.5);
 
     void Leaderboard.top(20).then((entries: LeaderboardEntry[]) => this.render(entries));
 

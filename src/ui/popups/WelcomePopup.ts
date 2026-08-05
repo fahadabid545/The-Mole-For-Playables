@@ -5,6 +5,7 @@ import { GAME_WIDTH, GAME_HEIGHT } from '../../config/GameConfig';
 import { I18n, LANGS, Lang } from '../../services/I18nService';
 import { Save } from '../../services/SaveService';
 import { Audio } from '../../services/AudioService';
+import { TS } from '../../config/TextStyles';
 
 interface Opts {
   onDone: () => void;
@@ -19,14 +20,9 @@ export class WelcomePopup extends Popup {
     const cx = GAME_WIDTH / 2;
     const topY = GAME_HEIGHT / 2 - 300;
 
-    const title = scene.add.text(cx, topY, I18n.t('welcome'), {
-      fontFamily: 'Impact, "Arial Black", sans-serif', fontSize: '68px', color: '#1b5e20',
-      stroke: '#fff8e1', strokeThickness: 4,
-    }).setOrigin(0.5);
-
-    const sub = scene.add.text(cx, topY + 70, I18n.t('chooseLanguage'), {
-      fontFamily: 'Arial, sans-serif', fontSize: '30px', color: '#3e2723',
-    }).setOrigin(0.5);
+    const title = scene.add.text(cx, topY, I18n.t('welcome'),
+      { ...TS.title('#1b5e20'), fontSize: '64px' }).setOrigin(0.5);
+    const sub = scene.add.text(cx, topY + 70, I18n.t('chooseLanguage'), TS.body('#3e2723')).setOrigin(0.5);
 
     this.addContent(title, sub);
 

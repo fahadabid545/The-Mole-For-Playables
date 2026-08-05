@@ -11,6 +11,7 @@ import { I18n } from '../services/I18nService';
 import { WelcomePopup } from '../ui/popups/WelcomePopup';
 import { NamePromptPopup } from '../ui/popups/NamePromptPopup';
 import { IS_PLAYABLES } from '../config/BuildFlags';
+import { TS } from '../config/TextStyles';
 
 export class MenuScene extends Phaser.Scene {
   constructor() { super('Menu'); }
@@ -20,15 +21,7 @@ export class MenuScene extends Phaser.Scene {
     new ParallaxJungle(this);
     spawnLeafParticles(this);
 
-    const title = this.add.text(GAME_WIDTH / 2, 220, 'JUNGLE\nMOLE', {
-      fontFamily: 'Impact, "Arial Black", sans-serif',
-      fontSize: '132px',
-      color: '#fff8e1',
-      stroke: '#1b5e20',
-      strokeThickness: 14,
-      align: 'center',
-      shadow: { offsetX: 0, offsetY: 8, color: '#000000', blur: 12, fill: true },
-    }).setOrigin(0.5);
+    const title = this.add.text(GAME_WIDTH / 2, 220, 'JUNGLE\nMOLE', TS.hero()).setOrigin(0.5);
     this.tweens.add({ targets: title, y: '+=12', yoyo: true, repeat: -1, duration: 1500, ease: 'Sine.InOut' });
 
     const mascot = this.add.image(GAME_WIDTH / 2, 600, TX.raccoon).setOrigin(0.5).setScale(1.6);
@@ -37,21 +30,21 @@ export class MenuScene extends Phaser.Scene {
     const highest = Save.get().highestUnlockedLevel;
     const playLabel = highest > 1 ? I18n.t('continue') : I18n.t('play');
 
-    // Main CTA
+    // Main CTA (full-size)
     new Button(this, GAME_WIDTH / 2, 830, {
       label: playLabel,
       onClick: () => this.scene.start('Game', { level: highest }),
     });
 
-    // Secondary options (3): Levels, Leaderboard, Daily Challenge
-    new Button(this, GAME_WIDTH / 2, 930, {
+    // Secondary options — all identical size
+    new Button(this, GAME_WIDTH / 2, 940, {
       label: I18n.t('levels'), onClick: () => this.scene.start('LevelSelect'), scale: 0.85,
     });
-    new Button(this, GAME_WIDTH / 2, 1020, {
+    new Button(this, GAME_WIDTH / 2, 1030, {
       label: I18n.t('leaderboard'), onClick: () => this.scene.start('Leaderboard'), scale: 0.85,
     });
-    new Button(this, GAME_WIDTH / 2, 1110, {
-      label: I18n.t('dailyChallenge'), onClick: () => this.scene.start('Challenge', { kind: 'daily' }), scale: 0.85, variant: 'ad',
+    new Button(this, GAME_WIDTH / 2, 1120, {
+      label: I18n.t('challenges'), onClick: () => this.scene.start('Challenges'), scale: 0.85, variant: 'ad',
     });
 
     // Top-right sound toggle

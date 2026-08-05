@@ -55,6 +55,9 @@ const DICT: Record<Lang, Dict> = {
     plusOneLife: '+1 Life',
     plusBonus: '+{n} Bonus Score',
     combo: 'COMBO!',
+    level: 'Level {n}',
+    challenges: 'Challenges',
+    locked: 'Locked',
   },
   fr: {
     welcome: 'Bienvenue !',
@@ -100,6 +103,9 @@ const DICT: Record<Lang, Dict> = {
     plusOneLife: '+1 Vie',
     plusBonus: '+{n} Points bonus',
     combo: 'COMBO !',
+    level: 'Niveau {n}',
+    challenges: 'Défis',
+    locked: 'Verrouillé',
   },
   nl: {
     welcome: 'Welkom!',
@@ -145,6 +151,9 @@ const DICT: Record<Lang, Dict> = {
     plusOneLife: '+1 Leven',
     plusBonus: '+{n} Bonuspunten',
     combo: 'COMBO!',
+    level: 'Level {n}',
+    challenges: 'Uitdagingen',
+    locked: 'Vergrendeld',
   },
   hi: {
     welcome: 'स्वागत है!',
@@ -190,6 +199,9 @@ const DICT: Record<Lang, Dict> = {
     plusOneLife: '+1 जीवन',
     plusBonus: '+{n} बोनस अंक',
     combo: 'कॉम्बो!',
+    level: 'स्तर {n}',
+    challenges: 'चुनौतियाँ',
+    locked: 'बंद',
   },
   ar: {
     welcome: '!أهلاً بك',
@@ -235,6 +247,9 @@ const DICT: Record<Lang, Dict> = {
     plusOneLife: 'حياة +1',
     plusBonus: 'نقاط إضافية +{n}',
     combo: '!كومبو',
+    level: '{n} المرحلة',
+    challenges: 'التحديات',
+    locked: 'مقفل',
   },
 };
 

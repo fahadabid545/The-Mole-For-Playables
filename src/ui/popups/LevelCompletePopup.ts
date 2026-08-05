@@ -5,6 +5,7 @@ import { TX } from '../../objects/TextureFactory';
 import { GAME_WIDTH, GAME_HEIGHT } from '../../config/GameConfig';
 import { Audio } from '../../services/AudioService';
 import { I18n } from '../../services/I18nService';
+import { TS } from '../../config/TextStyles';
 
 interface Opts {
   level: number;
@@ -19,9 +20,8 @@ export class LevelCompletePopup extends Popup {
     super(scene, { closeable: true, onCloseX: o.onMenu });
     Audio.play('win');
 
-    const title = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 170, I18n.t('levelComplete', { n: o.level }), {
-      fontFamily: 'Impact, "Arial Black", sans-serif', fontSize: '48px', color: '#3e2723',
-    }).setOrigin(0.5);
+    const title = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 170, I18n.t('levelComplete', { n: o.level }),
+      TS.title('#2e7d32')).setOrigin(0.5);
 
     const starObjs: Phaser.GameObjects.Image[] = [];
     for (let i = 0; i < 3; i++) {
@@ -36,9 +36,8 @@ export class LevelCompletePopup extends Popup {
       }
     }
 
-    const scoreText = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 40, I18n.t('score', { n: o.score }), {
-      fontFamily: 'Arial, sans-serif', fontSize: '32px', color: '#3e2723',
-    }).setOrigin(0.5);
+    const scoreText = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 40, I18n.t('score', { n: o.score }),
+      { ...TS.h2('#3e2723'), fontSize: '36px' }).setOrigin(0.5);
 
     const nextBtn = new Button(scene, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 120, {
       label: I18n.t('next'), onClick: () => this.close(o.onNext),

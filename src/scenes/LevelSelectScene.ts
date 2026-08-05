@@ -8,6 +8,7 @@ import { Button } from '../ui/Button';
 import { Audio } from '../services/AudioService';
 import { AdBanner } from '../ui/AdBanner';
 import { I18n } from '../services/I18nService';
+import { TS } from '../config/TextStyles';
 
 export class LevelSelectScene extends Phaser.Scene {
   private gridContainer!: Phaser.GameObjects.Container;
@@ -22,10 +23,7 @@ export class LevelSelectScene extends Phaser.Scene {
   create(): void {
     new ParallaxJungle(this);
 
-    this.add.text(GAME_WIDTH / 2, 100, I18n.t('levels'), {
-      fontFamily: 'Impact, "Arial Black", sans-serif',
-      fontSize: '56px', color: '#fff8e1', stroke: '#1b5e20', strokeThickness: 8,
-    }).setOrigin(0.5).setDepth(100);
+    this.add.text(GAME_WIDTH / 2, 100, I18n.t('levels'), TS.title('#fff8e1')).setOrigin(0.5).setDepth(100);
 
     // A mask lets the grid scroll behind the top title and above the bottom
     // controls without leaking pixels over the UI chrome.

@@ -6,6 +6,7 @@ import { GAME_WIDTH, GAME_HEIGHT } from '../../config/GameConfig';
 import { Audio } from '../../services/AudioService';
 import { Save } from '../../services/SaveService';
 import { I18n } from '../../services/I18nService';
+import { TS } from '../../config/TextStyles';
 
 interface Opts {
   level: number;
@@ -19,23 +20,18 @@ export class LevelFailedPopup extends Popup {
     super(scene);
     Audio.play('fail');
 
-    const title = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 170, I18n.t('levelFailed', { n: o.level }), {
-      fontFamily: 'Impact, "Arial Black", sans-serif', fontSize: '46px', color: '#b71c1c',
-    }).setOrigin(0.5);
+    const title = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 170, I18n.t('levelFailed', { n: o.level }),
+      TS.title('#b71c1c')).setOrigin(0.5);
 
     // Friendly mascot with a paw on your shoulder
     const paw = scene.add.image(GAME_WIDTH / 2 - 180, GAME_HEIGHT / 2 - 70, TX.paw).setOrigin(0.5).setAngle(-20);
     scene.tweens.add({ targets: paw, x: '+=40', duration: 500, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
 
     const msg = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 60,
-      I18n.t('encourage'), {
-      fontFamily: 'Arial, sans-serif', fontSize: '28px', color: '#3e2723', align: 'center',
-    }).setOrigin(0.5);
+      I18n.t('encourage'), { ...TS.body('#3e2723'), align: 'center', fontSize: '30px' }).setOrigin(0.5);
 
     const livesText = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 20,
-      I18n.t('livesLeft', { n: Save.get().lives }), {
-      fontFamily: 'Arial, sans-serif', fontSize: '26px', color: '#5d4037',
-    }).setOrigin(0.5);
+      I18n.t('livesLeft', { n: Save.get().lives }), TS.h2('#5d4037')).setOrigin(0.5);
 
     const retry = new Button(scene, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 90, {
       label: I18n.t('retry'), onClick: () => this.close(o.onRetry),

@@ -4,6 +4,8 @@ import { LivesBar } from '../ui/LivesBar';
 import { EventBus, EVT } from '../utils/EventBus';
 import { TX } from '../objects/TextureFactory';
 import { Audio } from '../services/AudioService';
+import { I18n } from '../services/I18nService';
+import { TS } from '../config/TextStyles';
 
 export interface HUDData {
   level: number;
@@ -23,20 +25,13 @@ export class HUDScene extends Phaser.Scene {
 
   create(data: HUDData): void {
     this.timeLimitMs = data.timeLimitMs;
-    this.levelText = this.add.text(20, 20, `L ${data.level}`, {
-      fontFamily: 'Impact, sans-serif', fontSize: '36px', color: '#fffde7', stroke: '#1b5e20', strokeThickness: 6,
-    });
-    this.quotaText = this.add.text(20, 66, `Hits 0/${data.quota}`, {
-      fontFamily: 'Arial, sans-serif', fontSize: '22px', color: '#fffde7', stroke: '#1b5e20', strokeThickness: 4,
-    });
+    this.levelText = this.add.text(20, 20, I18n.t('level', { n: data.level }), TS.hudBig());
+    this.quotaText = this.add.text(20, 76, I18n.t('hits', { a: 0, b: data.quota }), TS.hudSmall());
 
-    this.scoreText = this.add.text(GAME_WIDTH / 2, 30, '0', {
-      fontFamily: 'Impact, sans-serif', fontSize: '44px', color: '#fff176', stroke: '#3e2723', strokeThickness: 6,
-    }).setOrigin(0.5, 0);
+    this.scoreText = this.add.text(GAME_WIDTH / 2, 30, '0', TS.score()).setOrigin(0.5, 0);
 
-    this.timeText = this.add.text(GAME_WIDTH - 20, 30, this.fmt(data.timeLimitMs), {
-      fontFamily: 'Impact, sans-serif', fontSize: '40px', color: '#fffde7', stroke: '#b71c1c', strokeThickness: 6,
-    }).setOrigin(1, 0);
+    this.timeText = this.add.text(GAME_WIDTH - 20, 30, this.fmt(data.timeLimitMs),
+      { ...TS.hudBig('#fffde7'), stroke: '#b71c1c' }).setOrigin(1, 0);
 
     // Timer bar
     const barW = 240, barH = 12;
@@ -58,7 +53,7 @@ export class HUDScene extends Phaser.Scene {
 
     EventBus.on(EVT.SCORE_CHANGED, (score: number, hits: number, quota: number) => {
       this.scoreText.setText(`${score}`);
-      this.quotaText.setText(`Hits ${hits}/${quota}`);
+      this.quotaText.setText(I18n.t('hits', { a: hits, b: quota }));
     });
     EventBus.on(EVT.TIMER_TICK, (msLeft: number) => {
       this.timeText.setText(this.fmt(msLeft));
