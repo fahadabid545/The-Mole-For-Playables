@@ -1,0 +1,10 @@
+node_modules
+dist
+dist-store
+.vite
+.DS_Store
+*.log
+.env
+.env.*
+android
+ios

@@ -1,0 +1,51 @@
+import Phaser from 'phaser';
+import { Popup } from './Popup';
+import { Button } from '../Button';
+import { TX } from '../../objects/TextureFactory';
+import { GAME_WIDTH, GAME_HEIGHT } from '../../config/GameConfig';
+import { Audio } from '../../services/AudioService';
+import { Save } from '../../services/SaveService';
+
+interface Opts {
+  level: number;
+  onRetry: () => void;
+  onWatchAdForLife: () => void;
+  onMenu: () => void;
+}
+
+export class LevelFailedPopup extends Popup {
+  constructor(scene: Phaser.Scene, o: Opts) {
+    super(scene);
+    Audio.play('fail');
+
+    const title = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 170, `Level ${o.level} Failed`, {
+      fontFamily: 'Impact, "Arial Black", sans-serif', fontSize: '46px', color: '#b71c1c',
+    }).setOrigin(0.5);
+
+    // Friendly mascot with a paw on your shoulder
+    const paw = scene.add.image(GAME_WIDTH / 2 - 180, GAME_HEIGHT / 2 - 70, TX.paw).setOrigin(0.5).setAngle(-20);
+    scene.tweens.add({ targets: paw, x: '+=40', duration: 500, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+
+    const msg = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 60,
+      "You'll get 'em\nnext time, buddy!", {
+      fontFamily: 'Arial, sans-serif', fontSize: '28px', color: '#3e2723', align: 'center',
+    }).setOrigin(0.5);
+
+    const livesText = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 20,
+      `Lives left: ${Save.get().lives}`, {
+      fontFamily: 'Arial, sans-serif', fontSize: '26px', color: '#5d4037',
+    }).setOrigin(0.5);
+
+    const retry = new Button(scene, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 90, {
+      label: 'Retry', onClick: () => this.close(o.onRetry),
+    });
+    const adBtn = new Button(scene, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 180, {
+      label: '+1 Life  (Watch Ad)', onClick: () => this.close(o.onWatchAdForLife), variant: 'ad',
+    });
+    const menu = new Button(scene, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 270, {
+      label: 'Menu', onClick: () => this.close(o.onMenu), scale: 0.7,
+    });
+
+    this.addContent(title, paw, msg, livesText, retry, adBtn, menu);
+  }
+}
