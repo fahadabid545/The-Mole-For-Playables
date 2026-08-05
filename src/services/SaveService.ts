@@ -17,6 +17,8 @@ export interface SaveData {
   lastWeeklyKey?: string;
   dailyStreak: number;
   bonusScore: number;
+  powerups: { freeze: number; double: number; auto: number };
+  achievements: string[];
 }
 
 const defaults = (): SaveData => ({
@@ -29,6 +31,8 @@ const defaults = (): SaveData => ({
   welcomed: false,
   dailyStreak: 0,
   bonusScore: 0,
+  powerups: { freeze: 1, double: 1, auto: 0 },
+  achievements: [],
 });
 
 let cache: SaveData | null = null;
@@ -93,6 +97,23 @@ export const Save = {
     d.lastDailyKey = key; write();
   },
   markWeeklyDone(key: string): void { const d = read(); d.lastWeeklyKey = key; write(); },
+  addPowerup(kind: 'freeze' | 'double' | 'auto', n = 1): void {
+    const d = read();
+    d.powerups = d.powerups || { freeze: 0, double: 0, auto: 0 };
+    d.powerups[kind] = (d.powerups[kind] || 0) + n; write();
+  },
+  usePowerup(kind: 'freeze' | 'double' | 'auto'): boolean {
+    const d = read();
+    d.powerups = d.powerups || { freeze: 0, double: 0, auto: 0 };
+    if ((d.powerups[kind] || 0) <= 0) return false;
+    d.powerups[kind]--; write(); return true;
+  },
+  unlockAchievement(id: string): boolean {
+    const d = read();
+    d.achievements = d.achievements || [];
+    if (d.achievements.includes(id)) return false;
+    d.achievements.push(id); write(); return true;
+  },
 
   reset(): void { cache = defaults(); write(); },
 };

@@ -50,11 +50,13 @@ export class LevelSelectScene extends Phaser.Scene {
 
       const tile = this.add.rectangle(x, y, size, size, unlocked ? COLORS.leafMid : 0x424242, 1)
         .setStrokeStyle(4, COLORS.woodDark);
-      const num = this.add.text(x, y, unlocked ? `${level}` : '🔒', {
-        fontFamily: 'Impact, "Arial Black", sans-serif',
-        fontSize: '40px', color: '#fffde7',
-      }).setOrigin(0.5);
-      this.gridContainer.add([tile, num]);
+      let numOrLock: Phaser.GameObjects.GameObject;
+      if (unlocked) {
+        numOrLock = this.add.text(x, y, `${level}`, TS.hudBig('#fffde7')).setOrigin(0.5);
+      } else {
+        numOrLock = this.add.image(x, y, TX.iconLock).setOrigin(0.5).setScale(0.85);
+      }
+      this.gridContainer.add([tile, numOrLock]);
 
       const stars = save.perLevelStars[level] ?? 0;
       for (let s = 0; s < 3; s++) {

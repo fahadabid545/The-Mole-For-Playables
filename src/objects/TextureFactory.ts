@@ -19,6 +19,8 @@ export const TX = {
   raccoon: 'tx-raccoon',
   raccoonHit: 'tx-raccoon-hit',
   raccoonGolden: 'tx-raccoon-golden',
+  raccoonFrozen: 'tx-raccoon-frozen',
+  raccoonBoss: 'tx-raccoon-boss',
   bomb: 'tx-bomb',
   hammer: 'tx-hammer',
   spark: 'tx-spark',
@@ -36,6 +38,15 @@ export const TX = {
   soundOn: 'tx-sound-on',
   soundOff: 'tx-sound-off',
   pause: 'tx-pause',
+  iconLock: 'tx-icon-lock',
+  iconFlame: 'tx-icon-flame',
+  iconHeartIcon: 'tx-icon-heart',
+  iconTrophy: 'tx-icon-trophy',
+  iconGear: 'tx-icon-gear',
+  iconFreeze: 'tx-icon-freeze',
+  iconDouble: 'tx-icon-double',
+  iconTarget: 'tx-icon-target',
+  iconCheck: 'tx-icon-check',
 } as const;
 
 function makeTexture(scene: Phaser.Scene, key: string, w: number, h: number, draw: (g: Phaser.GameObjects.Graphics) => void): void {
@@ -61,6 +72,8 @@ export function buildAllTextures(scene: Phaser.Scene): void {
   buildRaccoon(scene, TX.raccoon, COLORS.raccoonBody, COLORS.raccoonFur, false);
   buildRaccoon(scene, TX.raccoonHit, COLORS.raccoonBody, COLORS.raccoonFur, true);
   buildRaccoon(scene, TX.raccoonGolden, COLORS.gold, 0xfff59d, false);
+  buildRaccoon(scene, TX.raccoonFrozen, 0x81d4fa, 0xe1f5fe, false);
+  buildBossRaccoon(scene);
   buildBomb(scene);
   buildHammer(scene);
   buildSpark(scene);
@@ -78,6 +91,15 @@ export function buildAllTextures(scene: Phaser.Scene): void {
   buildSoundIcon(scene, TX.soundOn, true);
   buildSoundIcon(scene, TX.soundOff, false);
   buildPauseIcon(scene);
+  buildIconLock(scene);
+  buildIconFlame(scene);
+  buildIconHeart(scene);
+  buildIconTrophy(scene);
+  buildIconGear(scene);
+  buildIconFreeze(scene);
+  buildIconDouble(scene);
+  buildIconTarget(scene);
+  buildIconCheck(scene);
 }
 
 // ----- individual builders -----
@@ -541,5 +563,178 @@ function buildPauseIcon(scene: Phaser.Scene) {
     g.fillStyle(COLORS.textLight, 1);
     g.fillRoundedRect(18, 14, 14, 44, 4);
     g.fillRoundedRect(40, 14, 14, 44, 4);
+  });
+}
+
+function buildBossRaccoon(scene: Phaser.Scene) {
+  makeTexture(scene, TX.raccoonBoss, 260, 260, g => {
+    // Bigger body, purple-gold, spikes
+    g.fillStyle(0x6a1b9a, 1);
+    g.fillEllipse(130, 160, 200, 190);
+    g.fillStyle(0x9c27b0, 1);
+    g.fillEllipse(130, 90, 170, 140);
+    // Crown
+    g.fillStyle(COLORS.gold, 1);
+    g.fillTriangle(70, 40, 100, 10, 130, 40);
+    g.fillTriangle(100, 40, 130, 5, 160, 40);
+    g.fillTriangle(130, 40, 160, 10, 190, 40);
+    g.fillRect(70, 35, 120, 12);
+    // Ears
+    g.fillStyle(0x4a148c, 1);
+    g.fillTriangle(70, 60, 60, 20, 100, 45);
+    g.fillTriangle(190, 60, 200, 20, 160, 45);
+    // Mask
+    g.fillStyle(COLORS.raccoonMask, 1);
+    g.fillEllipse(95, 100, 55, 32);
+    g.fillEllipse(165, 100, 55, 32);
+    // Eyes
+    g.fillStyle(0xffee58, 1);
+    g.fillCircle(95, 100, 10);
+    g.fillCircle(165, 100, 10);
+    g.fillStyle(0x000000, 1);
+    g.fillCircle(97, 102, 6);
+    g.fillCircle(167, 102, 6);
+    // Snout + nose
+    g.fillStyle(0xf5f5f5, 1);
+    g.fillEllipse(130, 130, 60, 36);
+    g.fillStyle(COLORS.raccoonNose, 1);
+    g.fillEllipse(130, 118, 20, 14);
+    // Fangs
+    g.fillStyle(0xffffff, 1);
+    g.fillTriangle(118, 138, 122, 138, 120, 152);
+    g.fillTriangle(138, 138, 142, 138, 140, 152);
+  });
+}
+
+function buildIconLock(scene: Phaser.Scene) {
+  makeTexture(scene, TX.iconLock, 60, 72, g => {
+    g.lineStyle(6, 0xffffff, 1);
+    g.strokeRoundedRect(18, 8, 24, 26, 12);
+    g.fillStyle(0xffffff, 1);
+    g.fillRoundedRect(6, 30, 48, 38, 8);
+    g.fillStyle(0x424242, 1);
+    g.fillCircle(30, 46, 5);
+    g.fillRect(28, 46, 4, 12);
+  });
+}
+
+function buildIconFlame(scene: Phaser.Scene) {
+  makeTexture(scene, TX.iconFlame, 48, 60, g => {
+    g.fillStyle(0xff6f00, 1);
+    g.beginPath();
+    g.moveTo(24, 6); g.lineTo(38, 24); g.lineTo(34, 34); g.lineTo(44, 42);
+    g.lineTo(36, 54); g.lineTo(24, 58); g.lineTo(12, 54); g.lineTo(4, 42);
+    g.lineTo(14, 34); g.lineTo(10, 24); g.closePath(); g.fillPath();
+    g.fillStyle(0xffca28, 1);
+    g.beginPath();
+    g.moveTo(24, 20); g.lineTo(32, 34); g.lineTo(28, 42); g.lineTo(24, 48);
+    g.lineTo(20, 42); g.lineTo(16, 34); g.closePath(); g.fillPath();
+  });
+}
+
+function buildIconHeart(scene: Phaser.Scene) {
+  makeTexture(scene, TX.iconHeartIcon, 48, 44, g => {
+    g.fillStyle(COLORS.heart, 1);
+    g.fillCircle(16, 16, 12);
+    g.fillCircle(32, 16, 12);
+    g.fillTriangle(4, 20, 44, 20, 24, 42);
+  });
+}
+
+function buildIconTrophy(scene: Phaser.Scene) {
+  makeTexture(scene, TX.iconTrophy, 64, 68, g => {
+    g.fillStyle(COLORS.gold, 1);
+    g.fillRoundedRect(16, 8, 32, 34, 6);
+    // handles
+    g.lineStyle(5, COLORS.gold, 1);
+    g.strokeRoundedRect(4, 14, 12, 20, 6);
+    g.strokeRoundedRect(48, 14, 12, 20, 6);
+    // stem
+    g.fillStyle(0x8d6e63, 1);
+    g.fillRect(24, 42, 16, 12);
+    // base
+    g.fillStyle(0x6d4c41, 1);
+    g.fillRoundedRect(14, 54, 36, 12, 4);
+    // star on cup
+    g.fillStyle(0xfff59d, 1);
+    g.fillCircle(32, 24, 8);
+  });
+}
+
+function buildIconGear(scene: Phaser.Scene) {
+  makeTexture(scene, TX.iconGear, 64, 64, g => {
+    g.fillStyle(0xfffde7, 1);
+    // 8 teeth
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      const cx = 32 + Math.cos(a) * 26;
+      const cy = 32 + Math.sin(a) * 26;
+      g.fillCircle(cx, cy, 8);
+    }
+    g.fillCircle(32, 32, 22);
+    g.fillStyle(0x424242, 1);
+    g.fillCircle(32, 32, 8);
+  });
+}
+
+function buildIconFreeze(scene: Phaser.Scene) {
+  makeTexture(scene, TX.iconFreeze, 60, 60, g => {
+    g.lineStyle(6, 0x81d4fa, 1);
+    for (let i = 0; i < 3; i++) {
+      const a = (i / 3) * Math.PI;
+      const cx = 30, cy = 30, r = 24;
+      const dx = Math.cos(a) * r, dy = Math.sin(a) * r;
+      g.beginPath(); g.moveTo(cx - dx, cy - dy); g.lineTo(cx + dx, cy + dy); g.strokePath();
+    }
+    // arrow tips
+    g.fillStyle(0x0288d1, 1);
+    g.fillCircle(30, 30, 6);
+  });
+}
+
+function buildIconDouble(scene: Phaser.Scene) {
+  makeTexture(scene, TX.iconDouble, 68, 60, g => {
+    g.fillStyle(0xffca28, 1);
+    // x2 style: draw star + "2"
+    const cx = 34, cy = 30, R = 22, r = 10;
+    const pts: number[] = [];
+    for (let i = 0; i < 10; i++) {
+      const a = (Math.PI * i) / 5 - Math.PI / 2;
+      const rad = i % 2 === 0 ? R : r;
+      pts.push(cx + Math.cos(a) * rad, cy + Math.sin(a) * rad);
+    }
+    g.beginPath(); g.moveTo(pts[0], pts[1]);
+    for (let i = 2; i < pts.length; i += 2) g.lineTo(pts[i], pts[i + 1]);
+    g.closePath(); g.fillPath();
+    g.fillStyle(0x3e2723, 1);
+    // "×2" label chunk
+    g.fillRect(cx - 4, cy - 6, 2, 12);
+    g.fillRect(cx + 2, cy - 6, 2, 12);
+  });
+}
+
+function buildIconTarget(scene: Phaser.Scene) {
+  makeTexture(scene, TX.iconTarget, 60, 60, g => {
+    g.fillStyle(0xffffff, 1);
+    g.fillCircle(30, 30, 26);
+    g.fillStyle(0xef5350, 1);
+    g.fillCircle(30, 30, 20);
+    g.fillStyle(0xffffff, 1);
+    g.fillCircle(30, 30, 14);
+    g.fillStyle(0xef5350, 1);
+    g.fillCircle(30, 30, 8);
+    g.fillStyle(0x212121, 1);
+    g.fillCircle(30, 30, 3);
+  });
+}
+
+function buildIconCheck(scene: Phaser.Scene) {
+  makeTexture(scene, TX.iconCheck, 44, 44, g => {
+    g.fillStyle(0x2e7d32, 1);
+    g.fillCircle(22, 22, 20);
+    g.lineStyle(6, 0xffffff, 1);
+    g.beginPath();
+    g.moveTo(10, 22); g.lineTo(20, 32); g.lineTo(34, 14);
+    g.strokePath();
   });
 }

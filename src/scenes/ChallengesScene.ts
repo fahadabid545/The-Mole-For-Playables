@@ -8,6 +8,7 @@ import { getChallenge, Challenge, ChallengeKind } from '../services/ChallengeSer
 import { I18n } from '../services/I18nService';
 import { AdBanner } from '../ui/AdBanner';
 import { TS } from '../config/TextStyles';
+import { TX } from '../objects/TextureFactory';
 
 // Landing page for BOTH daily + weekly challenges shown side by side
 // (vertically stacked cards). Selecting a card starts Game with that
@@ -53,15 +54,25 @@ export class ChallengesScene extends Phaser.Scene {
       `Hit ${ch.params.quota}  •  ${Math.round(ch.params.timeLimitMs / 1000)}s`,
       TS.body('#5d4037')).setOrigin(0.5);
 
-    // Reward chip
-    const rewardStr = ch.rewardLives > 0 && ch.rewardBonus > 0
-      ? `+${ch.rewardLives} ❤   +${ch.rewardBonus} pts`
-      : ch.rewardLives > 0 ? `+${ch.rewardLives} ❤` : `+${ch.rewardBonus} pts`;
-    this.add.text(cx, cy + 60, `${I18n.t('reward')}: ${rewardStr}`, TS.reward()).setOrigin(0.5);
+    // Reward line with heart + trophy icons instead of emojis
+    const rewardText = `${I18n.t('reward')}:`;
+    const label = this.add.text(cx - 220, cy + 60, rewardText, TS.reward()).setOrigin(0, 0.5);
+    let xOff = label.x + label.width + 16;
+    if (ch.rewardLives > 0) {
+      const h1 = this.add.image(xOff, cy + 60, TX.iconHeartIcon).setOrigin(0, 0.5).setScale(0.8);
+      const t1 = this.add.text(h1.x + h1.displayWidth + 6, cy + 60, `+${ch.rewardLives}`, TS.reward()).setOrigin(0, 0.5);
+      xOff = t1.x + t1.width + 24;
+    }
+    if (ch.rewardBonus > 0) {
+      const trophy = this.add.image(xOff, cy + 60, TX.iconTrophy).setOrigin(0, 0.5).setScale(0.5);
+      this.add.text(trophy.x + trophy.displayWidth + 6, cy + 60, `+${ch.rewardBonus}`, TS.reward()).setOrigin(0, 0.5);
+    }
 
     if (kind === 'daily' && Save.get().dailyStreak > 0) {
-      this.add.text(cx + w / 2 - 60, cy - h / 2 + 40, `🔥${Save.get().dailyStreak}`,
-        { ...TS.h2('#ff6f00'), fontSize: '28px' }).setOrigin(0.5);
+      const streakIcon = this.add.image(cx + w / 2 - 90, cy - h / 2 + 40, TX.iconFlame).setOrigin(0.5).setScale(0.9);
+      this.add.text(cx + w / 2 - 50, cy - h / 2 + 40, `${Save.get().dailyStreak}`,
+        { ...TS.h2('#ff6f00'), fontSize: '28px' }).setOrigin(0, 0.5);
+      void streakIcon;
     }
 
     // CTA

@@ -2,18 +2,33 @@ import Phaser from 'phaser';
 import { TX } from './TextureFactory';
 import { Audio } from '../services/AudioService';
 
-export type RaccoonKind = 'normal' | 'golden' | 'bomb';
+export type RaccoonKind = 'normal' | 'golden' | 'bomb' | 'frozen' | 'boss';
 
 export interface RaccoonHitResult {
   kind: RaccoonKind;
   points: number;
+  finished: boolean;    // whether this hit finished the raccoon off
 }
+
+const HP_FOR: Record<RaccoonKind, number> = {
+  normal: 1, golden: 1, bomb: 1, frozen: 2, boss: 3,
+};
+
+const TEXTURE_FOR: Record<RaccoonKind, string> = {
+  normal: TX.raccoon,
+  golden: TX.raccoonGolden,
+  bomb: TX.bomb,
+  frozen: TX.raccoonFrozen,
+  boss: TX.raccoonBoss,
+};
 
 export class Raccoon extends Phaser.GameObjects.Container {
   private sprite: Phaser.GameObjects.Image;
+  private hpText: Phaser.GameObjects.Text;
   private kind: RaccoonKind = 'normal';
   private popState: 'hidden' | 'rising' | 'up' | 'hit' | 'escaping' = 'hidden';
   private hitZone: Phaser.GameObjects.Zone;
+  private hp = 1;
   private onEscapeCb: (() => void) | null = null;
   private onHitCb: ((r: RaccoonHitResult) => void) | null = null;
   private timers: Phaser.Time.TimerEvent[] = [];
@@ -25,7 +40,13 @@ export class Raccoon extends Phaser.GameObjects.Container {
     this.sprite.setY(30);
     this.add(this.sprite);
 
-    this.hitZone = scene.add.zone(0, -40, 160, 160).setInteractive({ useHandCursor: true });
+    this.hpText = scene.add.text(0, -140, '', {
+      fontFamily: '"Luckiest Guy", Impact, sans-serif', fontSize: '28px',
+      color: '#fffde7', stroke: '#3e2723', strokeThickness: 5,
+    }).setOrigin(0.5).setVisible(false);
+    this.add(this.hpText);
+
+    this.hitZone = scene.add.zone(0, -40, 180, 180).setInteractive({ useHandCursor: true });
     this.hitZone.on('pointerdown', () => this.hit());
     this.add(this.hitZone);
 
@@ -38,22 +59,23 @@ export class Raccoon extends Phaser.GameObjects.Container {
     this.clearTimers();
     this.scene.tweens.killTweensOf(this.sprite);
     this.kind = kind;
+    this.hp = HP_FOR[kind];
     this.popState = 'rising';
     this.onHitCb = onHit;
     this.onEscapeCb = onEscape;
-    this.sprite.setTexture(
-      kind === 'bomb' ? TX.bomb : kind === 'golden' ? TX.raccoonGolden : TX.raccoon
-    );
+    this.sprite.setTexture(TEXTURE_FOR[kind]);
     this.sprite.setY(120);
-    this.sprite.setScale(1);
+    this.sprite.setScale(kind === 'boss' ? 1.2 : 1);
     this.sprite.setAngle(0);
+    this.sprite.clearTint();
+    this.updateHpBadge();
     this.setVisible(true);
-    Audio.play(kind === 'golden' ? 'golden' : kind === 'bomb' ? 'squeak' : 'squeak');
+    Audio.play(kind === 'golden' ? 'golden' : 'squeak');
 
     this.scene.tweens.add({
       targets: this.sprite,
-      y: -20,
-      duration: 180,
+      y: kind === 'boss' ? -40 : -20,
+      duration: 200,
       ease: 'Back.Out',
       onComplete: () => {
         if (this.popState !== 'rising') return;
@@ -63,49 +85,68 @@ export class Raccoon extends Phaser.GameObjects.Container {
     });
   }
 
+  private updateHpBadge(): void {
+    if (this.hp > 1) {
+      this.hpText.setText(`${this.hp}`);
+      this.hpText.setVisible(true);
+    } else {
+      this.hpText.setVisible(false);
+    }
+  }
+
   private hit(): void {
     if (this.popState !== 'up' && this.popState !== 'rising') return;
-    this.popState = 'hit';
-    this.clearTimers();
 
     if (this.kind === 'bomb') {
+      this.popState = 'hit';
+      this.clearTimers();
       Audio.play('bomb');
-      this.onHitCb?.({ kind: 'bomb', points: 0 });
-    } else {
-      Audio.play('hit');
-      this.sprite.setTexture(TX.raccoonHit);
-      this.onHitCb?.({ kind: this.kind, points: this.kind === 'golden' ? 3 : 1 });
+      this.onHitCb?.({ kind: 'bomb', points: 0, finished: true });
+      this.scene.tweens.add({ targets: this.sprite, scaleY: 0.7, scaleX: 1.15, duration: 80, yoyo: true,
+        onComplete: () => this.hide() });
+      return;
     }
 
-    this.scene.tweens.add({
-      targets: this.sprite,
-      scaleY: 0.7,
-      scaleX: 1.15,
-      duration: 80,
-      yoyo: true,
-      onComplete: () => this.hide(),
-    });
+    this.hp--;
+    Audio.play('hit');
+    // Flash tint on partial hit; last hit does a squash + hide
+    if (this.hp > 0) {
+      this.sprite.setTint(0xffffff);
+      this.scene.tweens.add({ targets: this.sprite, scaleX: 1.15, scaleY: 0.9, duration: 60, yoyo: true,
+        onComplete: () => this.sprite.clearTint() });
+      this.updateHpBadge();
+      this.onHitCb?.({ kind: this.kind, points: 0, finished: false });
+      return;
+    }
+
+    // Final hit
+    this.popState = 'hit';
+    this.clearTimers();
+    const pts = this.kind === 'boss' ? 100 : this.kind === 'golden' ? 3 : this.kind === 'frozen' ? 2 : 1;
+    this.onHitCb?.({ kind: this.kind, points: pts, finished: true });
+    this.scene.tweens.add({ targets: this.sprite, scaleY: 0.7, scaleX: 1.15, duration: 80, yoyo: true,
+      onComplete: () => this.hide() });
   }
 
   private escape(): void {
     if (this.popState !== 'up') return;
     this.popState = 'escaping';
-    if (this.kind === 'normal' || this.kind === 'golden') Audio.play('laugh');
+    if (this.kind !== 'bomb') Audio.play('laugh');
     this.scene.tweens.add({
       targets: this.sprite,
       y: 120,
-      duration: 150,
+      duration: 160,
       ease: 'Sine.In',
       onComplete: () => {
         this.setVisible(false);
         this.popState = 'hidden';
-        // Bombs escaping = no penalty; normal/golden escaping = penalty.
         if (this.kind !== 'bomb') this.onEscapeCb?.();
       },
     });
   }
 
   private hide(): void {
+    this.hpText.setVisible(false);
     this.scene.tweens.add({
       targets: this.sprite,
       y: 120,
@@ -126,6 +167,7 @@ export class Raccoon extends Phaser.GameObjects.Container {
   forceHide(): void {
     this.clearTimers();
     this.scene.tweens.killTweensOf(this.sprite);
+    this.hpText.setVisible(false);
     this.popState = 'hidden';
     this.setVisible(false);
   }

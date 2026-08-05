@@ -47,9 +47,14 @@ export class HUDScene extends Phaser.Scene {
       const m = Audio.toggleMute();
       sound.setTexture(m ? TX.soundOff : TX.soundOn);
     });
-    const pause = this.add.image(GAME_WIDTH - 60, 210, TX.pause)
-      .setOrigin(0.5).setInteractive({ useHandCursor: true }).setScale(0.9);
-    pause.on('pointerdown', () => this.scene.get('Game').events.emit('request-pause'));
+    // Pause: bigger, circular background so it's obvious
+    const pauseBg = this.add.circle(GAME_WIDTH - 60, 210, 36, 0x263238, 0.85)
+      .setStrokeStyle(3, 0xffb300);
+    const pause = this.add.image(GAME_WIDTH - 60, 210, TX.pause).setOrigin(0.5).setScale(1.1);
+    pauseBg.setInteractive({ useHandCursor: true });
+    pauseBg.on('pointerdown', () => this.scene.get('Game').events.emit('request-pause'));
+    pauseBg.on('pointerover', () => pause.setScale(1.25));
+    pauseBg.on('pointerout',  () => pause.setScale(1.1));
 
     EventBus.on(EVT.SCORE_CHANGED, (score: number, hits: number, quota: number) => {
       this.scoreText.setText(`${score}`);

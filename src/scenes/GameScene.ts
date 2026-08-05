@@ -18,6 +18,9 @@ import { Leaderboard } from '../services/LeaderboardService';
 import { LevelCompletePopup } from '../ui/popups/LevelCompletePopup';
 import { NamePromptPopup } from '../ui/popups/NamePromptPopup';
 import { Challenge } from '../services/ChallengeService';
+import { PowerupBar, PowerupKind } from '../ui/PowerupBar';
+import { attachAchievementToast } from '../ui/AchievementToast';
+import { checkProgress } from '../services/AchievementService';
 import { LevelFailedPopup } from '../ui/popups/LevelFailedPopup';
 import { OutOfLivesPopup } from '../ui/popups/OutOfLivesPopup';
 import { ExtraLifePopup } from '../ui/popups/ExtraLifePopup';
@@ -43,10 +46,21 @@ export class GameScene extends Phaser.Scene {
 
   private level = 1;
   private challenge: Challenge | null = null;
+  private doublePointsActive = false;
+  private grantRandomPowerup: (() => void) | null = null;
 
   constructor() { super('Game'); }
 
   create(data: { level: number; challenge?: Challenge }): void {
+    // CRITICAL: Phaser recycles the scene instance on restart, so class-field
+    // initialisers only run once. Any array/reference set on `this` from a
+    // previous life is still there. Reset everything here so level N+1
+    // doesn't get polluted with destroyed raccoons from level N.
+    this.holes = [];
+    this.raccoons = [];
+    this.tweens.killAll();
+    this.time.removeAllEvents();
+
     this.challenge = data.challenge ?? null;
     this.level = Math.max(1, Math.min(FLAGS.totalLevels, data.level ?? 1));
     this.params = this.challenge ? this.challenge.params : getLevelParams(this.level);
@@ -56,13 +70,24 @@ export class GameScene extends Phaser.Scene {
     this.combo = 0;
     this.paused = false;
     this.endedFlag = false;
+    this.levelActive = false;
     this.timeLeft = this.params.timeLimitMs;
+    this.input.enabled = true;
 
     new ParallaxJungle(this);
     spawnLeafParticles(this);
 
     this.buildGrid();
     this.hammer = new Hammer(this);
+    attachAchievementToast(this);
+    const powerupBar = new PowerupBar(this, 40, GAME_HEIGHT - 220);
+    powerupBar.setDepth(9500);
+    this.events.on('powerup-used', (kind: PowerupKind) => this.applyPowerup(kind, powerupBar));
+    this.grantRandomPowerup = () => {
+      const kinds: PowerupKind[] = ['freeze', 'double', 'auto'];
+      Save.addPowerup(kinds[Math.floor(Math.random() * kinds.length)]);
+      powerupBar.refresh();
+    };
     document.body.classList.add('playing');
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => document.body.classList.remove('playing'));
 
@@ -107,7 +132,9 @@ export class GameScene extends Phaser.Scene {
 
   private runCountdown(onDone: () => void): void {
     // Level intro banner slides in and out first
-    const banner = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 200, I18n.t('level', { n: this.level }), TS.banner())
+    const bannerText = this.params.isBoss ? `BOSS LEVEL ${this.level}` : I18n.t('level', { n: this.level });
+    const bannerStyle = this.params.isBoss ? { ...TS.banner(), color: '#f8bbd0', stroke: '#4a148c' } : TS.banner();
+    const banner = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 200, bannerText, bannerStyle)
       .setOrigin(0.5).setDepth(15000).setAlpha(0);
     this.tweens.add({ targets: banner, alpha: 1, y: '+=40', duration: 350, ease: 'Back.Out' });
     this.time.delayedCall(900, () => {
@@ -180,14 +207,29 @@ export class GameScene extends Phaser.Scene {
     if (free.length === 0) return;
     const rac = Phaser.Utils.Array.GetRandom(free) as Raccoon;
 
-    const roll = Math.random();
+    // Boss levels: spawn a boss occasionally (every ~4th spawn),
+    // otherwise a regular kind so filler raccoons still contribute.
     let kind: RaccoonKind = 'normal';
-    if (roll < this.params.bombChance) kind = 'bomb';
-    else if (roll < this.params.bombChance + this.params.goldenChance) kind = 'golden';
+    if (this.params.isBoss && Math.random() < 0.28 && this.raccoons.every(r => r.getKind() !== 'boss' || r.isAvailable())) {
+      kind = 'boss';
+    } else {
+      const roll = Math.random();
+      const bombEnd = this.params.bombChance;
+      const goldenEnd = bombEnd + this.params.goldenChance;
+      const frozenEnd = goldenEnd + this.params.frozenChance;
+      if (roll < bombEnd) kind = 'bomb';
+      else if (roll < goldenEnd) kind = 'golden';
+      else if (roll < frozenEnd) kind = 'frozen';
+    }
 
     rac.spawn(kind, this.params.popupVisibleMs,
-      (res) => this.onRaccoonHit(rac, res.kind, res.points),
+      (res) => { if (res.finished) this.onRaccoonHit(rac, res.kind, res.points); else this.onPartialHit(rac); },
       () => this.onRaccoonEscape(rac));
+  }
+
+  private onPartialHit(rac: Raccoon): void {
+    // Frozen or boss took a hit but isn't down yet — small feedback only.
+    spawnScorePopup(this, rac.x, rac.y - 30, '+1', '#a5d6a7');
   }
 
   private onRaccoonHit(rac: Raccoon, kind: RaccoonKind, points: number): void {
@@ -201,13 +243,22 @@ export class GameScene extends Phaser.Scene {
     }
     this.combo++;
     const comboMul = this.combo >= 8 ? 3 : this.combo >= 4 ? 2 : 1;
-    const base = kind === 'golden' ? 30 : 10;
-    const pts = base * comboMul;
+    const base = kind === 'boss' ? 100 : kind === 'golden' ? 30 : kind === 'frozen' ? 20 : 10;
+    const doubleMul = this.doublePointsActive ? 2 : 1;
+    const pts = base * comboMul * doubleMul;
     this.hits += points;
     this.score += pts;
-    const color = kind === 'golden' ? '#ffd54f' : comboMul > 1 ? '#ffeb3b' : '#fff176';
+    const color = kind === 'boss' ? '#e1bee7' : kind === 'golden' ? '#ffd54f' :
+                  kind === 'frozen' ? '#81d4fa' : comboMul > 1 ? '#ffeb3b' : '#fff176';
     spawnScorePopup(this, rac.x, rac.y - 60, `+${pts}${comboMul > 1 ? ` x${comboMul}` : ''}`, color);
     if (comboMul > 1) { spawnScorePopup(this, rac.x + 40, rac.y - 110, 'COMBO!', '#ff9800'); Audio.play('combo'); }
+    if (kind === 'boss') {
+      spawnScorePopup(this, rac.x, rac.y - 150, 'BOSS DOWN!', '#f8bbd0');
+      // Boss down grants a random power-up
+      if (this.grantRandomPowerup) this.grantRandomPowerup();
+    }
+    // Combo-10 award: grant power-up
+    if (this.combo === 10 && this.grantRandomPowerup) this.grantRandomPowerup();
     EventBus.emit(EVT.SCORE_CHANGED, this.score, this.hits, this.params.quota);
     if (this.hits >= this.params.quota) this.endLevel(true);
   }
@@ -270,6 +321,12 @@ export class GameScene extends Phaser.Scene {
       Save.recordStars(this.level, stars);
       Save.unlockUpTo(this.level + 1);
       Save.setBestScore(this.score);
+      // Achievement hooks
+      checkProgress('levelClear', this.level);
+      if (this.misses === 0) checkProgress('perfect', 1);
+      if (this.timeLeft / this.params.timeLimitMs > 0.5) checkProgress('speed', 1);
+      if (this.params.isBoss) checkProgress('boss', 1);
+      if (this.combo >= 10) checkProgress('combo', 10);
       const submit = () => void Leaderboard.submit(Save.get().playerName || 'Player', this.score, this.level);
       if (!Save.get().playerName) {
         // First win — ask for a name, then submit, then show the complete popup.
@@ -369,6 +426,33 @@ export class GameScene extends Phaser.Scene {
       onRestart: () => this.restart(),
       onQuit: () => this.goMenu(),
     });
+  }
+
+  private applyPowerup(kind: PowerupKind, bar: PowerupBar): void {
+    if (!this.levelActive || this.paused) { Save.addPowerup(kind); bar.refresh(); return; }
+    if (kind === 'freeze') {
+      this.paused = true;
+      this.time.delayedCall(3000, () => { this.paused = false; this.timerLast = this.time.now; });
+      spawnScorePopup(this, GAME_WIDTH / 2, 300, 'TIME FROZEN', '#81d4fa');
+    } else if (kind === 'double') {
+      this.doublePointsActive = true;
+      this.time.delayedCall(10000, () => { this.doublePointsActive = false; });
+      spawnScorePopup(this, GAME_WIDTH / 2, 300, 'x2 SCORE', '#ffca28');
+    } else if (kind === 'auto') {
+      // Instantly finish every currently-up raccoon
+      this.raccoons.forEach(r => {
+        if (!r.isAvailable() && r.getKind() !== 'bomb') {
+          const k = r.getKind();
+          r.forceHide();
+          const pts = k === 'boss' ? 100 : k === 'golden' ? 30 : k === 'frozen' ? 20 : 10;
+          this.hits += k === 'boss' ? 3 : k === 'golden' ? 3 : k === 'frozen' ? 2 : 1;
+          this.score += pts;
+        }
+      });
+      spawnScorePopup(this, GAME_WIDTH / 2, 300, 'AUTO HIT!', '#ef5350');
+      EventBus.emit(EVT.SCORE_CHANGED, this.score, this.hits, this.params.quota);
+      if (this.hits >= this.params.quota) this.endLevel(true);
+    }
   }
 
   private computeStars(): number {

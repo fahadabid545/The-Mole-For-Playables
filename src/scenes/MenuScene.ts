@@ -24,36 +24,36 @@ export class MenuScene extends Phaser.Scene {
     const title = this.add.text(GAME_WIDTH / 2, 220, 'JUNGLE\nMOLE', TS.hero()).setOrigin(0.5);
     this.tweens.add({ targets: title, y: '+=12', yoyo: true, repeat: -1, duration: 1500, ease: 'Sine.InOut' });
 
-    const mascot = this.add.image(GAME_WIDTH / 2, 600, TX.raccoon).setOrigin(0.5).setScale(1.6);
+    const mascot = this.add.image(GAME_WIDTH / 2, 560, TX.raccoon).setOrigin(0.5).setScale(1.4);
     this.tweens.add({ targets: mascot, angle: -6, yoyo: true, repeat: -1, duration: 900, ease: 'Sine.InOut' });
 
     const highest = Save.get().highestUnlockedLevel;
     const playLabel = highest > 1 ? I18n.t('continue') : I18n.t('play');
 
     // Main CTA (full-size)
-    new Button(this, GAME_WIDTH / 2, 830, {
+    new Button(this, GAME_WIDTH / 2, 740, {
       label: playLabel,
       onClick: () => this.scene.start('Game', { level: highest }),
     });
 
-    // Secondary options — all identical size
-    new Button(this, GAME_WIDTH / 2, 940, {
-      label: I18n.t('levels'), onClick: () => this.scene.start('LevelSelect'), scale: 0.85,
-    });
-    new Button(this, GAME_WIDTH / 2, 1030, {
-      label: I18n.t('leaderboard'), onClick: () => this.scene.start('Leaderboard'), scale: 0.85,
-    });
-    new Button(this, GAME_WIDTH / 2, 1120, {
-      label: I18n.t('challenges'), onClick: () => this.scene.start('Challenges'), scale: 0.85, variant: 'ad',
-    });
+    // Secondary options — all identical size, 76px vertical spacing
+    const secY = 840;
+    new Button(this, GAME_WIDTH / 2, secY,       { label: I18n.t('levels'),      onClick: () => this.scene.start('LevelSelect'),  scale: 0.72 });
+    new Button(this, GAME_WIDTH / 2, secY + 76,  { label: I18n.t('challenges'),  onClick: () => this.scene.start('Challenges'),   scale: 0.72, variant: 'ad' });
+    new Button(this, GAME_WIDTH / 2, secY + 152, { label: I18n.t('leaderboard'), onClick: () => this.scene.start('Leaderboard'),  scale: 0.72 });
+    new Button(this, GAME_WIDTH / 2, secY + 228, { label: 'Achievements',        onClick: () => this.scene.start('Achievements'), scale: 0.72 });
 
-    // Top-right sound toggle
+    // Top-right sound toggle + gear icon opens Settings
     const sound = this.add.image(GAME_WIDTH - 70, 70, Audio.isMuted() ? TX.soundOff : TX.soundOn)
       .setOrigin(0.5).setInteractive({ useHandCursor: true });
     sound.on('pointerdown', () => {
       const m = Audio.toggleMute();
       sound.setTexture(m ? TX.soundOff : TX.soundOn);
     });
+    const gear = this.add.image(GAME_WIDTH - 160, 70, TX.iconGear)
+      .setOrigin(0.5).setInteractive({ useHandCursor: true }).setScale(0.9);
+    gear.on('pointerdown', () => this.scene.start('Settings'));
+    this.tweens.add({ targets: gear, angle: 360, duration: 12000, repeat: -1 });
 
     // Language chip only in store build (playables ships single-language).
     if (!IS_PLAYABLES) {
