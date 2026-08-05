@@ -11,6 +11,8 @@ export const TX = {
   bgTreesNear: 'tx-bg-trees-near',
   bgLeavesFg: 'tx-bg-leaves-fg',
   bgGround: 'tx-bg-ground',
+  bgRiver: 'tx-bg-river',
+  vine: 'tx-vine',
   leafParticle: 'tx-leaf-particle',
   logHole: 'tx-log-hole',
   logHoleShadow: 'tx-log-hole-shadow',
@@ -51,6 +53,8 @@ export function buildAllTextures(scene: Phaser.Scene): void {
   buildTreesNear(scene);
   buildLeavesFg(scene);
   buildGround(scene);
+  buildRiver(scene);
+  buildVine(scene);
   buildLeafParticle(scene);
   buildLogHole(scene);
   buildLogHoleShadow(scene);
@@ -205,6 +209,48 @@ function buildGround(scene: Phaser.Scene) {
       const x = 60 + (i * 89) % 620;
       const y = 90 + (i * 73) % 800;
       g.fillEllipse(x, y, 14, 8);
+    }
+  });
+}
+
+function buildRiver(scene: Phaser.Scene) {
+  makeTexture(scene, TX.bgRiver, 720, 140, g => {
+    // Water gradient
+    g.fillGradientStyle(COLORS.water, COLORS.water, COLORS.waterDark, COLORS.waterDark, 1);
+    g.fillRoundedRect(-20, 0, 760, 140, 40);
+    // Foam ripples
+    g.fillStyle(COLORS.waterFoam, 0.9);
+    for (let x = 0; x < 720; x += 60) {
+      g.fillEllipse(x, 20, 40, 8);
+      g.fillEllipse(x + 30, 60, 30, 6);
+      g.fillEllipse(x, 100, 44, 8);
+    }
+    // Highlight sheen
+    g.fillStyle(0xffffff, 0.35);
+    g.fillEllipse(180, 40, 120, 10);
+    g.fillEllipse(520, 90, 140, 12);
+  });
+}
+
+function buildVine(scene: Phaser.Scene) {
+  makeTexture(scene, TX.vine, 60, 500, g => {
+    // Vine stem — twisting curve
+    g.fillStyle(COLORS.leafDark, 1);
+    for (let y = 0; y < 500; y += 4) {
+      const x = 30 + Math.sin(y * 0.03) * 10;
+      g.fillCircle(x, y, 6);
+    }
+    // Leaves along the vine
+    g.fillStyle(COLORS.leafMid, 1);
+    for (let y = 30; y < 500; y += 55) {
+      const x = 30 + Math.sin(y * 0.03) * 10;
+      g.fillEllipse(x - 18, y, 24, 12);
+      g.fillEllipse(x + 18, y + 20, 24, 12);
+    }
+    g.fillStyle(COLORS.leafLight, 0.8);
+    for (let y = 30; y < 500; y += 55) {
+      const x = 30 + Math.sin(y * 0.03) * 10;
+      g.fillEllipse(x - 18, y - 2, 14, 6);
     }
   });
 }

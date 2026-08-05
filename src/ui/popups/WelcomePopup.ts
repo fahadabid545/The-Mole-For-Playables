@@ -13,7 +13,6 @@ interface Opts {
 
 export class WelcomePopup extends Popup {
   constructor(scene: Phaser.Scene, opts: Opts | (() => void)) {
-    // Back-compat: an old caller passes a bare callback.
     const o: Opts = typeof opts === 'function' ? { onDone: opts } : opts;
     super(scene, { closeable: !!o.closeable });
 
@@ -31,20 +30,26 @@ export class WelcomePopup extends Popup {
 
     this.addContent(title, sub);
 
-    // Two-column grid: max 3 rows. 5 langs -> 2 cols x 3 rows, last cell empty.
+    // 2 columns; last odd item centered in its own row.
     const cols = 2;
     const gapX = 20;
     const gapY = 22;
     const btnW = 260;
     const btnH = 96;
-    const gridW = cols * btnW + (cols - 1) * gapX;
-    const startX = cx - gridW / 2 + btnW / 2;
     const startY = topY + 150;
 
     LANGS.forEach((l, i) => {
-      const c = i % cols;
       const r = Math.floor(i / cols);
-      const x = startX + c * (btnW + gapX);
+      const isLastLonely = i === LANGS.length - 1 && LANGS.length % cols === 1;
+      let x: number;
+      if (isLastLonely) {
+        x = cx;
+      } else {
+        const c = i % cols;
+        const gridW = cols * btnW + (cols - 1) * gapX;
+        const startX = cx - gridW / 2 + btnW / 2;
+        x = startX + c * (btnW + gapX);
+      }
       const y = startY + r * (btnH + gapY);
       const btn = new Button(scene, x, y, {
         label: l.label,

@@ -36,6 +36,7 @@ export class Raccoon extends Phaser.GameObjects.Container {
 
   spawn(kind: RaccoonKind, visibleMs: number, onHit: (r: RaccoonHitResult) => void, onEscape: () => void): void {
     this.clearTimers();
+    this.scene.tweens.killTweensOf(this.sprite);
     this.kind = kind;
     this.popState = 'rising';
     this.onHitCb = onHit;
@@ -124,6 +125,7 @@ export class Raccoon extends Phaser.GameObjects.Container {
 
   forceHide(): void {
     this.clearTimers();
+    this.scene.tweens.killTweensOf(this.sprite);
     this.popState = 'hidden';
     this.setVisible(false);
   }

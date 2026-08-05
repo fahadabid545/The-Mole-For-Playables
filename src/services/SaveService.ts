@@ -13,6 +13,10 @@ export interface SaveData {
   playerName?: string;
   bestScore: number;
   welcomed: boolean;
+  lastDailyKey?: string;
+  lastWeeklyKey?: string;
+  dailyStreak: number;
+  bonusScore: number;
 }
 
 const defaults = (): SaveData => ({
@@ -23,6 +27,8 @@ const defaults = (): SaveData => ({
   totalStars: 0,
   bestScore: 0,
   welcomed: false,
+  dailyStreak: 0,
+  bonusScore: 0,
 });
 
 let cache: SaveData | null = null;
@@ -78,6 +84,15 @@ export const Save = {
     if (n > d.bestScore) { d.bestScore = n; write(); }
   },
   setWelcomed(): void { const d = read(); d.welcomed = true; write(); },
+  addBonusScore(n: number): void { const d = read(); d.bonusScore += n; write(); },
+  markDailyDone(key: string): void {
+    const d = read();
+    const yest = new Date(); yest.setDate(yest.getDate() - 1);
+    const yestKey = yest.toISOString().slice(0, 10);
+    d.dailyStreak = d.lastDailyKey === yestKey ? d.dailyStreak + 1 : 1;
+    d.lastDailyKey = key; write();
+  },
+  markWeeklyDone(key: string): void { const d = read(); d.lastWeeklyKey = key; write(); },
 
   reset(): void { cache = defaults(); write(); },
 };

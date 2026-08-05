@@ -16,6 +16,7 @@ import { I18n } from '../services/I18nService';
 import { Leaderboard } from '../services/LeaderboardService';
 import { LevelCompletePopup } from '../ui/popups/LevelCompletePopup';
 import { NamePromptPopup } from '../ui/popups/NamePromptPopup';
+import { Challenge } from '../services/ChallengeService';
 import { LevelFailedPopup } from '../ui/popups/LevelFailedPopup';
 import { OutOfLivesPopup } from '../ui/popups/OutOfLivesPopup';
 import { ExtraLifePopup } from '../ui/popups/ExtraLifePopup';
@@ -29,6 +30,8 @@ export class GameScene extends Phaser.Scene {
 
   private hits = 0;
   private score = 0;
+  private misses = 0;
+  private combo = 0;
   private levelActive = false;
   private paused = false;
   private endedFlag = false;
@@ -38,14 +41,18 @@ export class GameScene extends Phaser.Scene {
   private nextSpawnAt = 0;
 
   private level = 1;
+  private challenge: Challenge | null = null;
 
   constructor() { super('Game'); }
 
-  create(data: { level: number }): void {
+  create(data: { level: number; challenge?: Challenge }): void {
+    this.challenge = data.challenge ?? null;
     this.level = Math.max(1, Math.min(FLAGS.totalLevels, data.level ?? 1));
-    this.params = getLevelParams(this.level);
+    this.params = this.challenge ? this.challenge.params : getLevelParams(this.level);
     this.hits = 0;
     this.score = 0;
+    this.misses = 0;
+    this.combo = 0;
     this.paused = false;
     this.endedFlag = false;
     this.timeLeft = this.params.timeLimitMs;
@@ -191,21 +198,38 @@ export class GameScene extends Phaser.Scene {
     if (kind === 'bomb') {
       spawnScorePopup(this, rac.x, rac.y - 60, '-3s', '#ff5252');
       Audio.play('lifeLost');
+      this.combo = 0;
       this.applyBombPenalty();
       return;
     }
+    this.combo++;
+    const comboMul = this.combo >= 8 ? 3 : this.combo >= 4 ? 2 : 1;
+    const base = kind === 'golden' ? 30 : 10;
+    const pts = base * comboMul;
     this.hits += points;
-    this.score += kind === 'golden' ? 30 : 10;
-    spawnScorePopup(this, rac.x, rac.y - 60, kind === 'golden' ? '+30' : '+10',
-      kind === 'golden' ? '#ffd54f' : '#fff176');
+    this.score += pts;
+    const color = kind === 'golden' ? '#ffd54f' : comboMul > 1 ? '#ffeb3b' : '#fff176';
+    spawnScorePopup(this, rac.x, rac.y - 60, `+${pts}${comboMul > 1 ? ` x${comboMul}` : ''}`, color);
+    if (comboMul > 1) { spawnScorePopup(this, rac.x + 40, rac.y - 110, 'COMBO!', '#ff9800'); Audio.play('combo'); }
     EventBus.emit(EVT.SCORE_CHANGED, this.score, this.hits, this.params.quota);
     if (this.hits >= this.params.quota) this.endLevel(true);
   }
 
   private onRaccoonEscape(rac: Raccoon): void {
     if (!this.levelActive) return;
-    // No life penalty for a single miss — only failing the level costs a life.
-    spawnScorePopup(this, rac.x, rac.y - 20, 'miss!', '#ffab91');
+    this.combo = 0;
+    this.misses++;
+    this.score = Math.max(0, this.score - 5);
+    spawnScorePopup(this, rac.x, rac.y - 20, '-5', '#ffab91');
+    EventBus.emit(EVT.SCORE_CHANGED, this.score, this.hits, this.params.quota);
+    // Every 5 escapes costs a life (in addition to the level-fail rule).
+    if (this.misses > 0 && this.misses % 5 === 0) {
+      Audio.play('lifeLost');
+      Save.loseLife();
+      EventBus.emit(EVT.LIFE_CHANGED);
+      spawnScorePopup(this, GAME_WIDTH / 2, GAME_HEIGHT / 2 - 100, '-1 LIFE!', '#ef5350');
+      if (Save.get().lives <= 0) this.endLevel(false, true);
+    }
   }
 
   private applyBombPenalty(): void {
@@ -231,6 +255,21 @@ export class GameScene extends Phaser.Scene {
 
     if (won) {
       const stars = this.computeStars();
+      if (this.challenge) {
+        // Challenge win path: grant reward, mark done, return to Challenge card.
+        if (this.challenge.rewardLives > 0) Save.addLife(this.challenge.rewardLives);
+        if (this.challenge.rewardBonus > 0) Save.addBonusScore(this.challenge.rewardBonus);
+        if (this.challenge.kind === 'daily') Save.markDailyDone(this.challenge.key);
+        else Save.markWeeklyDone(this.challenge.key);
+        Save.setBestScore(this.score);
+        EventBus.emit(EVT.LIFE_CHANGED);
+        new LevelCompletePopup(this, {
+          level: this.level, stars, score: this.score,
+          onNext: () => { this.scene.stop('HUD'); this.scene.start('Challenge', { kind: this.challenge!.kind }); },
+          onMenu: () => this.goMenu(),
+        });
+        return;
+      }
       Save.recordStars(this.level, stars);
       Save.unlockUpTo(this.level + 1);
       Save.setBestScore(this.score);

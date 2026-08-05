@@ -10,6 +10,13 @@ import { AdBanner } from '../ui/AdBanner';
 import { I18n } from '../services/I18nService';
 
 export class LevelSelectScene extends Phaser.Scene {
+  private gridContainer!: Phaser.GameObjects.Container;
+  private scrollY = 0;
+  private minY = 0;
+  private maxY = 0;
+  private dragging = false;
+  private lastY = 0;
+
   constructor() { super('LevelSelect'); }
 
   create(): void {
@@ -17,11 +24,16 @@ export class LevelSelectScene extends Phaser.Scene {
 
     this.add.text(GAME_WIDTH / 2, 100, I18n.t('levels'), {
       fontFamily: 'Impact, "Arial Black", sans-serif',
-      fontSize: '56px',
-      color: '#fff8e1',
-      stroke: '#1b5e20',
-      strokeThickness: 8,
-    }).setOrigin(0.5);
+      fontSize: '56px', color: '#fff8e1', stroke: '#1b5e20', strokeThickness: 8,
+    }).setOrigin(0.5).setDepth(100);
+
+    // A mask lets the grid scroll behind the top title and above the bottom
+    // controls without leaking pixels over the UI chrome.
+    const topClip = 170;
+    const bottomClip = 260;
+    const clipH = GAME_HEIGHT - topClip - bottomClip;
+
+    this.gridContainer = this.add.container(0, topClip);
 
     const save = Save.get();
     const cols = 5;
@@ -29,44 +41,78 @@ export class LevelSelectScene extends Phaser.Scene {
     const gap = 20;
     const totalW = cols * size + (cols - 1) * gap;
     const startX = (GAME_WIDTH - totalW) / 2 + size / 2;
-    const startY = 200;
+    const rowH = size + gap;
 
     for (let i = 0; i < FLAGS.totalLevels; i++) {
       const level = i + 1;
       const c = i % cols, r = Math.floor(i / cols);
       const x = startX + c * (size + gap);
-      const y = startY + r * (size + gap);
+      const y = 30 + r * rowH;
       const unlocked = level <= save.highestUnlockedLevel;
 
       const tile = this.add.rectangle(x, y, size, size, unlocked ? COLORS.leafMid : 0x424242, 1)
         .setStrokeStyle(4, COLORS.woodDark);
-      const num = this.add.text(x, y, `${level}`, {
+      const num = this.add.text(x, y, unlocked ? `${level}` : '🔒', {
         fontFamily: 'Impact, "Arial Black", sans-serif',
         fontSize: '40px', color: '#fffde7',
       }).setOrigin(0.5);
+      this.gridContainer.add([tile, num]);
 
       const stars = save.perLevelStars[level] ?? 0;
       for (let s = 0; s < 3; s++) {
         const st = this.add.image(x - 24 + s * 24, y + 38, TX.star).setOrigin(0.5).setScale(0.28);
         if (s >= stars) st.setAlpha(0.3);
+        this.gridContainer.add(st);
       }
 
       if (unlocked) {
         tile.setInteractive({ useHandCursor: true });
-        tile.on('pointerdown', () => {
+        let downX = 0, downY = 0;
+        tile.on('pointerdown', (p: Phaser.Input.Pointer) => { downX = p.x; downY = p.y; });
+        tile.on('pointerup', (p: Phaser.Input.Pointer) => {
+          if (Math.hypot(p.x - downX, p.y - downY) > 10) return; // drag, not tap
           Audio.play('click');
           this.scene.start('Game', { level });
         });
-      } else {
-        num.setText('🔒');
       }
-      void num;
     }
+
+    const rows = Math.ceil(FLAGS.totalLevels / cols);
+    const contentH = 60 + rows * rowH;
+    this.minY = Math.min(topClip, GAME_HEIGHT - bottomClip - contentH);
+    this.maxY = topClip;
+
+    // Rectangle mask so scrolled tiles are clipped inside the viewport.
+    const maskShape = this.make.graphics({ x: 0, y: 0 }).fillStyle(0xffffff)
+      .fillRect(0, topClip, GAME_WIDTH, clipH);
+    const mask = maskShape.createGeometryMask();
+    this.gridContainer.setMask(mask);
+
+    // Scroll: pointer drag + mouse wheel
+    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
+      if (p.y >= topClip && p.y <= topClip + clipH) { this.dragging = true; this.lastY = p.y; }
+    });
+    this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
+      if (!this.dragging || !p.isDown) return;
+      const dy = p.y - this.lastY;
+      this.lastY = p.y;
+      this.scrollBy(dy);
+    });
+    this.input.on('pointerup', () => { this.dragging = false; });
+    this.input.on('wheel', (_: unknown, __: unknown, ___: number, dy: number) => this.scrollBy(-dy));
 
     new Button(this, GAME_WIDTH / 2, GAME_HEIGHT - 220, {
       label: I18n.t('back'), onClick: () => this.scene.start('Menu'), scale: 0.8,
     });
 
     new AdBanner(this).show();
+  }
+
+  private scrollBy(dy: number): void {
+    this.scrollY += dy;
+    // Clamp so grid doesn't fly out of view
+    const targetY = Math.min(this.maxY, Math.max(this.minY, this.maxY + this.scrollY));
+    this.scrollY = targetY - this.maxY;
+    this.gridContainer.y = targetY;
   }
 }
