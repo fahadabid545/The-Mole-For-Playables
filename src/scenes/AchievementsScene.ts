@@ -33,8 +33,11 @@ export class AchievementsScene extends Phaser.Scene {
       const borderColor = isDone ? 0xffb300 : COLORS.woodDark;
       const bg = this.add.rectangle(GAME_WIDTH / 2, y, GAME_WIDTH - 60, rowH - 10, bgColor, bgAlpha)
         .setStrokeStyle(4, borderColor);
-      const trophy = this.add.image(90, y, TX.iconTrophy).setOrigin(0.5).setScale(0.75);
-      if (!isDone) trophy.setTint(0x8d6e63);
+      // Each achievement has its own themed icon (medal, target, trophy,
+      // shield, flame, bolt, swords, calendar) so the list doesn't just
+      // repeat a generic trophy.
+      const icon = this.add.image(90, y, a.icon).setOrigin(0.5).setScale(0.75);
+      if (!isDone) icon.setTint(0x8d6e63);
 
       // Dark text on light bg for both states — always readable.
       const titleColor = isDone ? '#3e2723' : '#5d3a1a';

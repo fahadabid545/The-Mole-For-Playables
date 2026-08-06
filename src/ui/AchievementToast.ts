@@ -1,5 +1,4 @@
 import Phaser from 'phaser';
-import { TX } from '../objects/TextureFactory';
 import { EventBus } from '../utils/EventBus';
 import { EVT_ACHIEVEMENT, Achievement } from '../services/AchievementService';
 import { TS } from '../config/TextStyles';
@@ -14,7 +13,7 @@ export function attachAchievementToast(scene: Phaser.Scene): void {
     const y = 160;
     const g = scene.add.container(GAME_WIDTH / 2, -80).setDepth(30000);
     const bg = scene.add.rectangle(0, 0, 560, 100, 0x263238, 0.95).setStrokeStyle(4, 0xffb300);
-    const icon = scene.add.image(-230, 0, TX.iconTrophy).setOrigin(0.5).setScale(0.8);
+    const icon = scene.add.image(-230, 0, a.icon).setOrigin(0.5).setScale(0.8);
     const title = scene.add.text(-170, -20, 'Achievement!', TS.h2('#ffb300')).setOrigin(0, 0.5);
     const name = scene.add.text(-170, 16, a.title, TS.body('#fff8e1')).setOrigin(0, 0.5);
     g.add([bg, icon, title, name]);

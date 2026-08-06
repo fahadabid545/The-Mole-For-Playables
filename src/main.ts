@@ -9,7 +9,6 @@ import { MenuScene } from './scenes/MenuScene';
 import { LevelSelectScene } from './scenes/LevelSelectScene';
 import { GameScene } from './scenes/GameScene';
 import { HUDScene } from './scenes/HUDScene';
-import { LeaderboardScene } from './scenes/LeaderboardScene';
 import { ChallengesScene } from './scenes/ChallengesScene';
 import { AchievementsScene } from './scenes/AchievementsScene';
 import { SettingsScene } from './scenes/SettingsScene';
@@ -26,7 +25,7 @@ const config: Phaser.Types.Core.GameConfig = {
   },
   input: { activePointers: 2 },
   render: { antialias: true, pixelArt: false, roundPixels: false },
-  scene: [BootScene, PreloadScene, MenuScene, LevelSelectScene, GameScene, HUDScene, LeaderboardScene, ChallengesScene, AchievementsScene, SettingsScene],
+  scene: [BootScene, PreloadScene, MenuScene, LevelSelectScene, GameScene, HUDScene, ChallengesScene, AchievementsScene, SettingsScene],
 };
 
 function boot() { new Phaser.Game(config); }

@@ -53,6 +53,11 @@ export const TX = {
   iconDouble: 'tx-icon-double',
   iconTarget: 'tx-icon-target',
   iconCheck: 'tx-icon-check',
+  iconShield: 'tx-icon-shield',
+  iconBolt: 'tx-icon-bolt',
+  iconSwords: 'tx-icon-swords',
+  iconCalendar: 'tx-icon-calendar',
+  iconMedal: 'tx-icon-medal',
 } as const;
 
 function makeTexture(scene: Phaser.Scene, key: string, w: number, h: number, draw: (g: Phaser.GameObjects.Graphics) => void): void {
@@ -112,6 +117,11 @@ export function buildAllTextures(scene: Phaser.Scene): void {
   buildIconDouble(scene);
   buildIconTarget(scene);
   buildIconCheck(scene);
+  buildIconShield(scene);
+  buildIconBolt(scene);
+  buildIconSwords(scene);
+  buildIconCalendar(scene);
+  buildIconMedal(scene);
 }
 
 // ----- individual builders -----
@@ -1145,5 +1155,142 @@ function buildIconCheck(scene: Phaser.Scene) {
     g.beginPath();
     g.moveTo(10, 22); g.lineTo(20, 32); g.lineTo(34, 14);
     g.strokePath();
+  });
+}
+
+function buildIconShield(scene: Phaser.Scene) {
+  // Untouchable / perfect — blue heraldic shield with a cross
+  makeTexture(scene, TX.iconShield, 64, 68, g => {
+    g.fillStyle(0x1976d2, 1);
+    g.beginPath();
+    g.moveTo(32, 4);
+    g.lineTo(58, 14);
+    g.lineTo(56, 40);
+    g.lineTo(32, 64);
+    g.lineTo(8, 40);
+    g.lineTo(6, 14);
+    g.closePath(); g.fillPath();
+    // Inner lighter shield
+    g.fillStyle(0x64b5f6, 1);
+    g.beginPath();
+    g.moveTo(32, 12); g.lineTo(50, 20);
+    g.lineTo(48, 38); g.lineTo(32, 56);
+    g.lineTo(16, 38); g.lineTo(14, 20);
+    g.closePath(); g.fillPath();
+    // White cross
+    g.fillStyle(0xffffff, 1);
+    g.fillRect(29, 20, 6, 26);
+    g.fillRect(20, 30, 24, 6);
+    // Rim shine
+    g.fillStyle(0xffffff, 0.4);
+    g.fillEllipse(24, 20, 12, 6);
+  });
+}
+
+function buildIconBolt(scene: Phaser.Scene) {
+  // Speed demon — yellow lightning bolt inside a dark circle
+  makeTexture(scene, TX.iconBolt, 60, 68, g => {
+    g.fillStyle(0x263238, 1); g.fillCircle(30, 34, 28);
+    g.fillStyle(0xffd54f, 1);
+    g.beginPath();
+    g.moveTo(34, 8);
+    g.lineTo(18, 34);
+    g.lineTo(28, 34);
+    g.lineTo(24, 60);
+    g.lineTo(42, 30);
+    g.lineTo(32, 30);
+    g.lineTo(38, 8);
+    g.closePath(); g.fillPath();
+    // Bright inner streak
+    g.fillStyle(0xffffff, 0.7);
+    g.beginPath();
+    g.moveTo(33, 14); g.lineTo(26, 30); g.lineTo(31, 30);
+    g.lineTo(28, 44); g.lineTo(35, 32); g.lineTo(30, 32);
+    g.lineTo(34, 14); g.closePath(); g.fillPath();
+  });
+}
+
+function buildIconSwords(scene: Phaser.Scene) {
+  // Boss slayer — two crossed swords over a dark disk
+  makeTexture(scene, TX.iconSwords, 68, 68, g => {
+    g.fillStyle(0x2b1810, 1); g.fillCircle(34, 34, 30);
+    // First blade (top-left to bottom-right)
+    const blade = (angle: number) => {
+      const cx = 34, cy = 34;
+      const cos = Math.cos(angle), sin = Math.sin(angle);
+      const rot = (x: number, y: number) => [cx + x * cos - y * sin, cy + x * sin + y * cos] as const;
+      // Blade rectangle
+      const [a1, b1] = rot(-24, -3);
+      const [a2, b2] = rot(20, -3);
+      const [a3, b3] = rot(20, 3);
+      const [a4, b4] = rot(-24, 3);
+      g.fillStyle(0xd7d7d7, 1);
+      g.fillPoints([{ x: a1, y: b1 }, { x: a2, y: b2 }, { x: a3, y: b3 }, { x: a4, y: b4 }], true);
+      // Tip (triangle)
+      const [t1, t2] = rot(28, 0);
+      const [t3, t4] = rot(20, -5);
+      const [t5, t6] = rot(20, 5);
+      g.fillTriangle(t1, t2, t3, t4, t5, t6);
+      // Hilt
+      const [h1, h2] = rot(-24, -6);
+      const [h3, h4] = rot(-18, -6);
+      const [h5, h6] = rot(-18, 6);
+      const [h7, h8] = rot(-24, 6);
+      g.fillStyle(0x8b5a2b, 1);
+      g.fillPoints([{ x: h1, y: h2 }, { x: h3, y: h4 }, { x: h5, y: h6 }, { x: h7, y: h8 }], true);
+    };
+    blade(Math.PI / 4);
+    blade(-Math.PI / 4);
+    // Center rivet
+    g.fillStyle(0xffd54f, 1); g.fillCircle(34, 34, 4);
+  });
+}
+
+function buildIconCalendar(scene: Phaser.Scene) {
+  // Daily streak — calendar page with a "7" or checked square
+  makeTexture(scene, TX.iconCalendar, 60, 64, g => {
+    // Body
+    g.fillStyle(0xffffff, 1); g.fillRoundedRect(6, 12, 48, 46, 6);
+    // Top red band
+    g.fillStyle(0xe53935, 1); g.fillRoundedRect(6, 12, 48, 16, 6);
+    g.fillRect(6, 20, 48, 8);
+    // Two ring binders
+    g.fillStyle(0x424242, 1);
+    g.fillRoundedRect(16, 4, 4, 14, 2);
+    g.fillRoundedRect(40, 4, 4, 14, 2);
+    // Grid dots
+    g.fillStyle(0xbdbdbd, 1);
+    for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) g.fillCircle(14 + c * 10, 34 + r * 8, 1.5);
+    // Big "7" in bold
+    g.fillStyle(0x2e7d32, 1);
+    g.fillRect(20, 34, 20, 4);
+    g.fillTriangle(40, 34, 40, 40, 30, 54);
+    g.fillTriangle(30, 54, 34, 54, 40, 40);
+  });
+}
+
+function buildIconMedal(scene: Phaser.Scene) {
+  // Generic medal (used as fallback / first-win badge)
+  makeTexture(scene, TX.iconMedal, 60, 72, g => {
+    // Ribbon
+    g.fillStyle(0xe53935, 1);
+    g.fillTriangle(18, 0, 30, 20, 42, 0);
+    g.fillTriangle(18, 0, 8, 24, 22, 24);
+    g.fillTriangle(42, 0, 52, 24, 38, 24);
+    // Medal body
+    g.fillStyle(COLORS.gold, 1); g.fillCircle(30, 46, 22);
+    g.fillStyle(0xffca28, 1); g.fillCircle(30, 46, 17);
+    // Star inside
+    const cx = 30, cy = 46, R = 12, r = 5;
+    const pts: number[] = [];
+    for (let i = 0; i < 10; i++) {
+      const a = (Math.PI * i) / 5 - Math.PI / 2;
+      const rad = i % 2 === 0 ? R : r;
+      pts.push(cx + Math.cos(a) * rad, cy + Math.sin(a) * rad);
+    }
+    g.fillStyle(0xffffff, 1);
+    g.beginPath(); g.moveTo(pts[0], pts[1]);
+    for (let i = 2; i < pts.length; i += 2) g.lineTo(pts[i], pts[i + 1]);
+    g.closePath(); g.fillPath();
   });
 }

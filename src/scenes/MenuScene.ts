@@ -41,14 +41,15 @@ export class MenuScene extends Phaser.Scene {
       onClick: () => this.scene.start('Game', { level: highest }),
     });
 
-    // Secondary options — same full size as the main CTA so the entire
-    // menu column reads as one consistent set of wooden signboards.
-    const gap = 112;
-    const secY = 858;
-    new Button(this, GAME_WIDTH / 2, secY,             { label: I18n.t('levels'),      onClick: () => this.scene.start('LevelSelect') });
-    new Button(this, GAME_WIDTH / 2, secY + gap,       { label: I18n.t('challenges'),  onClick: () => this.scene.start('Challenges'),   variant: 'ad' });
-    new Button(this, GAME_WIDTH / 2, secY + gap * 2,   { label: I18n.t('leaderboard'), onClick: () => this.scene.start('Leaderboard') });
-    new Button(this, GAME_WIDTH / 2, secY + gap * 3,   { label: 'Achievements',        onClick: () => this.scene.start('Achievements') });
+    // Secondary options — same full size as the main CTA. Leaderboard
+    // was removed (Playables single-HTML can't reach a shared backend,
+    // so a truly universal leaderboard isn't possible here). Challenges
+    // takes its slot as the highlighted rewards path.
+    const gap = 118;
+    const secY = 870;
+    new Button(this, GAME_WIDTH / 2, secY,           { label: I18n.t('levels'),     onClick: () => this.scene.start('LevelSelect') });
+    new Button(this, GAME_WIDTH / 2, secY + gap,     { label: I18n.t('challenges'), onClick: () => this.scene.start('Challenges'), variant: 'ad' });
+    new Button(this, GAME_WIDTH / 2, secY + gap * 2, { label: 'Achievements',       onClick: () => this.scene.start('Achievements') });
 
     // Top-right sound toggle + gear icon — offset below browser chrome
     const topPad = 110;

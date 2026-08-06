@@ -59,7 +59,7 @@ export class NamePromptPopup extends Popup {
     };
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') finish(); });
 
-    const ok = new Button(scene, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 70, {
+    const ok = new Button(scene, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 150, {
       label: I18n.t('submit'),
       onClick: finish,
     });

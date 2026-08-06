@@ -14,7 +14,6 @@ import { Audio } from '../services/AudioService';
 import { Ads } from '../services/AdsService';
 import { I18n } from '../services/I18nService';
 import { TS } from '../config/TextStyles';
-import { Leaderboard } from '../services/LeaderboardService';
 import { LevelCompletePopup } from '../ui/popups/LevelCompletePopup';
 import { NamePromptPopup } from '../ui/popups/NamePromptPopup';
 import { Challenge } from '../services/ChallengeService';
@@ -332,12 +331,10 @@ export class GameScene extends Phaser.Scene {
       if (this.timeLeft / this.params.timeLimitMs > 0.5) checkProgress('speed', 1);
       if (this.params.isBoss) checkProgress('boss', 1);
       if (this.combo >= 10) checkProgress('combo', 10);
-      const submit = () => void Leaderboard.submit(Save.get().playerName || 'Player', this.score, this.level);
       if (!Save.get().playerName) {
-        // First win — ask for a name, then submit, then show the complete popup.
-        new NamePromptPopup(this, '', (n) => { Save.setPlayerName(n); submit(); });
-      } else {
-        submit();
+        // First win — capture the player's name so it appears in future
+        // celebrations. No leaderboard submit anymore (removed).
+        new NamePromptPopup(this, '', (n) => { Save.setPlayerName(n); });
       }
 
       const proceed = () => {
