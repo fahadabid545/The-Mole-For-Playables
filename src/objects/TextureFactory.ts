@@ -1270,27 +1270,36 @@ function buildIconCalendar(scene: Phaser.Scene) {
 }
 
 function buildIconMedal(scene: Phaser.Scene) {
-  // Generic medal (used as fallback / first-win badge)
-  makeTexture(scene, TX.iconMedal, 60, 72, g => {
-    // Ribbon
-    g.fillStyle(0xe53935, 1);
-    g.fillTriangle(18, 0, 30, 20, 42, 0);
-    g.fillTriangle(18, 0, 8, 24, 22, 24);
-    g.fillTriangle(42, 0, 52, 24, 38, 24);
-    // Medal body
-    g.fillStyle(COLORS.gold, 1); g.fillCircle(30, 46, 22);
-    g.fillStyle(0xffca28, 1); g.fillCircle(30, 46, 17);
-    // Star inside
-    const cx = 30, cy = 46, R = 12, r = 5;
+  // Round rosette badge — no ribbon triangles (previously read as an
+  // "M" letter). Gold medallion with scalloped rim and a "1st" style
+  // star inside.
+  makeTexture(scene, TX.iconMedal, 64, 64, g => {
+    // Scalloped rim (small gold bumps around a bigger circle)
+    g.fillStyle(0xffa000, 1);
+    for (let i = 0; i < 14; i++) {
+      const a = (i / 14) * Math.PI * 2;
+      g.fillCircle(32 + Math.cos(a) * 28, 32 + Math.sin(a) * 28, 6);
+    }
+    // Gold body
+    g.fillStyle(COLORS.gold, 1); g.fillCircle(32, 32, 24);
+    // Inner darker ring
+    g.fillStyle(0xffb300, 1); g.fillCircle(32, 32, 20);
+    // Bright inner disk
+    g.fillStyle(0xffe082, 1); g.fillCircle(32, 32, 15);
+    // Star in center
+    const cx = 32, cy = 32, R = 11, r = 5;
     const pts: number[] = [];
     for (let i = 0; i < 10; i++) {
       const a = (Math.PI * i) / 5 - Math.PI / 2;
       const rad = i % 2 === 0 ? R : r;
       pts.push(cx + Math.cos(a) * rad, cy + Math.sin(a) * rad);
     }
-    g.fillStyle(0xffffff, 1);
+    g.fillStyle(0xc65a00, 1);
     g.beginPath(); g.moveTo(pts[0], pts[1]);
     for (let i = 2; i < pts.length; i += 2) g.lineTo(pts[i], pts[i + 1]);
     g.closePath(); g.fillPath();
+    // Highlight glint
+    g.fillStyle(0xffffff, 0.6);
+    g.fillEllipse(24, 22, 12, 5);
   });
 }

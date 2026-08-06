@@ -29,8 +29,9 @@ export class LevelSelectScene extends Phaser.Scene {
 
     // Grid area clipped between title (bottom) and BACK button (top).
     // Extra top padding so the first row of tiles isn't chopped off by
-    // the signboard.
-    const topClip = 260;
+    // the hanging signboard (signboard ends at ~y=230, we start well
+    // below that).
+    const topClip = 300;
     const bottomClip = 260;
     const clipH = GAME_HEIGHT - topClip - bottomClip;
 
@@ -48,7 +49,9 @@ export class LevelSelectScene extends Phaser.Scene {
       const level = i + 1;
       const c = i % cols, r = Math.floor(i / cols);
       const x = startX + c * (size + gap);
-      const y = 30 + r * rowH;
+      // Extra headroom inside the container so the first row's tiles
+      // (and their stars underneath) sit clearly below the signboard.
+      const y = 70 + r * rowH;
       const unlocked = level <= save.highestUnlockedLevel;
 
       // Wooden tile background (with locked variant showing leaf overlay).

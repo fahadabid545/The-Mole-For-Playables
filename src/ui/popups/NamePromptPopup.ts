@@ -23,7 +23,11 @@ export class NamePromptPopup extends Popup {
 
     this.addContent(title, hint);
 
-    // DOM input overlaid at the canvas position. Sized to be finger-friendly.
+    // DOM input overlaid on top of the game CANVAS (not the viewport).
+    // The canvas is letterboxed when the browser is wider than 9:16, so
+    // positioning by viewport % floats the input outside the canvas on
+    // the left. Instead, we measure the canvas rect every frame while
+    // the popup is open and pin the input to canvas-center.
     const input = document.createElement('input');
     input.type = 'text';
     input.maxLength = 16;
@@ -31,10 +35,7 @@ export class NamePromptPopup extends Popup {
     input.autocapitalize = 'words';
     input.placeholder = 'Your name';
     input.style.cssText = [
-      'position:absolute',
-      'left:50%',
-      'top:50%',
-      'transform:translate(-50%,-30%)',
+      'position:fixed',
       'width:280px', 'height:48px',
       'padding:8px 14px',
       'font-size:22px',
@@ -46,9 +47,29 @@ export class NamePromptPopup extends Popup {
       'color:#2b1810',
       'outline:none',
       'z-index:99999',
+      'box-sizing:border-box',
     ].join(';');
     document.body.appendChild(input);
     this.inputEl = input;
+
+    const reposition = () => {
+      const canvas = document.querySelector('canvas');
+      if (!canvas) return;
+      const r = canvas.getBoundingClientRect();
+      // Center the input horizontally on the canvas, and place it
+      // vertically at the same fraction of the canvas as the popup's
+      // input-line (roughly 48% down the game area = around y ~615 of
+      // 1280 tall).
+      const cx = r.left + r.width / 2;
+      const cy = r.top + r.height * 0.48;
+      const iw = 280, ih = 48;
+      input.style.left = `${Math.round(cx - iw / 2)}px`;
+      input.style.top  = `${Math.round(cy - ih / 2)}px`;
+    };
+    reposition();
+    window.addEventListener('resize', reposition);
+    // Keep track so we can remove the listener on close
+    (input as any)._reposition = reposition;
     // Focus after a tick so mobile keyboards trigger reliably
     setTimeout(() => input.focus(), 60);
 
@@ -70,7 +91,11 @@ export class NamePromptPopup extends Popup {
   }
 
   private removeInput(): void {
-    if (this.inputEl?.parentNode) this.inputEl.parentNode.removeChild(this.inputEl);
-    this.inputEl = undefined;
+    if (this.inputEl) {
+      const rep = (this.inputEl as any)._reposition as (() => void) | undefined;
+      if (rep) window.removeEventListener('resize', rep);
+      if (this.inputEl.parentNode) this.inputEl.parentNode.removeChild(this.inputEl);
+      this.inputEl = undefined;
+    }
   }
 }
