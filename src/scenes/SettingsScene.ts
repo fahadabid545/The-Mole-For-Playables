@@ -9,6 +9,7 @@ import { TS } from '../config/TextStyles';
 import { TX } from '../objects/TextureFactory';
 import { AdBanner } from '../ui/AdBanner';
 import { IS_PLAYABLES } from '../config/BuildFlags';
+import { Popup } from '../ui/popups/Popup';
 
 // Settings hub. Volume slider, mute toggle, language chooser (store
 // build only), and a reset-progress button behind a confirmation.
@@ -75,19 +76,23 @@ export class SettingsScene extends Phaser.Scene {
   }
 
   private confirmReset(): void {
-    const overlay = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x000000, 0.7)
-      .setInteractive().setDepth(20000);
-    const box = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, 520, 300, 0xfff8e1, 1)
-      .setStrokeStyle(6, 0xef5350).setDepth(20001);
-    const msg = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 60,
-      'Reset ALL progress?\nThis cannot be undone.',
-      { ...TS.h2('#b71c1c'), align: 'center', fontSize: '30px' }).setOrigin(0.5).setDepth(20002);
-    const yes = new Button(this, GAME_WIDTH / 2 - 110, GAME_HEIGHT / 2 + 70, {
-      label: 'Yes', onClick: () => { Save.reset(); this.scene.restart(); }, scale: 0.7, variant: 'ad',
-    }).setDepth(20002);
-    const no = new Button(this, GAME_WIDTH / 2 + 110, GAME_HEIGHT / 2 + 70, {
-      label: 'Cancel', onClick: () => { overlay.destroy(); box.destroy(); msg.destroy(); yes.destroy(); no.destroy(); },
-      scale: 0.7,
-    }).setDepth(20002);
+    // Use the shared wooden signboard Popup so the confirm dialog matches
+    // the rest of the game (was previously a plain red-bordered box).
+    const popup = new Popup(this);
+    const title = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 140,
+      'Reset ALL progress?',
+      { ...TS.title('#b71c1c'), fontSize: '44px' }).setOrigin(0.5);
+    const sub = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 60,
+      'This cannot be undone.',
+      { ...TS.body('#3e2723'), align: 'center', fontSize: '28px' }).setOrigin(0.5);
+    const yes = new Button(this, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 70, {
+      label: 'Yes, reset',
+      onClick: () => popup.close(() => { Save.reset(); this.scene.restart(); }),
+      variant: 'ad',
+    });
+    const no = new Button(this, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 180, {
+      label: 'Cancel', onClick: () => popup.close(), scale: 0.8,
+    });
+    popup.addContent(title, sub, yes, no);
   }
 }

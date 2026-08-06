@@ -1270,36 +1270,28 @@ function buildIconCalendar(scene: Phaser.Scene) {
 }
 
 function buildIconMedal(scene: Phaser.Scene) {
-  // Round rosette badge — no ribbon triangles (previously read as an
-  // "M" letter). Gold medallion with scalloped rim and a "1st" style
-  // star inside.
+  // Clean "1st place" coin — solid gold disk with a large "1" in the
+  // center, no scalloped rim, no ribbon (previous designs read as an
+  // "M" or a gear).
   makeTexture(scene, TX.iconMedal, 64, 64, g => {
-    // Scalloped rim (small gold bumps around a bigger circle)
-    g.fillStyle(0xffa000, 1);
-    for (let i = 0; i < 14; i++) {
-      const a = (i / 14) * Math.PI * 2;
-      g.fillCircle(32 + Math.cos(a) * 28, 32 + Math.sin(a) * 28, 6);
-    }
+    // Outer dark ring for depth
+    g.fillStyle(0x8a5a00, 1); g.fillCircle(32, 32, 28);
     // Gold body
-    g.fillStyle(COLORS.gold, 1); g.fillCircle(32, 32, 24);
-    // Inner darker ring
-    g.fillStyle(0xffb300, 1); g.fillCircle(32, 32, 20);
-    // Bright inner disk
-    g.fillStyle(0xffe082, 1); g.fillCircle(32, 32, 15);
-    // Star in center
-    const cx = 32, cy = 32, R = 11, r = 5;
-    const pts: number[] = [];
-    for (let i = 0; i < 10; i++) {
-      const a = (Math.PI * i) / 5 - Math.PI / 2;
-      const rad = i % 2 === 0 ? R : r;
-      pts.push(cx + Math.cos(a) * rad, cy + Math.sin(a) * rad);
-    }
-    g.fillStyle(0xc65a00, 1);
-    g.beginPath(); g.moveTo(pts[0], pts[1]);
-    for (let i = 2; i < pts.length; i += 2) g.lineTo(pts[i], pts[i + 1]);
-    g.closePath(); g.fillPath();
-    // Highlight glint
-    g.fillStyle(0xffffff, 0.6);
-    g.fillEllipse(24, 22, 12, 5);
+    g.fillStyle(COLORS.gold, 1); g.fillCircle(32, 32, 26);
+    // Inner ring
+    g.fillStyle(0xffb300, 1); g.fillCircle(32, 32, 22);
+    // Bright face
+    g.fillStyle(0xffe082, 1); g.fillCircle(32, 32, 18);
+    // Big carved "1" in the middle
+    g.fillStyle(0x8a5a00, 1);
+    // Vertical stem
+    g.fillRect(30, 20, 6, 26);
+    // Top-left angled flag of the "1"
+    g.fillTriangle(30, 20, 22, 26, 30, 26);
+    // Bottom serif base
+    g.fillRect(22, 46, 22, 4);
+    // Highlight glint on top-left
+    g.fillStyle(0xffffff, 0.55);
+    g.fillEllipse(24, 22, 10, 4);
   });
 }
