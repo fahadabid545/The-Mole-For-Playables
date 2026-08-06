@@ -14,26 +14,35 @@ export class AchievementsScene extends Phaser.Scene {
 
   create(): void {
     new ParallaxJungle(this);
-    this.add.text(GAME_WIDTH / 2, 130, 'Achievements', TS.title('#fff8e1')).setOrigin(0.5).setDepth(100);
+    this.add.image(GAME_WIDTH / 2, 160, TX.signHang).setOrigin(0.5).setDepth(99);
+    this.add.text(GAME_WIDTH / 2, 168, 'Achievements', TS.title('#fff5c9')).setOrigin(0.5).setDepth(100);
 
     const unlocked = new Set(Save.get().achievements ?? []);
-    const startY = 240;
-    const rowH = 100;
+    const startY = 260;
+    const rowH = 82;
 
     ACHIEVEMENTS.forEach((a, i) => {
       const y = startY + i * rowH;
       const isDone = unlocked.has(a.id);
 
-      const bg = this.add.rectangle(GAME_WIDTH / 2, y, GAME_WIDTH - 60, rowH - 10,
-        isDone ? 0xfff8e1 : 0x263238, isDone ? 0.95 : 0.75)
-        .setStrokeStyle(4, isDone ? 0xffb300 : COLORS.woodDark);
+      // Locked rows now use a light-cream background too (was near-black
+      // with grey text — unreadable). A subtle sepia tint distinguishes
+      // them from the bright gold-bordered unlocked rows.
+      const bgColor = isDone ? 0xfff5c9 : 0xefe0b3;
+      const bgAlpha = isDone ? 0.98 : 0.95;
+      const borderColor = isDone ? 0xffb300 : COLORS.woodDark;
+      const bg = this.add.rectangle(GAME_WIDTH / 2, y, GAME_WIDTH - 60, rowH - 10, bgColor, bgAlpha)
+        .setStrokeStyle(4, borderColor);
       const trophy = this.add.image(90, y, TX.iconTrophy).setOrigin(0.5).setScale(0.75);
-      if (!isDone) trophy.setTint(0x616161);
+      if (!isDone) trophy.setTint(0x8d6e63);
 
+      // Dark text on light bg for both states — always readable.
+      const titleColor = isDone ? '#3e2723' : '#5d3a1a';
+      const descColor  = isDone ? '#5d4037' : '#7a5a3a';
       const title = this.add.text(160, y - 16, a.title,
-        { ...TS.h2(isDone ? '#3e2723' : '#e0e0e0'), fontSize: '30px' }).setOrigin(0, 0.5);
+        { ...TS.h2(titleColor), fontSize: '30px' }).setOrigin(0, 0.5);
       const desc = this.add.text(160, y + 18, a.desc,
-        TS.body(isDone ? '#5d4037' : '#bdbdbd')).setOrigin(0, 0.5);
+        TS.body(descColor)).setOrigin(0, 0.5);
 
       if (isDone) {
         const check = this.add.image(GAME_WIDTH - 60, y, TX.iconCheck).setOrigin(0.5);

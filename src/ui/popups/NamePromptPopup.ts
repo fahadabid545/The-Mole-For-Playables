@@ -5,62 +5,72 @@ import { GAME_WIDTH, GAME_HEIGHT } from '../../config/GameConfig';
 import { I18n } from '../../services/I18nService';
 import { TS } from '../../config/TextStyles';
 
-const FUN_NAMES = ['Rocky', 'Mila', 'Kenji', 'Aisha', 'Diego', 'Nora', 'Priya', 'Sven', 'Luca', 'Zoe',
-  'Rex', 'Tara', 'Nico', 'Iris', 'Kian', 'Mira', 'Otis', 'Vera', 'Bruno', 'Cleo'];
-
-// Kept fully in-canvas (works for playables where an overlaid HTML input might
-// misalign inside iframes). A shuffle button rolls through fun defaults; the
-// player can pick from four quick-choose chips or shuffle for more.
+// Real name-entry popup. Uses a positioned <input> DOM element overlaid
+// on top of the canvas — works inside single-HTML Playables sandboxes
+// and gives the native mobile keyboard on touch devices.
 export class NamePromptPopup extends Popup {
-  private chosen: string;
-  private display!: Phaser.GameObjects.Text;
+  private inputEl?: HTMLInputElement;
 
   constructor(scene: Phaser.Scene, initial: string, onDone: (name: string) => void) {
     super(scene);
-    this.chosen = (initial || FUN_NAMES[Math.floor(Math.random() * FUN_NAMES.length)]).slice(0, 16);
+    const start = (initial || '').slice(0, 16);
 
-    const title = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 170, I18n.t('enterName'),
-      TS.title('#2e7d32')).setOrigin(0.5);
+    const title = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 200, I18n.t('enterName'),
+      TS.title('#2b1810')).setOrigin(0.5);
 
-    this.display = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 80, this.chosen,
-      { ...TS.hero(), fontSize: '56px' }).setOrigin(0.5);
+    const hint = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 130,
+      'Type your name below', { ...TS.body('#5d3a1a'), fontSize: '24px' }).setOrigin(0.5);
 
-    // Quick pick chips
-    const chipY = GAME_HEIGHT / 2 + 10;
-    const picks = this.pickFour();
-    const chips = picks.map((n, i) => {
-      const t = scene.add.text(GAME_WIDTH / 2 + (i - 1.5) * 130, chipY, n, {
-        ...TS.chipDark(),
-        backgroundColor: '#2e7d32',
-        padding: { left: 12, right: 12, top: 6, bottom: 6 },
-      }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-      t.on('pointerdown', () => { this.chosen = n; this.display.setText(n); });
-      return t;
-    });
+    this.addContent(title, hint);
 
-    const shuffle = new Button(scene, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 90, {
-      label: 'Shuffle',
-      onClick: () => {
-        this.chosen = FUN_NAMES[Math.floor(Math.random() * FUN_NAMES.length)];
-        this.display.setText(this.chosen);
-      },
-      scale: 0.75,
-    });
+    // DOM input overlaid at the canvas position. Sized to be finger-friendly.
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.maxLength = 16;
+    input.value = start;
+    input.autocapitalize = 'words';
+    input.placeholder = 'Your name';
+    input.style.cssText = [
+      'position:absolute',
+      'left:50%',
+      'top:50%',
+      'transform:translate(-50%,-30%)',
+      'width:280px', 'height:48px',
+      'padding:8px 14px',
+      'font-size:22px',
+      'font-family:"Luckiest Guy", Arial, sans-serif',
+      'text-align:center',
+      'border:4px solid #5d3a1a',
+      'border-radius:12px',
+      'background:#fff5c9',
+      'color:#2b1810',
+      'outline:none',
+      'z-index:99999',
+    ].join(';');
+    document.body.appendChild(input);
+    this.inputEl = input;
+    // Focus after a tick so mobile keyboards trigger reliably
+    setTimeout(() => input.focus(), 60);
 
-    const ok = new Button(scene, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 190, {
+    const finish = () => {
+      const name = (input.value || '').trim().slice(0, 16) || 'Player';
+      this.removeInput();
+      this.close(() => onDone(name));
+    };
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') finish(); });
+
+    const ok = new Button(scene, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 70, {
       label: I18n.t('submit'),
-      onClick: () => this.close(() => onDone(this.chosen.trim().slice(0, 16) || 'Player')),
+      onClick: finish,
     });
+    this.addContent(ok);
 
-    this.addContent(title, this.display, ...chips, shuffle, ok);
+    // Clean up the DOM node if the scene shuts down before submit
+    scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.removeInput());
   }
 
-  private pickFour(): string[] {
-    const pool = [...FUN_NAMES];
-    const out: string[] = [];
-    for (let i = 0; i < 4; i++) {
-      out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
-    }
-    return out;
+  private removeInput(): void {
+    if (this.inputEl?.parentNode) this.inputEl.parentNode.removeChild(this.inputEl);
+    this.inputEl = undefined;
   }
 }

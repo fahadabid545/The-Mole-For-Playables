@@ -13,6 +13,11 @@ export interface HUDData {
   timeLimitMs: number;
 }
 
+// Top-safe padding for browser chrome (notch, address bar).
+// Everything HUD-related pushes DOWN by this much so the timer, score,
+// and icons stay fully visible instead of getting cropped at the top.
+const TOP_SAFE = 60;
+
 export class HUDScene extends Phaser.Scene {
   private levelText!: Phaser.GameObjects.Text;
   private scoreText!: Phaser.GameObjects.Text;
@@ -25,34 +30,36 @@ export class HUDScene extends Phaser.Scene {
 
   create(data: HUDData): void {
     this.timeLimitMs = data.timeLimitMs;
-    // Wooden HUD bar background
-    this.add.image(GAME_WIDTH / 2, 90, TX.hudBar).setOrigin(0.5).setDepth(-1);
-    this.levelText = this.add.text(20, 20, I18n.t('level', { n: data.level }), TS.hudBig());
-    this.quotaText = this.add.text(20, 76, I18n.t('hits', { a: 0, b: data.quota }), TS.hudSmall());
+    // Wooden HUD bar background — taller & pushed down so it clears
+    // the browser's top chrome and gives the score/timer room.
+    this.add.image(GAME_WIDTH / 2, TOP_SAFE + 90, TX.hudBar).setOrigin(0.5).setDepth(-1);
 
-    this.scoreText = this.add.text(GAME_WIDTH / 2, 30, '0', TS.score()).setOrigin(0.5, 0);
+    this.levelText = this.add.text(24, TOP_SAFE + 20, I18n.t('level', { n: data.level }), TS.hudBig());
+    this.quotaText = this.add.text(24, TOP_SAFE + 76, I18n.t('hits', { a: 0, b: data.quota }), TS.hudSmall());
 
-    this.timeText = this.add.text(GAME_WIDTH - 20, 30, this.fmt(data.timeLimitMs),
+    this.scoreText = this.add.text(GAME_WIDTH / 2, TOP_SAFE + 30, '0', TS.score()).setOrigin(0.5, 0);
+
+    this.timeText = this.add.text(GAME_WIDTH - 24, TOP_SAFE + 30, this.fmt(data.timeLimitMs),
       { ...TS.hudBig('#fffde7'), stroke: '#b71c1c' }).setOrigin(1, 0);
 
-    // Timer bar
-    const barW = 240, barH = 12;
-    this.add.rectangle(GAME_WIDTH - 20 - barW, 90, barW, barH, 0x000000, 0.35).setOrigin(0, 0.5);
-    this.timeBarFill = this.add.rectangle(GAME_WIDTH - 20 - barW, 90, barW, barH, 0x66bb6a, 1).setOrigin(0, 0.5);
+    // Timer bar under the numeric time
+    const barW = 240, barH = 14;
+    this.add.rectangle(GAME_WIDTH - 24 - barW, TOP_SAFE + 96, barW, barH, 0x000000, 0.4).setOrigin(0, 0.5);
+    this.timeBarFill = this.add.rectangle(GAME_WIDTH - 24 - barW, TOP_SAFE + 96, barW, barH, 0x66bb6a, 1).setOrigin(0, 0.5);
 
-    new LivesBar(this, 24, 120);
+    new LivesBar(this, 28, TOP_SAFE + 130);
 
-    // Sound + pause icons
-    const sound = this.add.image(GAME_WIDTH - 60, 130, Audio.isMuted() ? TX.soundOff : TX.soundOn)
+    // Sound + pause icons, tucked below the wooden bar so nothing overlaps
+    const iconY = TOP_SAFE + 190;
+    const sound = this.add.image(GAME_WIDTH - 64, iconY, Audio.isMuted() ? TX.soundOff : TX.soundOn)
       .setOrigin(0.5).setInteractive({ useHandCursor: true }).setScale(0.9);
     sound.on('pointerdown', () => {
       const m = Audio.toggleMute();
       sound.setTexture(m ? TX.soundOff : TX.soundOn);
     });
-    // Pause: bigger, circular background so it's obvious
-    const pauseBg = this.add.circle(GAME_WIDTH - 60, 210, 36, 0x263238, 0.85)
+    const pauseBg = this.add.circle(GAME_WIDTH - 64, iconY + 80, 36, 0x263238, 0.85)
       .setStrokeStyle(3, 0xffb300);
-    const pause = this.add.image(GAME_WIDTH - 60, 210, TX.pause).setOrigin(0.5).setScale(1.1);
+    const pause = this.add.image(GAME_WIDTH - 64, iconY + 80, TX.pause).setOrigin(0.5).setScale(1.1);
     pauseBg.setInteractive({ useHandCursor: true });
     pauseBg.on('pointerdown', () => this.scene.get('Game').events.emit('request-pause'));
     pauseBg.on('pointerover', () => pause.setScale(1.25));

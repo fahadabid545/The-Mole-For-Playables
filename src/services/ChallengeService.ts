@@ -41,7 +41,9 @@ export function getChallenge(kind: ChallengeKind): Challenge {
     timeLimitMs: Math.round(base.timeLimitMs * 0.85),
     quota: Math.round(base.quota * 1.1),
   };
-  const rewardLives = kind === 'daily' ? 1 : 2;
+  // Ads are disabled in Playables, so challenge completion is the ONLY
+  // way to earn extra lives. Bump the weekly reward accordingly.
+  const rewardLives = kind === 'daily' ? 1 : 3;
   const rewardBonus = kind === 'daily' ? 100 : 500;
   const alreadyDone = kind === 'daily'
     ? Save.get().lastDailyKey === key

@@ -23,13 +23,14 @@ export class LevelSelectScene extends Phaser.Scene {
   create(): void {
     new ParallaxJungle(this);
 
-    // Hanging signboard title
-    this.add.image(GAME_WIDTH / 2, 100, TX.signHang).setOrigin(0.5, 0.5).setDepth(99);
-    this.add.text(GAME_WIDTH / 2, 108, I18n.t('levels'), TS.title('#fff5c9')).setOrigin(0.5).setDepth(100);
+    // Hanging signboard title — pushed below browser top-chrome
+    this.add.image(GAME_WIDTH / 2, 160, TX.signHang).setOrigin(0.5, 0.5).setDepth(99);
+    this.add.text(GAME_WIDTH / 2, 168, I18n.t('levels'), TS.title('#fff5c9')).setOrigin(0.5).setDepth(100);
 
-    // A mask lets the grid scroll behind the top title and above the bottom
-    // controls without leaking pixels over the UI chrome.
-    const topClip = 170;
+    // Grid area clipped between title (bottom) and BACK button (top).
+    // Extra top padding so the first row of tiles isn't chopped off by
+    // the signboard.
+    const topClip = 260;
     const bottomClip = 260;
     const clipH = GAME_HEIGHT - topClip - bottomClip;
 

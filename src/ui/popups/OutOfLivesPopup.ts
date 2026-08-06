@@ -5,47 +5,61 @@ import { TX } from '../../objects/TextureFactory';
 import { GAME_WIDTH, GAME_HEIGHT } from '../../config/GameConfig';
 import { I18n } from '../../services/I18nService';
 import { TS } from '../../config/TextStyles';
+import { IS_PLAYABLES } from '../../config/BuildFlags';
 
 interface Opts {
   levelToUnlock?: number;
   onWatchAdForLife: () => void;
   onWatchAdToUnlock?: () => void;
   onMenu: () => void;
+  onChallenges?: () => void;
 }
 
 export class OutOfLivesPopup extends Popup {
   constructor(scene: Phaser.Scene, o: Opts) {
     super(scene);
 
-    const title = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 180, I18n.t('outOfLives'),
+    const title = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 200, I18n.t('outOfLives'),
       TS.title('#b71c1c')).setOrigin(0.5);
 
     const hearts: Phaser.GameObjects.Image[] = [];
     for (let i = 0; i < 5; i++) {
-      const h = scene.add.image(GAME_WIDTH / 2 + (i - 2) * 60, GAME_HEIGHT / 2 - 90, TX.heartEmpty)
+      const h = scene.add.image(GAME_WIDTH / 2 + (i - 2) * 60, GAME_HEIGHT / 2 - 110, TX.heartEmpty)
         .setOrigin(0.5).setScale(0.9);
       hearts.push(h);
     }
+    this.addContent(title, ...hearts);
 
-    const msg = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, I18n.t('watchAdKeep'),
-      { ...TS.body('#3e2723'), align: 'center', fontSize: '28px' }).setOrigin(0.5);
-
-    const adLife = new Button(scene, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 70, {
-      label: I18n.t('plusOneLifeAd'), onClick: () => this.close(o.onWatchAdForLife), variant: 'ad',
-    });
-
-    this.addContent(title, ...hearts, msg, adLife);
-
-    if (o.levelToUnlock && o.onWatchAdToUnlock) {
-      const unlock = new Button(scene, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 165, {
-        label: I18n.t('unlockNextAd', { n: o.levelToUnlock }),
-        onClick: () => this.close(o.onWatchAdToUnlock),
-        variant: 'ad',
+    if (IS_PLAYABLES) {
+      const msg = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 20,
+        'Earn free lives by completing challenges:\nDaily → +1 life\nWeekly → +3 lives',
+        { ...TS.body('#2b1810'), align: 'center', fontSize: '26px' }).setOrigin(0.5);
+      this.addContent(msg);
+      if (o.onChallenges) {
+        const chalBtn = new Button(scene, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 110, {
+          label: 'Challenges', onClick: () => this.close(o.onChallenges!), variant: 'ad',
+        });
+        this.addContent(chalBtn);
+      }
+    } else {
+      const msg = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 20, I18n.t('watchAdKeep'),
+        { ...TS.body('#3e2723'), align: 'center', fontSize: '28px' }).setOrigin(0.5);
+      this.addContent(msg);
+      const adLife = new Button(scene, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 60, {
+        label: I18n.t('plusOneLifeAd'), onClick: () => this.close(o.onWatchAdForLife), variant: 'ad',
       });
-      this.addContent(unlock);
+      this.addContent(adLife);
+      if (o.levelToUnlock && o.onWatchAdToUnlock) {
+        const unlock = new Button(scene, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 170, {
+          label: I18n.t('unlockNextAd', { n: o.levelToUnlock }),
+          onClick: () => this.close(o.onWatchAdToUnlock),
+          variant: 'ad',
+        });
+        this.addContent(unlock);
+      }
     }
 
-    const menu = new Button(scene, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 250, {
+    const menu = new Button(scene, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 260, {
       label: I18n.t('menu'), onClick: () => this.close(o.onMenu), scale: 0.7,
     });
     this.addContent(menu);

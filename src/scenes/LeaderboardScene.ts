@@ -14,8 +14,8 @@ export class LeaderboardScene extends Phaser.Scene {
   create(): void {
     new ParallaxJungle(this);
 
-    this.add.text(GAME_WIDTH / 2, 100, I18n.t('world'), TS.title('#fff8e1')).setOrigin(0.5);
-    this.add.text(GAME_WIDTH / 2, 170, I18n.t('yourBest', { n: Save.get().bestScore }),
+    this.add.text(GAME_WIDTH / 2, 160, I18n.t('world'), TS.title('#fff5c9')).setOrigin(0.5);
+    this.add.text(GAME_WIDTH / 2, 230, I18n.t('yourBest', { n: Save.get().bestScore }),
       TS.hudSmall()).setOrigin(0.5);
 
     void Leaderboard.top(20).then((entries: LeaderboardEntry[]) => this.render(entries));
@@ -28,8 +28,14 @@ export class LeaderboardScene extends Phaser.Scene {
   }
 
   private render(entries: LeaderboardEntry[]): void {
-    const startY = 240;
+    const startY = 320;
     const rowH = 56;
+    if (entries.length === 0) {
+      this.add.text(GAME_WIDTH / 2, startY + 80,
+        'No scores yet.\nPlay a level to be the first!',
+        { ...TS.body('#fff5c9'), align: 'center', fontSize: '30px' }).setOrigin(0.5);
+      return;
+    }
     entries.forEach((e, i) => {
       const y = startY + i * rowH;
       const bg = this.add.rectangle(GAME_WIDTH / 2, y, GAME_WIDTH - 60, rowH - 6,

@@ -636,15 +636,57 @@ function buildDust(scene: Phaser.Scene) {
 }
 
 function buildHeart(scene: Phaser.Scene, key: string, color: number, alpha: number) {
-  makeTexture(scene, key, 60, 60, g => {
+  // Burning heart — heart shape topped with a flickering flame.
+  // Empty variant (alpha < 1) draws outline only + faint charred flame.
+  makeTexture(scene, key, 72, 88, g => {
+    // Flame (drawn first so heart overlaps its base a bit)
+    if (alpha >= 1) {
+      // Outer orange flame
+      g.fillStyle(0xff6f00, 1);
+      g.beginPath();
+      g.moveTo(36, 0);
+      g.lineTo(52, 18);
+      g.lineTo(48, 30);
+      g.lineTo(56, 40);
+      g.lineTo(36, 44);
+      g.lineTo(16, 40);
+      g.lineTo(24, 30);
+      g.lineTo(20, 18);
+      g.closePath(); g.fillPath();
+      // Inner yellow tongue
+      g.fillStyle(0xffd54f, 1);
+      g.beginPath();
+      g.moveTo(36, 8);
+      g.lineTo(46, 22);
+      g.lineTo(42, 32);
+      g.lineTo(36, 38);
+      g.lineTo(30, 32);
+      g.lineTo(26, 22);
+      g.closePath(); g.fillPath();
+      // White hot core
+      g.fillStyle(0xffffff, 0.85);
+      g.fillEllipse(36, 30, 8, 12);
+    } else {
+      // Charred faint flame outline for empty slots
+      g.lineStyle(2, 0x616161, 0.7);
+      g.beginPath();
+      g.moveTo(36, 8); g.lineTo(48, 22); g.lineTo(44, 32);
+      g.lineTo(36, 40); g.lineTo(28, 32); g.lineTo(24, 22);
+      g.closePath(); g.strokePath();
+    }
+    // Heart shape (bottom half of the texture)
     g.fillStyle(color, alpha);
-    g.fillCircle(20, 22, 14);
-    g.fillCircle(40, 22, 14);
-    g.fillTriangle(6, 26, 54, 26, 30, 54);
+    g.fillCircle(24, 52, 16);
+    g.fillCircle(48, 52, 16);
+    g.fillTriangle(8, 56, 64, 56, 36, 84);
     if (alpha < 1) {
-      g.lineStyle(2, color, 1);
-      g.strokeCircle(20, 22, 14);
-      g.strokeCircle(40, 22, 14);
+      g.lineStyle(3, color, 1);
+      g.strokeCircle(24, 52, 16);
+      g.strokeCircle(48, 52, 16);
+    } else {
+      // Highlight glint on the heart
+      g.fillStyle(0xffffff, 0.4);
+      g.fillEllipse(20, 46, 10, 6);
     }
   });
 }

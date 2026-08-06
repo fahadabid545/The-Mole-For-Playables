@@ -18,27 +18,17 @@ class LocalLeaderboard implements LeaderboardService {
   private read(): LeaderboardEntry[] {
     try {
       const raw = localStorage.getItem(LOCAL_KEY);
-      return raw ? (JSON.parse(raw) as LeaderboardEntry[]) : this.seed();
-    } catch { return this.seed(); }
+      // Legacy seeded lists had exactly the fake defaults ("Rocky", "Mila", …).
+      // Strip any entry whose player name matches the old seed so pre-existing
+      // saves stop showing fake scores after upgrade.
+      if (!raw) return [];
+      const list = JSON.parse(raw) as LeaderboardEntry[];
+      const fakeNames = new Set(['Rocky', 'Mila', 'Kenji', 'Aisha', 'Diego', 'Nora', 'Priya', 'Sven', 'Luca', 'Zoe']);
+      return list.filter(e => !fakeNames.has(e.name));
+    } catch { return []; }
   }
   private write(list: LeaderboardEntry[]): void {
     try { localStorage.setItem(LOCAL_KEY, JSON.stringify(list)); } catch { /* ignore */ }
-  }
-  private seed(): LeaderboardEntry[] {
-    const seed: LeaderboardEntry[] = [
-      { name: 'Rocky',  score: 4200, level: 40, at: Date.now() - 6e6 },
-      { name: 'Mila',   score: 3900, level: 38, at: Date.now() - 5e6 },
-      { name: 'Kenji',  score: 3600, level: 34, at: Date.now() - 4e6 },
-      { name: 'Aisha',  score: 3300, level: 31, at: Date.now() - 3e6 },
-      { name: 'Diego',  score: 2900, level: 28, at: Date.now() - 2e6 },
-      { name: 'Nora',   score: 2600, level: 25, at: Date.now() - 1e6 },
-      { name: 'Priya',  score: 2200, level: 22, at: Date.now() - 8e5 },
-      { name: 'Sven',   score: 1800, level: 18, at: Date.now() - 5e5 },
-      { name: 'Luca',   score: 1400, level: 14, at: Date.now() - 2e5 },
-      { name: 'Zoe',    score: 1000, level: 10, at: Date.now() - 1e5 },
-    ];
-    this.write(seed);
-    return seed;
   }
   async submit(name: string, score: number, level: number): Promise<void> {
     const list = this.read();

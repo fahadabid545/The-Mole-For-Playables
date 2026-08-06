@@ -18,7 +18,7 @@ import { Leaderboard } from '../services/LeaderboardService';
 import { LevelCompletePopup } from '../ui/popups/LevelCompletePopup';
 import { NamePromptPopup } from '../ui/popups/NamePromptPopup';
 import { Challenge } from '../services/ChallengeService';
-import { PowerupBar, PowerupKind } from '../ui/PowerupBar';
+import type { PowerupKind } from '../ui/PowerupBar';
 import { attachAchievementToast } from '../ui/AchievementToast';
 import { checkProgress } from '../services/AchievementService';
 import { LevelFailedPopup } from '../ui/popups/LevelFailedPopup';
@@ -80,13 +80,13 @@ export class GameScene extends Phaser.Scene {
     this.buildGrid();
     this.hammer = new Hammer(this);
     attachAchievementToast(this);
-    const powerupBar = new PowerupBar(this, 40, GAME_HEIGHT - 220);
-    powerupBar.setDepth(9500);
-    this.events.on('powerup-used', (kind: PowerupKind) => this.applyPowerup(kind, powerupBar));
+    // Power-up bar removed from gameplay per playables spec (icons cluttered
+    // the play area). Awarded power-ups still stack in the save so a future
+    // build can surface them again from a settings screen without code
+    // changes.
     this.grantRandomPowerup = () => {
       const kinds: PowerupKind[] = ['freeze', 'double', 'auto'];
       Save.addPowerup(kinds[Math.floor(Math.random() * kinds.length)]);
-      powerupBar.refresh();
     };
     document.body.classList.add('playing');
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => document.body.classList.remove('playing'));
@@ -373,6 +373,7 @@ export class GameScene extends Phaser.Scene {
             this.scene.start('Game', { level: this.level + 1 });
           } else this.goMenu();
         },
+        onChallenges: () => { this.scene.stop('HUD'); this.scene.start('Challenges'); },
         onMenu: () => this.goMenu(),
       });
     } else {
@@ -384,6 +385,7 @@ export class GameScene extends Phaser.Scene {
           if (r === 'reward') { Save.addLife(1); EventBus.emit(EVT.LIFE_CHANGED); }
           this.restart();
         },
+        onChallenges: () => { this.scene.stop('HUD'); this.scene.start('Challenges'); },
         onMenu: () => this.goMenu(),
       });
     }
@@ -433,8 +435,8 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  private applyPowerup(kind: PowerupKind, bar: PowerupBar): void {
-    if (!this.levelActive || this.paused) { Save.addPowerup(kind); bar.refresh(); return; }
+  private applyPowerup(kind: PowerupKind): void {
+    if (!this.levelActive || this.paused) { Save.addPowerup(kind); return; }
     if (kind === 'freeze') {
       this.paused = true;
       this.time.delayedCall(3000, () => { this.paused = false; this.timerLast = this.time.now; });
