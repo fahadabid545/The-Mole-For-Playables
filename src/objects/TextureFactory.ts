@@ -769,8 +769,9 @@ function buildPanel(scene: Phaser.Scene) {
 }
 
 function buildSignHang(scene: Phaser.Scene) {
-  // Smaller title signboard (used for scene titles like "Levels")
-  const W = 360, H = 120;
+  // Title signboard used for scene titles. Wide enough to hold longer
+  // words like "Achievements" without the text spilling off the plank.
+  const W = 540, H = 120;
   makeTexture(scene, TX.signHang, W, H + 20, g => {
     g.lineStyle(5, COLORS.ropeShadow, 1);
     g.beginPath(); g.moveTo(60, 0); g.lineTo(48, 22); g.strokePath();
