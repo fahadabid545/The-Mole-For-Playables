@@ -21,8 +21,12 @@ export class MenuScene extends Phaser.Scene {
     new ParallaxJungle(this);
     spawnLeafParticles(this);
 
-    const title = this.add.text(GAME_WIDTH / 2, 220, 'JUNGLE\nMOLE', TS.hero()).setOrigin(0.5);
-    this.tweens.add({ targets: title, y: '+=12', yoyo: true, repeat: -1, duration: 1500, ease: 'Sine.InOut' });
+    // Title: chunky bevelled logo dropping in with rope-swing feel
+    const title = this.add.text(GAME_WIDTH / 2, 260, 'JUNGLE\nMOLE', TS.hero()).setOrigin(0.5);
+    title.setY(-100).setAngle(-8);
+    this.tweens.add({ targets: title, y: 260, angle: 0, duration: 700, ease: 'Bounce.Out' });
+    this.tweens.add({ targets: title, y: '+=14', yoyo: true, repeat: -1, duration: 1600, ease: 'Sine.InOut', delay: 800 });
+    this.tweens.add({ targets: title, angle: { from: -3, to: 3 }, yoyo: true, repeat: -1, duration: 2400, ease: 'Sine.InOut', delay: 800 });
 
     const mascot = this.add.image(GAME_WIDTH / 2, 560, TX.raccoon).setOrigin(0.5).setScale(1.4);
     this.tweens.add({ targets: mascot, angle: -6, yoyo: true, repeat: -1, duration: 900, ease: 'Sine.InOut' });

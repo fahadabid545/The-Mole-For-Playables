@@ -25,6 +25,8 @@ export class HUDScene extends Phaser.Scene {
 
   create(data: HUDData): void {
     this.timeLimitMs = data.timeLimitMs;
+    // Wooden HUD bar background
+    this.add.image(GAME_WIDTH / 2, 90, TX.hudBar).setOrigin(0.5).setDepth(-1);
     this.levelText = this.add.text(20, 20, I18n.t('level', { n: data.level }), TS.hudBig());
     this.quotaText = this.add.text(20, 76, I18n.t('hits', { a: 0, b: data.quota }), TS.hudSmall());
 

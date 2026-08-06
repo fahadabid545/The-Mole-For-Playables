@@ -2,35 +2,45 @@ export const GAME_WIDTH = 720;
 export const GAME_HEIGHT = 1280;
 
 export const COLORS = {
-  skyTop: 0xffb74d,      // warm morning orange
-  skyMid: 0xffe0b2,      // soft peach
-  skyBottom: 0xfff8e1,   // creamy horizon
+  // Sky: fresh painterly morning jungle
+  skyTop: 0x7ecff0,      // clear morning blue
+  skyMid: 0xbfe6d9,      // pale mint horizon
+  skyBottom: 0xfff5c9,   // warm sun horizon
+  mountainFar: 0x6a92a8, // hazy blue-grey ridge
+  mountainNear: 0x4a7a6b,// closer misty green
   water: 0x29b6f6,
-  waterDark: 0x0288d1,
+  waterDark: 0x0277bd,
   waterFoam: 0xe1f5fe,
-  leafDark: 0x1b5e20,
-  leafMid: 0x2e7d32,
-  leafLight: 0x81c784,   // brighter foliage highlight
-  wood: 0x6d4c41,
-  woodDark: 0x4e342e,
-  woodLight: 0x8d6e63,
-  raccoonBody: 0x616161,
-  raccoonMask: 0x212121,
-  raccoonFur: 0x9e9e9e,
-  raccoonNose: 0xef5350,
-  hammerHead: 0xbdbdbd,
-  hammerHeadDark: 0x616161,
-  hammerHandle: 0x8d6e63,
+  // Foliage
+  leafDark: 0x0f4a1e,    // deep jungle
+  leafMid: 0x2e8b3d,     // vivid leaf
+  leafLight: 0x8bc966,   // sun-hit highlight
+  leafYellow: 0xd4e157,  // extra highlight
+  // Wood (warm, richer)
+  wood: 0x8b5a2b,
+  woodDark: 0x5d3a1a,
+  woodLight: 0xc9954d,
+  woodGrain: 0x6b4520,
+  rope: 0xd6b47a,
+  ropeShadow: 0x9a7a4a,
+  // Mole (raccoon-mole, warmer brown)
+  raccoonBody: 0x7a4a2e,   // rich mole brown
+  raccoonMask: 0x2b1810,   // dark mask
+  raccoonFur: 0xb88860,    // warm belly cream
+  raccoonNose: 0xff7043,
+  hammerHead: 0xd7d7d7,
+  hammerHeadDark: 0x555555,
+  hammerHandle: 0x8b5a2b,
   heart: 0xe53935,
   heartEmpty: 0x424242,
   gold: 0xffd54f,
   bomb: 0x263238,
-  panelBg: 0xfff8e1,
-  panelBorder: 0x6d4c41,
-  textDark: 0x3e2723,
-  textLight: 0xfffde7,
-  starYellow: 0xfff176,
-  dust: 0xd7ccc8,
+  panelBg: 0xfff5c9,
+  panelBorder: 0x5d3a1a,
+  textDark: 0x2b1810,
+  textLight: 0xfff5c9,
+  starYellow: 0xffd54f,
+  dust: 0xe6d3b3,
 } as const;
 
 export const GRID = {

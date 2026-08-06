@@ -79,7 +79,62 @@ class AudioServiceImpl {
     lfo.connect(lfoGain).connect(rFilt.frequency);
     lfo.start();
 
-    // Layer 3 — bird chirps scheduled 2–6s apart at random pitches
+    // Layer 3 — gentle bamboo-flute melody (pentatonic, drifts, super calm)
+    const flutePool = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50]; // C5 D5 E5 G5 A5 C6
+    let noteIdx = 0;
+    const scheduleFlute = () => {
+      if (!this.ctx || !this.masterGain) return;
+      if (!this.muted) {
+        const t = this.ctx.currentTime + 0.02;
+        const freq = flutePool[noteIdx % flutePool.length];
+        noteIdx += 1 + Math.floor(Math.random() * 2);
+        const osc = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        const filt = this.ctx.createBiquadFilter();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, t);
+        filt.type = 'lowpass';
+        filt.frequency.value = 2200;
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.045, t + 0.15);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
+        osc.connect(filt).connect(g).connect(this.masterGain);
+        osc.start(t); osc.stop(t + 1.3);
+        // Soft harmonic overtone for warmth
+        const oh = this.ctx.createOscillator();
+        const gh = this.ctx.createGain();
+        oh.type = 'sine'; oh.frequency.setValueAtTime(freq * 2, t);
+        gh.gain.setValueAtTime(0.0001, t);
+        gh.gain.exponentialRampToValueAtTime(0.012, t + 0.15);
+        gh.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
+        oh.connect(gh).connect(this.masterGain);
+        oh.start(t); oh.stop(t + 1.0);
+      }
+      setTimeout(scheduleFlute, 2200 + Math.random() * 1600);
+    };
+    setTimeout(scheduleFlute, 1200);
+
+    // Layer 4 — soft frame drum every ~4s (heartbeat feel)
+    const scheduleDrum = () => {
+      if (!this.ctx || !this.masterGain) return;
+      if (!this.muted) {
+        const t = this.ctx.currentTime + 0.02;
+        const osc = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(140, t);
+        osc.frequency.exponentialRampToValueAtTime(60, t + 0.18);
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.09, t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+        osc.connect(g).connect(this.masterGain);
+        osc.start(t); osc.stop(t + 0.24);
+      }
+      setTimeout(scheduleDrum, 3600 + Math.random() * 900);
+    };
+    setTimeout(scheduleDrum, 2000);
+
+    // Layer 5 — bird chirps scheduled 2–6s apart at random pitches
     const scheduleBird = () => {
       if (this.muted || !this.ctx) return;
       const t = this.ctx.currentTime + 0.01;
@@ -145,11 +200,17 @@ class AudioServiceImpl {
 
     switch (kind) {
       case 'hit':
-        // Punchy THWACK: low body + high metallic ping + noise slap
-        beep(90,  0.16, 'sine',     0.5, 40);
-        beep(220, 0.08, 'square',   0.28, 80);
-        beep(1800, 0.06, 'triangle', 0.22, 900);
-        noiseBurst(0.08, 0.32, 900, 4200);
+        // Deeply satisfying THWACK — layered:
+        //   1) Low body sub-thump (60→30 Hz sweep) — chest hit
+        //   2) Mid wood crack (240→80)
+        //   3) High tick (2400→1200)
+        //   4) Noise slap (wet leaf/dust)
+        //   5) Tiny squeak tail for cuteness
+        beep(60,   0.20, 'sine',     0.55, 28);
+        beep(240,  0.10, 'triangle', 0.32, 80);
+        beep(2400, 0.05, 'triangle', 0.20, 1200);
+        noiseBurst(0.09, 0.38, 900, 4600);
+        setTimeout(() => beep(1400 + Math.random() * 400, 0.06, 'triangle', 0.14, 900), 60);
         break;
       case 'miss':
         // Softer dust puff plus a low bonk

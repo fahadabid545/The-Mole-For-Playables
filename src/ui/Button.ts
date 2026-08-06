@@ -7,15 +7,10 @@ export interface ButtonOpts {
   label: string;
   onClick: () => void;
   variant?: 'primary' | 'ad';
-  scale?: number;   // 1 = full width (~380px). Small buttons use 0.75.
-  width?: number;   // optional override
+  scale?: number;
+  width?: number;
 }
 
-// Every button in the game funnels through here so they share:
-// - the same 380px x 108px art
-// - hover-grow to 1.06 on desktop (touch devices skip the tween)
-// - press-down bounce to 0.95
-// - a click SFX
 export class Button extends Phaser.GameObjects.Container {
   private baseScale: number;
 
@@ -25,22 +20,28 @@ export class Button extends Phaser.GameObjects.Container {
 
     const key = opts.variant === 'ad' ? TX.buttonAd : TX.button;
     const bg = scene.add.image(0, 0, key).setOrigin(0.5);
-    const label = scene.add.text(0, -6, opts.label, TS.buttonLabel()).setOrigin(0.5);
+    // Label sits over the plank face; the art texture has ropes on top
+    // ~34px above center, so nudge label down for centered feel on plank.
+    const label = scene.add.text(0, 14, opts.label, TS.buttonLabel()).setOrigin(0.5);
 
-    // Tight hit area matching the button art (380x108)
     bg.setInteractive({ useHandCursor: true });
 
     bg.on('pointerover', () => {
       scene.tweens.add({ targets: this, scale: this.baseScale * 1.06, duration: 120, ease: 'Sine.Out' });
-      bg.setTint(0xf5fff5);
+      // Rope-sway feel: tiny back-and-forth wobble
+      scene.tweens.add({ targets: this, angle: { from: -2, to: 2 }, yoyo: true, repeat: 0, duration: 180, ease: 'Sine.InOut' });
+      bg.setTint(0xfff2d0);
     });
     bg.on('pointerout', () => {
-      scene.tweens.add({ targets: this, scale: this.baseScale, duration: 120, ease: 'Sine.Out' });
+      scene.tweens.killTweensOf(this);
+      scene.tweens.add({ targets: this, scale: this.baseScale, angle: 0, duration: 160, ease: 'Sine.Out' });
       bg.clearTint();
     });
     bg.on('pointerdown', () => {
       Audio.play('click');
-      scene.tweens.add({ targets: this, scale: this.baseScale * 0.94, duration: 60, yoyo: true, ease: 'Quad.Out' });
+      // Plank-drop press: quick down + swing
+      scene.tweens.add({ targets: this, y: this.y + 4, scale: this.baseScale * 0.94, duration: 70, yoyo: true, ease: 'Quad.Out' });
+      scene.tweens.add({ targets: this, angle: { from: -6, to: 6 }, yoyo: true, repeat: 1, duration: 140, ease: 'Sine.InOut' });
       opts.onClick();
     });
 

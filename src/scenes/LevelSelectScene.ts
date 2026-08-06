@@ -23,7 +23,9 @@ export class LevelSelectScene extends Phaser.Scene {
   create(): void {
     new ParallaxJungle(this);
 
-    this.add.text(GAME_WIDTH / 2, 100, I18n.t('levels'), TS.title('#fff8e1')).setOrigin(0.5).setDepth(100);
+    // Hanging signboard title
+    this.add.image(GAME_WIDTH / 2, 100, TX.signHang).setOrigin(0.5, 0.5).setDepth(99);
+    this.add.text(GAME_WIDTH / 2, 108, I18n.t('levels'), TS.title('#fff5c9')).setOrigin(0.5).setDepth(100);
 
     // A mask lets the grid scroll behind the top title and above the bottom
     // controls without leaking pixels over the UI chrome.
@@ -48,15 +50,20 @@ export class LevelSelectScene extends Phaser.Scene {
       const y = 30 + r * rowH;
       const unlocked = level <= save.highestUnlockedLevel;
 
-      const tile = this.add.rectangle(x, y, size, size, unlocked ? COLORS.leafMid : 0x424242, 1)
-        .setStrokeStyle(4, COLORS.woodDark);
+      // Wooden tile background (with locked variant showing leaf overlay).
+      // Texture is 130x130; scale to fit `size` without distorting.
+      const tileKey = unlocked ? TX.tileWood : TX.tileWoodLocked;
+      const scale = size / 130;
+      const tileImg = this.add.image(x, y, tileKey).setOrigin(0.5).setScale(scale);
       let numOrLock: Phaser.GameObjects.GameObject;
       if (unlocked) {
-        numOrLock = this.add.text(x, y, `${level}`, TS.hudBig('#fffde7')).setOrigin(0.5);
+        numOrLock = this.add.text(x, y - 6, `${level}`, TS.hudBig('#fff5c9')).setOrigin(0.5);
       } else {
         numOrLock = this.add.image(x, y, TX.iconLock).setOrigin(0.5).setScale(0.85);
       }
-      this.gridContainer.add([tile, numOrLock]);
+      this.gridContainer.add([tileImg, numOrLock]);
+      // Reassign name so pointer hookup below uses the image
+      const tile = tileImg;
 
       const stars = save.perLevelStars[level] ?? 0;
       for (let s = 0; s < 3; s++) {

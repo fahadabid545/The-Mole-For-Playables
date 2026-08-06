@@ -31,9 +31,15 @@ export class Popup extends Phaser.GameObjects.Container {
     this.setDepth(20000);
     scene.add.existing(this);
 
-    // Entrance animation on the whole group
-    this.panelGroup.setScale(0.55);
-    scene.tweens.add({ targets: this.panelGroup, scale: 1, duration: 260, ease: 'Back.Out' });
+    // Entrance: swing down from above like a hanging sign, then settle
+    const restY = this.panelGroup.y;
+    this.panelGroup.setY(restY - 260);
+    this.panelGroup.setScale(0.85);
+    this.panelGroup.setAngle(-6);
+    scene.tweens.add({ targets: this.panelGroup, y: restY, scale: 1, duration: 320, ease: 'Back.Out' });
+    scene.tweens.add({ targets: this.panelGroup, angle: { from: -6, to: 4 },
+      yoyo: true, repeat: 1, duration: 220, ease: 'Sine.InOut',
+      onComplete: () => this.panelGroup.setAngle(0) });
     this.overlay.setAlpha(0);
     scene.tweens.add({ targets: this.overlay, alpha: 0.65, duration: 200 });
 

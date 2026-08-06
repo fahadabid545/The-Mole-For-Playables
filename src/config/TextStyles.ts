@@ -6,9 +6,9 @@ type S = Phaser.Types.GameObjects.Text.TextStyle;
 
 export const TS = {
   hero: (): S => ({
-    fontFamily: FAM, fontSize: '140px', color: '#fff8e1',
-    stroke: '#1b5e20', strokeThickness: 14,
-    shadow: { offsetX: 0, offsetY: 10, color: '#000000', blur: 16, fill: true }, align: 'center',
+    fontFamily: FAM, fontSize: '150px', color: '#ffb300',
+    stroke: '#4a1a05', strokeThickness: 16,
+    shadow: { offsetX: 0, offsetY: 12, color: '#000000', blur: 18, fill: true }, align: 'center',
   }),
   title: (color = '#1b5e20'): S => ({
     fontFamily: FAM, fontSize: '54px', color, stroke: '#fff8e1', strokeThickness: 5,

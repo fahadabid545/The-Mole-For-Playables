@@ -7,11 +7,17 @@ import { COLORS } from '../config/GameConfig';
 
 export const TX = {
   bgSky: 'tx-bg-sky',
+  bgMountains: 'tx-bg-mountains',
+  bgSunrays: 'tx-bg-sunrays',
   bgTreesFar: 'tx-bg-trees-far',
   bgTreesNear: 'tx-bg-trees-near',
   bgLeavesFg: 'tx-bg-leaves-fg',
   bgGround: 'tx-bg-ground',
   bgRiver: 'tx-bg-river',
+  tileWood: 'tx-tile-wood',
+  tileWoodLocked: 'tx-tile-wood-locked',
+  hudBar: 'tx-hud-bar',
+  signHang: 'tx-sign-hang',
   vine: 'tx-vine',
   leafParticle: 'tx-leaf-particle',
   logHole: 'tx-log-hole',
@@ -60,11 +66,17 @@ function makeTexture(scene: Phaser.Scene, key: string, w: number, h: number, dra
 
 export function buildAllTextures(scene: Phaser.Scene): void {
   buildSky(scene);
+  buildMountains(scene);
+  buildSunrays(scene);
   buildTreesFar(scene);
   buildTreesNear(scene);
   buildLeavesFg(scene);
   buildGround(scene);
   buildRiver(scene);
+  buildTileWood(scene);
+  buildTileWoodLocked(scene);
+  buildHudBar(scene);
+  buildSignHang(scene);
   buildVine(scene);
   buildLeafParticle(scene);
   buildLogHole(scene);
@@ -83,9 +95,9 @@ export function buildAllTextures(scene: Phaser.Scene): void {
   buildStar(scene);
   buildPanel(scene);
   buildCloseButton(scene);
-  buildButton(scene, TX.button, 0x66bb6a, 0x2e7d32);
-  buildButton(scene, TX.buttonPressed, 0x2e7d32, 0x1b5e20);
-  buildButton(scene, TX.buttonAd, 0xffb300, 0xe65100);
+  buildButton(scene, TX.button, COLORS.wood, COLORS.woodDark);
+  buildButton(scene, TX.buttonPressed, COLORS.woodDark, 0x3a2410);
+  buildButton(scene, TX.buttonAd, 0xff9a1f, 0xc65a00);
   buildConfetti(scene);
   buildPaw(scene);
   buildSoundIcon(scene, TX.soundOn, true);
@@ -106,86 +118,193 @@ export function buildAllTextures(scene: Phaser.Scene): void {
 
 function buildSky(scene: Phaser.Scene) {
   makeTexture(scene, TX.bgSky, 720, 1280, g => {
-    // Three-stop gradient: bright sky -> lighter -> warm horizon
-    g.fillGradientStyle(COLORS.skyTop, COLORS.skyTop, COLORS.skyMid, COLORS.skyMid, 1);
-    g.fillRect(0, 0, 720, 640);
-    g.fillGradientStyle(COLORS.skyMid, COLORS.skyMid, COLORS.skyBottom, COLORS.skyBottom, 1);
-    g.fillRect(0, 640, 720, 640);
-    // Sun disk
-    g.fillStyle(0xfff59d, 0.9);
-    g.fillCircle(560, 220, 80);
-    g.fillStyle(0xffffff, 0.6);
-    g.fillCircle(560, 220, 50);
-    // Sun rays (soft, radial)
-    g.fillStyle(0xfff8e1, 0.18);
-    for (let i = 0; i < 12; i++) {
-      const a = (i / 12) * Math.PI * 2;
-      const dx = Math.cos(a) * 260, dy = Math.sin(a) * 260;
-      g.fillTriangle(560, 220,
-        560 + dx - Math.sin(a) * 20, 220 + dy + Math.cos(a) * 20,
-        560 + dx + Math.sin(a) * 20, 220 + dy - Math.cos(a) * 20);
+    // Solid stripe gradient (fillGradientStyle unreliable in generateTexture)
+    // — paint short horizontal bands to fake a smooth vertical gradient.
+    const bands = 64;
+    const bandH = 1280 / bands;
+    const lerp = (a: number, b: number, t: number) => Math.round(a + (b - a) * t);
+    const mix = (c1: number, c2: number, t: number) => {
+      const r = lerp((c1 >> 16) & 255, (c2 >> 16) & 255, t);
+      const g_ = lerp((c1 >> 8) & 255, (c2 >> 8) & 255, t);
+      const b = lerp(c1 & 255, c2 & 255, t);
+      return (r << 16) | (g_ << 8) | b;
+    };
+    for (let i = 0; i < bands; i++) {
+      const y = i * bandH;
+      const t = i / (bands - 1);
+      // Top→Mid for upper 60%, Mid→Bottom for lower 40%
+      const col = t < 0.6
+        ? mix(COLORS.skyTop, COLORS.skyMid, t / 0.6)
+        : mix(COLORS.skyMid, COLORS.skyBottom, (t - 0.6) / 0.4);
+      g.fillStyle(col, 1);
+      g.fillRect(0, y, 720, Math.ceil(bandH) + 1);
     }
-    // Fluffy clouds
+    // Warm sun glow behind clouds
+    g.fillStyle(0xfff59d, 0.55);
+    g.fillCircle(560, 200, 120);
+    g.fillStyle(0xffffff, 0.85);
+    g.fillCircle(560, 200, 68);
+    g.fillStyle(0xffffff, 1);
+    g.fillCircle(560, 200, 40);
+    // Fluffy clouds (soft, layered)
+    for (let i = 0; i < 5; i++) {
+      const x = 80 + i * 130;
+      const y = 100 + (i % 2) * 60;
+      g.fillStyle(0xffffff, 0.35);
+      g.fillEllipse(x, y + 4, 160, 54);
+      g.fillEllipse(x - 40, y + 12, 100, 38);
+      g.fillEllipse(x + 40, y + 12, 100, 38);
+      g.fillStyle(0xffffff, 0.75);
+      g.fillEllipse(x, y, 130, 40);
+      g.fillEllipse(x - 30, y + 8, 82, 30);
+      g.fillEllipse(x + 30, y + 8, 82, 30);
+    }
+    // Distant tiny birds
+    g.lineStyle(3, 0x2b1810, 0.4);
+    for (let i = 0; i < 4; i++) {
+      const bx = 180 + i * 90, by = 260 + (i % 2) * 30;
+      g.beginPath();
+      g.moveTo(bx, by); g.lineTo(bx + 8, by - 6); g.lineTo(bx + 16, by);
+      g.moveTo(bx + 16, by); g.lineTo(bx + 24, by - 6); g.lineTo(bx + 32, by);
+      g.strokePath();
+    }
+  });
+}
+
+function buildMountains(scene: Phaser.Scene) {
+  makeTexture(scene, TX.bgMountains, 720, 340, g => {
+    // Far hazy ridge
+    g.fillStyle(COLORS.mountainFar, 0.8);
+    g.beginPath();
+    g.moveTo(0, 340);
+    g.lineTo(0, 220);
+    const farPts = [[80, 160], [180, 200], [280, 130], [380, 180], [500, 120], [620, 180], [720, 150]];
+    farPts.forEach(([x, y]) => g.lineTo(x, y));
+    g.lineTo(720, 340); g.closePath(); g.fillPath();
+    // Snow caps on far peaks
     g.fillStyle(0xffffff, 0.55);
-    for (let i = 0; i < 6; i++) {
-      const x = 60 + i * 110;
-      const y = 140 + (i % 2) * 70;
-      g.fillEllipse(x, y, 140, 46);
-      g.fillEllipse(x - 30, y + 8, 90, 34);
-      g.fillEllipse(x + 30, y + 8, 90, 34);
+    g.fillTriangle(280, 130, 260, 168, 300, 168);
+    g.fillTriangle(500, 120, 480, 160, 520, 160);
+    // Nearer ridge
+    g.fillStyle(COLORS.mountainNear, 0.9);
+    g.beginPath();
+    g.moveTo(0, 340);
+    g.lineTo(0, 260);
+    const nearPts = [[100, 220], [220, 260], [340, 200], [460, 250], [580, 210], [720, 250]];
+    nearPts.forEach(([x, y]) => g.lineTo(x, y));
+    g.lineTo(720, 340); g.closePath(); g.fillPath();
+    // Mist band
+    g.fillStyle(0xffffff, 0.28);
+    g.fillRect(0, 260, 720, 40);
+  });
+}
+
+function buildSunrays(scene: Phaser.Scene) {
+  makeTexture(scene, TX.bgSunrays, 720, 1280, g => {
+    // Radial soft yellow rays from top-right sun position
+    const cx = 560, cy = 200;
+    g.fillStyle(0xfff59d, 0.14);
+    for (let i = 0; i < 14; i++) {
+      const a = (i / 14) * Math.PI * 2;
+      const dx = Math.cos(a) * 900, dy = Math.sin(a) * 900;
+      g.fillTriangle(cx, cy,
+        cx + dx - Math.sin(a) * 30, cy + dy + Math.cos(a) * 30,
+        cx + dx + Math.sin(a) * 30, cy + dy - Math.cos(a) * 30);
     }
+    // Two big vertical shafts angling down-left
+    g.fillStyle(0xfff8c9, 0.10);
+    g.fillTriangle(cx, cy, cx - 380, 1280, cx - 250, 1280);
+    g.fillTriangle(cx, cy, cx - 180, 1280, cx - 40, 1280);
   });
 }
 
 function buildTreesFar(scene: Phaser.Scene) {
-  makeTexture(scene, TX.bgTreesFar, 720, 1280, g => {
-    g.fillStyle(COLORS.leafMid, 0.6);
+  // Distant silhouettes — rolling hills of foliage at horizon only
+  makeTexture(scene, TX.bgTreesFar, 720, 420, g => {
+    // Row 1: hazy blue-green tree line
+    g.fillStyle(COLORS.leafMid, 0.5);
+    for (let x = -40; x < 760; x += 70) {
+      const h = 140 + Math.sin(x * 0.03) * 40;
+      g.fillCircle(x, 380, h * 0.4);
+    }
+    g.fillStyle(COLORS.leafMid, 0.5);
+    g.fillRect(0, 380, 720, 40);
+    // Row 2: closer, darker
+    g.fillStyle(COLORS.leafDark, 0.75);
     for (let x = -20; x < 760; x += 90) {
-      const h = 260 + Math.sin(x * 0.03) * 60;
-      g.fillTriangle(x - 60, 900, x + 60, 900, x, 900 - h);
+      const h = 170 + Math.cos(x * 0.025) * 50;
+      g.fillCircle(x, 400, h * 0.42);
     }
-    g.fillStyle(COLORS.leafDark, 0.55);
-    for (let x = 0; x < 720; x += 120) {
-      const h = 340 + Math.cos(x * 0.02) * 80;
-      g.fillTriangle(x - 80, 950, x + 80, 950, x, 950 - h);
-    }
+    g.fillRect(0, 400, 720, 20);
   });
 }
 
 function buildTreesNear(scene: Phaser.Scene) {
-  makeTexture(scene, TX.bgTreesNear, 720, 1280, g => {
-    // Trunks with subtle inner highlight for depth
-    g.fillStyle(COLORS.woodDark, 1);
-    g.fillRect(30, 0, 60, 1280);
-    g.fillRect(630, 0, 60, 1280);
-    g.fillStyle(COLORS.woodLight, 0.35);
-    g.fillRect(40, 0, 8, 1280);
-    g.fillRect(640, 0, 8, 1280);
-    // Leaf canopy at top — multiple clumps for depth
-    g.fillStyle(COLORS.leafDark, 1);
-    g.fillCircle(60, 120, 140);
-    g.fillCircle(660, 120, 140);
-    g.fillStyle(COLORS.leafMid, 1);
-    g.fillCircle(90, 180, 100);
-    g.fillCircle(630, 180, 100);
-    g.fillStyle(COLORS.leafLight, 0.9);
-    g.fillCircle(110, 150, 60);
-    g.fillCircle(610, 150, 60);
-    // Vines
-    g.lineStyle(6, COLORS.leafMid, 0.9);
-    for (let i = 0; i < 4; i++) {
-      const x = 90 + i * 8;
+  // Left and right tree columns — canopy + trunks that only reach the
+  // upper 700px, so ground/UI beneath stays clean (no trunks poking down).
+  const TX_H = 700;
+  makeTexture(scene, TX.bgTreesNear, 720, TX_H, g => {
+    // ---- Left trunk (curved) ----
+    const drawTrunk = (baseX: number, dir: number) => {
+      // Trunk with slight organic curve
+      for (let y = 0; y < TX_H; y += 8) {
+        const w = 74 + Math.sin(y * 0.008) * 6;
+        const x = baseX + Math.sin(y * 0.004 + dir) * 12 * dir;
+        // Base wood
+        g.fillStyle(COLORS.wood, 1);
+        g.fillRect(x - w / 2, y, w, 10);
+        // Grain highlight
+        g.fillStyle(COLORS.woodLight, 0.35);
+        g.fillRect(x - w / 2 + 8, y, 10, 10);
+        // Deep shadow edge
+        g.fillStyle(COLORS.woodDark, 0.55);
+        g.fillRect(x + w / 2 - 12, y, 12, 10);
+      }
+      // Bark knots
+      g.fillStyle(COLORS.woodDark, 0.7);
+      for (let y = 200; y < TX_H - 80; y += 220) g.fillEllipse(baseX + dir * 8, y, 22, 12);
+    };
+    drawTrunk(50, 1);
+    drawTrunk(670, -1);
+
+    // ---- Canopy top clumps (overhang from top edge) ----
+    const clump = (cx: number, cy: number, r: number, color: number, alpha = 1) => {
+      g.fillStyle(color, alpha);
+      g.fillCircle(cx, cy, r);
+      g.fillCircle(cx - r * 0.6, cy + r * 0.2, r * 0.8);
+      g.fillCircle(cx + r * 0.6, cy + r * 0.2, r * 0.8);
+      g.fillCircle(cx, cy - r * 0.3, r * 0.75);
+    };
+    // Left canopy
+    clump(0, 0, 190, COLORS.leafDark);
+    clump(80, 60, 160, COLORS.leafMid);
+    clump(140, 30, 100, COLORS.leafLight, 0.9);
+    // Right canopy
+    clump(720, 0, 190, COLORS.leafDark);
+    clump(640, 60, 160, COLORS.leafMid);
+    clump(580, 30, 100, COLORS.leafLight, 0.9);
+    // Center-top overhang (smaller, gives lush frame)
+    clump(360, -30, 150, COLORS.leafDark, 0.9);
+    clump(280, 30, 90, COLORS.leafMid, 0.85);
+    clump(440, 30, 90, COLORS.leafMid, 0.85);
+
+    // ---- Hanging vines (thin, subtle, from top only) ----
+    g.lineStyle(4, COLORS.leafDark, 0.85);
+    const vine = (x0: number, wobble: number, len: number) => {
       g.beginPath();
-      g.moveTo(x, 200);
-      for (let y = 200; y < 600; y += 20) g.lineTo(x + Math.sin(y * 0.05) * 12, y);
+      g.moveTo(x0, 0);
+      for (let y = 0; y < len; y += 12) g.lineTo(x0 + Math.sin(y * 0.06 + wobble) * 14, y);
       g.strokePath();
-    }
-    for (let i = 0; i < 4; i++) {
-      const x = 630 - i * 8;
-      g.beginPath();
-      g.moveTo(x, 200);
-      for (let y = 200; y < 600; y += 20) g.lineTo(x + Math.sin(y * 0.05 + 1) * 12, y);
-      g.strokePath();
+    };
+    vine(90, 0, 340);
+    vine(130, 1, 260);
+    vine(590, 0.5, 300);
+    vine(640, 1.5, 260);
+    // Little leaves on vines
+    g.fillStyle(COLORS.leafMid, 0.9);
+    for (const [x, y] of [[92, 120], [96, 240], [128, 180], [592, 140], [594, 230], [640, 200]] as const) {
+      g.fillEllipse(x - 12, y, 20, 10);
+      g.fillEllipse(x + 12, y + 20, 20, 10);
     }
   });
 }
@@ -211,26 +330,63 @@ function buildLeavesFg(scene: Phaser.Scene) {
 
 function buildGround(scene: Phaser.Scene) {
   makeTexture(scene, TX.bgGround, 720, 900, g => {
-    // Warm dirt gradient
-    g.fillGradientStyle(0x7cb342, 0x7cb342, 0x558b2f, 0x558b2f, 0.9);
-    g.fillRoundedRect(-60, 40, 840, 900, 200);
-    // Darker shadow patch around center
-    g.fillStyle(0x33691e, 0.25);
-    g.fillEllipse(360, 400, 700, 260);
-    // Grass tufts sprinkled
-    g.fillStyle(0x81c784, 1);
-    for (let i = 0; i < 30; i++) {
-      const x = 30 + Math.floor((i * 97) % 660);
-      const y = 60 + Math.floor((i * 53) % 820);
-      g.fillTriangle(x, y, x + 4, y - 10, x + 8, y);
-      g.fillTriangle(x - 6, y + 2, x - 2, y - 8, x + 2, y + 2);
+    // Solid base green (gradient inside generateTexture is unreliable —
+    // paint a solid fill then stripe-shade downward for the depth effect).
+    g.fillStyle(0x8fc16e, 1);
+    g.fillRect(0, 0, 720, 900);
+    // Downward shading stripes so it looks like it recedes
+    for (let y = 0; y < 900; y += 4) {
+      const t = y / 900;
+      const shadeAlpha = t * 0.35;
+      g.fillStyle(0x2e5920, shadeAlpha);
+      g.fillRect(0, y, 720, 4);
     }
-    // Pebble
-    g.fillStyle(0xbcaaa4, 1);
-    for (let i = 0; i < 8; i++) {
-      const x = 60 + (i * 89) % 620;
-      const y = 90 + (i * 73) % 800;
-      g.fillEllipse(x, y, 14, 8);
+    // Soft curved top edge (grassy horizon)
+    g.fillStyle(0x9ac970, 1);
+    for (let x = 0; x < 720; x += 8) {
+      const w = Math.sin(x * 0.02) * 6 + 4;
+      g.fillEllipse(x, 0, 12, 8 + w);
+    }
+    // Soft dappled shadow patches
+    g.fillStyle(0x1f5a2b, 0.22);
+    g.fillEllipse(200, 360, 320, 140);
+    g.fillEllipse(560, 480, 340, 150);
+    g.fillEllipse(360, 220, 500, 120);
+    // Sun dapples
+    g.fillStyle(0xd6f5b3, 0.35);
+    g.fillEllipse(140, 240, 200, 80);
+    g.fillEllipse(500, 180, 240, 70);
+    g.fillEllipse(380, 620, 300, 90);
+    // Grass tufts
+    for (let i = 0; i < 50; i++) {
+      const x = 20 + Math.floor((i * 97) % 680);
+      const y = 40 + Math.floor((i * 61) % 820);
+      g.fillStyle(0x6ba444, 1);
+      g.fillTriangle(x, y, x + 4, y - 12, x + 8, y);
+      g.fillTriangle(x - 6, y + 2, x - 2, y - 10, x + 2, y + 2);
+      g.fillStyle(0xbfe093, 0.9);
+      g.fillTriangle(x + 2, y - 2, x + 4, y - 10, x + 6, y - 2);
+    }
+    // Small flowers (subtle pops of color)
+    const flower = (fx: number, fy: number, col: number) => {
+      g.fillStyle(col, 1);
+      g.fillCircle(fx - 4, fy, 3);
+      g.fillCircle(fx + 4, fy, 3);
+      g.fillCircle(fx, fy - 4, 3);
+      g.fillCircle(fx, fy + 4, 3);
+      g.fillStyle(0xffeb3b, 1); g.fillCircle(fx, fy, 3);
+    };
+    flower(90, 180, 0xf8bbd0); flower(620, 260, 0xff8a80);
+    flower(440, 500, 0xce93d8); flower(180, 640, 0xffab91);
+    flower(560, 720, 0xf48fb1);
+    // Pebbles
+    g.fillStyle(0x9c8778, 1);
+    for (let i = 0; i < 12; i++) {
+      const x = 40 + (i * 89) % 640;
+      const y = 90 + (i * 73) % 780;
+      g.fillEllipse(x, y, 16, 9);
+      g.fillStyle(0xd7c9b7, 0.5); g.fillEllipse(x - 3, y - 2, 6, 3);
+      g.fillStyle(0x9c8778, 1);
     }
   });
 }
@@ -288,20 +444,38 @@ function buildLeafParticle(scene: Phaser.Scene) {
 
 function buildLogHole(scene: Phaser.Scene) {
   const r = 100;
-  makeTexture(scene, TX.logHole, r * 2 + 20, r * 2 + 60, g => {
-    // Log rim (front)
+  makeTexture(scene, TX.logHole, r * 2 + 30, r * 2 + 80, g => {
+    const cx = r + 15, cy = r + 20;
+    // Grass mound base (dirt bump around the hole)
+    g.fillStyle(0x6ba444, 1);
+    g.fillEllipse(cx, cy + 40, r * 2.15, r * 1.35);
+    // Mound highlight
+    g.fillStyle(0x9ac970, 1);
+    g.fillEllipse(cx, cy + 30, r * 2.0, r * 1.2);
+    // Grass tufts around rim
+    g.fillStyle(0x4a8b3a, 1);
+    for (let i = 0; i < 8; i++) {
+      const a = Math.PI + (i / 7) * Math.PI;
+      const px = cx + Math.cos(a) * (r + 8);
+      const py = cy + Math.sin(a) * (r * 0.6) + 6;
+      g.fillTriangle(px - 5, py, px, py - 12, px + 5, py);
+    }
+    // Dirt rim (front)
     g.fillStyle(COLORS.woodLight, 1);
-    g.fillEllipse(r + 10, r + 20, r * 2, r * 1.4);
+    g.fillEllipse(cx, cy + 12, r * 2, r * 1.3);
+    g.fillStyle(COLORS.wood, 1);
+    g.fillEllipse(cx, cy + 6, r * 2 - 14, r * 1.2);
     g.fillStyle(COLORS.woodDark, 1);
-    g.fillEllipse(r + 10, r + 10, r * 2 - 20, r * 1.2);
-    // Inner dark
-    g.fillStyle(0x000000, 1);
-    g.fillEllipse(r + 10, r + 10, r * 1.6, r * 0.9);
-    // Wood ring texture
-    g.lineStyle(3, COLORS.wood, 0.7);
-    g.strokeEllipse(r + 10, r + 20, r * 2, r * 1.4);
-    g.lineStyle(2, COLORS.wood, 0.4);
-    g.strokeEllipse(r + 10, r + 22, r * 2 - 12, r * 1.3);
+    g.fillEllipse(cx, cy, r * 2 - 26, r * 1.1);
+    // Inner dark hole
+    g.fillStyle(0x1a0f08, 1);
+    g.fillEllipse(cx, cy, r * 1.6, r * 0.9);
+    // Deeper inner shadow
+    g.fillStyle(0x000000, 0.85);
+    g.fillEllipse(cx, cy - 4, r * 1.35, r * 0.72);
+    // Rim highlight (top-left catches light)
+    g.fillStyle(0xffffff, 0.15);
+    g.fillEllipse(cx - 30, cy - r * 0.5, r * 1.2, 14);
   });
 }
 
@@ -313,56 +487,85 @@ function buildLogHoleShadow(scene: Phaser.Scene) {
 }
 
 function buildRaccoon(scene: Phaser.Scene, key: string, bodyColor: number, furColor: number, dizzy: boolean) {
-  makeTexture(scene, key, 180, 180, g => {
-    // Body
+  makeTexture(scene, key, 200, 200, g => {
+    // Drop shadow
+    g.fillStyle(0x000000, 0.25);
+    g.fillEllipse(100, 175, 130, 20);
+    // Body (rounder mole)
     g.fillStyle(bodyColor, 1);
-    g.fillEllipse(90, 110, 130, 120);
-    // Belly
+    g.fillEllipse(100, 120, 150, 130);
+    // Body shading (bottom darker)
+    g.fillStyle(0x000000, 0.15);
+    g.fillEllipse(100, 155, 130, 40);
+    // Belly (lighter cream)
     g.fillStyle(furColor, 1);
-    g.fillEllipse(90, 130, 80, 70);
+    g.fillEllipse(100, 140, 92, 74);
     // Head
     g.fillStyle(bodyColor, 1);
-    g.fillEllipse(90, 70, 110, 90);
-    // Ears
+    g.fillEllipse(100, 78, 130, 108);
+    // Head shading
+    g.fillStyle(0x000000, 0.10);
+    g.fillEllipse(100, 108, 118, 30);
+    // Ears (rounder, less pointy)
     g.fillStyle(bodyColor, 1);
-    g.fillTriangle(40, 45, 30, 10, 70, 30);
-    g.fillTriangle(140, 45, 150, 10, 110, 30);
-    g.fillStyle(COLORS.raccoonNose, 0.8);
-    g.fillTriangle(45, 40, 40, 20, 62, 30);
-    g.fillTriangle(135, 40, 140, 20, 118, 30);
-    // Mask
+    g.fillCircle(45, 42, 22);
+    g.fillCircle(155, 42, 22);
+    g.fillStyle(0x000000, 0.35);
+    g.fillCircle(45, 46, 14);
+    g.fillCircle(155, 46, 14);
+    g.fillStyle(COLORS.raccoonNose, 0.85);
+    g.fillCircle(45, 44, 10);
+    g.fillCircle(155, 44, 10);
+    // Cheek blush (cuteness)
+    g.fillStyle(0xff8a80, 0.55);
+    g.fillEllipse(52, 96, 22, 12);
+    g.fillEllipse(148, 96, 22, 12);
+    // Mask around eyes
     g.fillStyle(COLORS.raccoonMask, 1);
-    g.fillEllipse(65, 72, 40, 26);
-    g.fillEllipse(115, 72, 40, 26);
-    // Snout white
-    g.fillStyle(0xf5f5f5, 1);
-    g.fillEllipse(90, 92, 46, 28);
-    // Nose
+    g.fillEllipse(72, 76, 44, 30);
+    g.fillEllipse(128, 76, 44, 30);
+    // Snout / muzzle (light)
+    g.fillStyle(0xfff5c9, 1);
+    g.fillEllipse(100, 102, 54, 32);
+    // Nose (heart-like triangle)
     g.fillStyle(COLORS.raccoonNose, 1);
-    g.fillEllipse(90, 84, 14, 10);
+    g.fillTriangle(90, 88, 110, 88, 100, 100);
+    g.fillCircle(100, 89, 6);
     // Eyes
     if (dizzy) {
       g.lineStyle(4, 0xffffff, 1);
-      g.strokeCircle(65, 72, 10);
-      g.strokeCircle(115, 72, 10);
+      g.strokeCircle(72, 76, 11);
+      g.strokeCircle(128, 76, 11);
       g.lineStyle(3, 0xffffff, 1);
-      g.beginPath(); g.moveTo(58, 65); g.lineTo(72, 79); g.moveTo(72, 65); g.lineTo(58, 79); g.strokePath();
-      g.beginPath(); g.moveTo(108, 65); g.lineTo(122, 79); g.moveTo(122, 65); g.lineTo(108, 79); g.strokePath();
+      g.beginPath(); g.moveTo(64, 68); g.lineTo(80, 84); g.moveTo(80, 68); g.lineTo(64, 84); g.strokePath();
+      g.beginPath(); g.moveTo(120, 68); g.lineTo(136, 84); g.moveTo(136, 68); g.lineTo(120, 84); g.strokePath();
     } else {
       g.fillStyle(0xffffff, 1);
-      g.fillCircle(65, 72, 8);
-      g.fillCircle(115, 72, 8);
-      g.fillStyle(0x000000, 1);
-      g.fillCircle(67, 74, 5);
-      g.fillCircle(117, 74, 5);
+      g.fillCircle(72, 76, 10);
+      g.fillCircle(128, 76, 10);
+      g.fillStyle(0x1a0f08, 1);
+      g.fillCircle(74, 78, 7);
+      g.fillCircle(130, 78, 7);
+      // Eye shine
+      g.fillStyle(0xffffff, 1);
+      g.fillCircle(76, 76, 2.5);
+      g.fillCircle(132, 76, 2.5);
     }
-    // Mouth
+    // Smile
     g.lineStyle(3, COLORS.raccoonMask, 1);
     g.beginPath();
-    g.moveTo(80, 100);
-    g.lineTo(90, 106);
-    g.lineTo(100, 100);
+    g.moveTo(85, 112);
+    g.lineTo(100, 120);
+    g.lineTo(115, 112);
     g.strokePath();
+    // Tiny front teeth (cute)
+    g.fillStyle(0xffffff, 1);
+    g.fillRect(95, 118, 4, 5);
+    g.fillRect(101, 118, 4, 5);
+    // Tiny paws in front
+    g.fillStyle(furColor, 1);
+    g.fillEllipse(56, 156, 28, 14);
+    g.fillEllipse(144, 156, 28, 14);
   });
 }
 
@@ -465,60 +668,224 @@ function buildStar(scene: Phaser.Scene) {
 }
 
 function buildPanel(scene: Phaser.Scene) {
-  makeTexture(scene, TX.panel, 620, 720, g => {
-    // Deep drop-shadow
-    g.fillStyle(0x000000, 0.35);
-    g.fillRoundedRect(6, 12, 614, 712, 34);
-    // Dark outer frame (wood look)
-    g.fillStyle(0x3e2723, 1);
-    g.fillRoundedRect(0, 0, 620, 720, 30);
-    // Golden inner border for pop
-    g.fillStyle(0xffb300, 1);
-    g.fillRoundedRect(10, 10, 600, 700, 26);
-    // Warm cream inner panel with subtle gradient
-    g.fillGradientStyle(0xfffde7, 0xfffde7, 0xffecb3, 0xffecb3, 1);
-    g.fillRoundedRect(18, 18, 584, 684, 22);
-    // Inner highlight strip
-    g.fillStyle(0xffffff, 0.45);
-    g.fillRoundedRect(30, 30, 560, 24, 12);
+  // Wooden signboard-style popup with rope hangs on top corners
+  const W = 620, H = 780;
+  makeTexture(scene, TX.panel, W, H, g => {
+    // Ropes hanging from top-corners into the board
+    g.lineStyle(8, COLORS.ropeShadow, 1);
+    g.beginPath(); g.moveTo(100, 0); g.lineTo(80, 46); g.strokePath();
+    g.beginPath(); g.moveTo(W - 100, 0); g.lineTo(W - 80, 46); g.strokePath();
+    g.lineStyle(6, COLORS.rope, 1);
+    g.beginPath(); g.moveTo(100, 0); g.lineTo(80, 46); g.strokePath();
+    g.beginPath(); g.moveTo(W - 100, 0); g.lineTo(W - 80, 46); g.strokePath();
+    // Deep drop-shadow behind board
+    g.fillStyle(0x000000, 0.4);
+    g.fillRoundedRect(12, 52, W - 24, H - 62, 36);
+    // Dark wood frame (edge)
+    g.fillStyle(COLORS.woodDark, 1);
+    g.fillRoundedRect(4, 42, W - 8, H - 52, 34);
+    // Main wood face (rich brown)
+    g.fillStyle(COLORS.wood, 1);
+    g.fillRoundedRect(14, 52, W - 28, H - 72, 28);
+    // Inner cream carved panel
+    g.fillStyle(COLORS.woodDark, 1);
+    g.fillRoundedRect(28, 66, W - 56, H - 100, 22);
+    g.fillGradientStyle(0xfff5c9, 0xfff5c9, 0xffe4a3, 0xffe4a3, 1);
+    g.fillRoundedRect(34, 72, W - 68, H - 112, 18);
+    // Top highlight strip on cream
+    g.fillStyle(0xffffff, 0.5);
+    g.fillRoundedRect(46, 82, W - 92, 18, 9);
+    // Iron nails at 4 corners of wood frame
+    const nail = (nx: number, ny: number) => {
+      g.fillStyle(0x000000, 0.5); g.fillCircle(nx + 1, ny + 1, 8);
+      g.fillStyle(0x666666, 1);   g.fillCircle(nx, ny, 7);
+      g.fillStyle(0xd7d7d7, 1);   g.fillCircle(nx - 2, ny - 2, 3);
+    };
+    nail(32, 70); nail(W - 32, 70);
+    nail(32, H - 42); nail(W - 32, H - 42);
+    // Palm leaf accents at top corners
+    g.fillStyle(COLORS.leafDark, 1);
+    g.fillEllipse(70, 50, 60, 24);
+    g.fillEllipse(W - 70, 50, 60, 24);
+    g.fillStyle(COLORS.leafMid, 1);
+    g.fillEllipse(72, 46, 46, 18);
+    g.fillEllipse(W - 72, 46, 46, 18);
+    g.fillStyle(COLORS.leafLight, 0.85);
+    g.fillEllipse(78, 42, 30, 12);
+    g.fillEllipse(W - 78, 42, 30, 12);
+  });
+}
+
+function buildSignHang(scene: Phaser.Scene) {
+  // Smaller title signboard (used for scene titles like "Levels")
+  const W = 360, H = 120;
+  makeTexture(scene, TX.signHang, W, H + 20, g => {
+    g.lineStyle(5, COLORS.ropeShadow, 1);
+    g.beginPath(); g.moveTo(60, 0); g.lineTo(48, 22); g.strokePath();
+    g.beginPath(); g.moveTo(W - 60, 0); g.lineTo(W - 48, 22); g.strokePath();
+    g.lineStyle(3, COLORS.rope, 1);
+    g.beginPath(); g.moveTo(60, 0); g.lineTo(48, 22); g.strokePath();
+    g.beginPath(); g.moveTo(W - 60, 0); g.lineTo(W - 48, 22); g.strokePath();
+    g.fillStyle(0x000000, 0.35); g.fillRoundedRect(8, 28, W - 16, H, 20);
+    g.fillStyle(COLORS.woodDark, 1); g.fillRoundedRect(4, 22, W - 8, H, 22);
+    g.fillStyle(COLORS.wood, 1); g.fillRoundedRect(12, 30, W - 24, H - 16, 16);
+    g.lineStyle(2, COLORS.woodGrain, 0.4);
+    for (let y = 44; y < H + 10; y += 14) {
+      g.beginPath(); g.moveTo(24, y + Math.sin(y * 0.1) * 2);
+      g.lineTo(W - 24, y + Math.cos(y * 0.08) * 2); g.strokePath();
+    }
+    g.fillStyle(0xffffff, 0.35); g.fillRoundedRect(24, 32, W - 48, 10, 5);
+  });
+}
+
+function buildTileWood(scene: Phaser.Scene) {
+  const S = 130;
+  makeTexture(scene, TX.tileWood, S, S, g => {
+    g.fillStyle(0x000000, 0.35); g.fillRoundedRect(6, 8, S - 8, S - 8, 18);
+    g.fillStyle(COLORS.woodDark, 1); g.fillRoundedRect(0, 0, S, S - 6, 18);
+    g.fillStyle(COLORS.wood, 1); g.fillRoundedRect(6, 6, S - 12, S - 18, 14);
+    // Grain
+    g.lineStyle(2, COLORS.woodGrain, 0.35);
+    for (let y = 20; y < S - 20; y += 12) {
+      g.beginPath(); g.moveTo(12, y + Math.sin(y * 0.1) * 2);
+      g.lineTo(S - 12, y + Math.cos(y * 0.08) * 2); g.strokePath();
+    }
+    g.fillStyle(0xffffff, 0.35);
+    g.fillRoundedRect(14, 10, S - 28, 10, 5);
+    // Corner nails
+    const nail = (nx: number, ny: number) => {
+      g.fillStyle(0x555, 1); g.fillCircle(nx, ny, 4);
+      g.fillStyle(0xd7d7d7, 1); g.fillCircle(nx - 1, ny - 1, 1.5);
+    };
+    nail(14, 14); nail(S - 14, 14); nail(14, S - 20); nail(S - 14, S - 20);
+  });
+}
+
+function buildTileWoodLocked(scene: Phaser.Scene) {
+  const S = 130;
+  makeTexture(scene, TX.tileWoodLocked, S, S, g => {
+    g.fillStyle(0x000000, 0.35); g.fillRoundedRect(6, 8, S - 8, S - 8, 18);
+    g.fillStyle(0x2a1810, 1); g.fillRoundedRect(0, 0, S, S - 6, 18);
+    g.fillStyle(0x4a3020, 1); g.fillRoundedRect(6, 6, S - 12, S - 18, 14);
+    // Vines covering (leaves)
+    g.fillStyle(COLORS.leafDark, 0.9);
+    g.fillEllipse(S / 2 - 24, 44, 40, 20);
+    g.fillEllipse(S / 2 + 20, 60, 40, 20);
+    g.fillEllipse(S / 2, S - 40, 44, 22);
+    g.fillStyle(COLORS.leafMid, 0.8);
+    g.fillEllipse(S / 2 - 20, 42, 26, 12);
+    g.fillEllipse(S / 2 + 24, 58, 26, 12);
+    g.fillEllipse(S / 2 + 4, S - 42, 30, 14);
+  });
+}
+
+function buildHudBar(scene: Phaser.Scene) {
+  // Wide wooden bar for HUD top area
+  const W = 720, H = 180;
+  makeTexture(scene, TX.hudBar, W, H, g => {
+    // Ropes at top corners going into board (short)
+    g.lineStyle(6, COLORS.ropeShadow, 1);
+    g.beginPath(); g.moveTo(40, 0); g.lineTo(30, 22); g.strokePath();
+    g.beginPath(); g.moveTo(W - 40, 0); g.lineTo(W - 30, 22); g.strokePath();
+    g.lineStyle(4, COLORS.rope, 1);
+    g.beginPath(); g.moveTo(40, 0); g.lineTo(30, 22); g.strokePath();
+    g.beginPath(); g.moveTo(W - 40, 0); g.lineTo(W - 30, 22); g.strokePath();
+    g.fillStyle(0x000000, 0.35); g.fillRect(0, 26, W, H - 26);
+    g.fillStyle(COLORS.woodDark, 1); g.fillRoundedRect(-20, 18, W + 40, H - 26, 24);
+    g.fillStyle(COLORS.wood, 1); g.fillRoundedRect(-14, 24, W + 28, H - 44, 20);
+    g.lineStyle(2, COLORS.woodGrain, 0.35);
+    for (let y = 42; y < H - 24; y += 14) {
+      g.beginPath(); g.moveTo(0, y + Math.sin(y * 0.1) * 2);
+      g.lineTo(W, y + Math.cos(y * 0.08) * 2); g.strokePath();
+    }
+    // Leaf accent left
+    g.fillStyle(COLORS.leafDark, 1); g.fillEllipse(60, 22, 90, 34);
+    g.fillStyle(COLORS.leafMid, 1);  g.fillEllipse(62, 20, 70, 26);
+    g.fillStyle(COLORS.leafLight, 0.9); g.fillEllipse(68, 18, 46, 16);
+    // Right
+    g.fillStyle(COLORS.leafDark, 1); g.fillEllipse(W - 60, 22, 90, 34);
+    g.fillStyle(COLORS.leafMid, 1);  g.fillEllipse(W - 62, 20, 70, 26);
+    g.fillStyle(COLORS.leafLight, 0.9); g.fillEllipse(W - 68, 18, 46, 16);
   });
 }
 
 function buildCloseButton(scene: Phaser.Scene) {
+  // Wooden round button with X carved into it
   makeTexture(scene, 'tx-close', 80, 80, g => {
-    g.fillStyle(0x000000, 0.3);
-    g.fillCircle(42, 44, 34);
-    g.fillStyle(0xef5350, 1);
-    g.fillCircle(40, 40, 32);
-    g.fillStyle(0xffffff, 0.5);
-    g.fillCircle(30, 30, 8);
-    g.lineStyle(7, 0xffffff, 1);
+    g.fillStyle(0x000000, 0.4); g.fillCircle(42, 44, 34);
+    g.fillStyle(COLORS.woodDark, 1); g.fillCircle(40, 40, 34);
+    g.fillStyle(COLORS.wood, 1); g.fillCircle(40, 40, 30);
+    g.fillStyle(0xffffff, 0.35); g.fillEllipse(34, 30, 24, 10);
+    // Red X on top
+    g.lineStyle(9, 0xd32f2f, 1);
     g.beginPath();
-    g.moveTo(24, 24); g.lineTo(56, 56);
-    g.moveTo(56, 24); g.lineTo(24, 56);
+    g.moveTo(26, 26); g.lineTo(54, 54);
+    g.moveTo(54, 26); g.lineTo(26, 54);
+    g.strokePath();
+    g.lineStyle(4, 0xffffff, 1);
+    g.beginPath();
+    g.moveTo(28, 28); g.lineTo(52, 52);
+    g.moveTo(52, 28); g.lineTo(28, 52);
     g.strokePath();
   });
 }
 
 function buildButton(scene: Phaser.Scene, key: string, top: number, shadow: number) {
-  makeTexture(scene, key, 380, 108, g => {
-    // Outer glow
-    g.fillStyle(top, 0.28);
-    g.fillRoundedRect(-6, -4, 392, 116, 26);
-    // Dark shadow lip
+  // Wooden hanging plank with rope loops at top corners + iron nails.
+  // Palette: `top` = plank main tone, `shadow` = darker lip beneath.
+  const W = 420, H = 148;
+  makeTexture(scene, key, W, H, g => {
+    // Two ropes hanging from top-corners into the plank
+    const ropeTop = 4, plankTop = 34;
+    g.lineStyle(6, COLORS.ropeShadow, 1);
+    g.beginPath(); g.moveTo(60, ropeTop); g.lineTo(50, plankTop + 8); g.strokePath();
+    g.beginPath(); g.moveTo(W - 60, ropeTop); g.lineTo(W - 50, plankTop + 8); g.strokePath();
+    g.lineStyle(4, COLORS.rope, 1);
+    g.beginPath(); g.moveTo(60, ropeTop); g.lineTo(50, plankTop + 8); g.strokePath();
+    g.beginPath(); g.moveTo(W - 60, ropeTop); g.lineTo(W - 50, plankTop + 8); g.strokePath();
+    // Rope loops (small ovals at top)
+    g.fillStyle(COLORS.rope, 1);
+    g.fillEllipse(60, ropeTop + 2, 22, 10);
+    g.fillEllipse(W - 60, ropeTop + 2, 22, 10);
+    g.fillStyle(COLORS.ropeShadow, 1);
+    g.fillEllipse(60, ropeTop + 2, 14, 6);
+    g.fillEllipse(W - 60, ropeTop + 2, 14, 6);
+    // Plank drop-shadow
     g.fillStyle(0x000000, 0.35);
-    g.fillRoundedRect(4, 14, 372, 92, 22);
+    g.fillRoundedRect(14, plankTop + 8, W - 28, 106, 20);
+    // Bottom lip (dark wood underside)
     g.fillStyle(shadow, 1);
-    g.fillRoundedRect(0, 10, 380, 92, 22);
-    // Top face
+    g.fillRoundedRect(8, plankTop + 6, W - 16, 104, 18);
+    // Top plank face (main wood)
     g.fillStyle(top, 1);
-    g.fillRoundedRect(0, 0, 380, 88, 22);
-    // Rim highlight
-    g.fillStyle(0xffffff, 0.55);
-    g.fillRoundedRect(16, 8, 348, 22, 12);
-    // Bottom edge shadow inside
-    g.fillStyle(0x000000, 0.12);
-    g.fillRoundedRect(16, 64, 348, 18, 10);
+    g.fillRoundedRect(8, plankTop, W - 16, 96, 18);
+    // Wood grain lines (subtle)
+    g.lineStyle(2, COLORS.woodGrain, 0.35);
+    for (let y = plankTop + 18; y < plankTop + 88; y += 14) {
+      g.beginPath();
+      g.moveTo(24, y + Math.sin(y * 0.1) * 2);
+      g.lineTo(W - 24, y + Math.cos(y * 0.08) * 2);
+      g.strokePath();
+    }
+    // Board seam (two-plank illusion)
+    g.lineStyle(2, COLORS.woodDark, 0.5);
+    g.beginPath(); g.moveTo(24, plankTop + 48); g.lineTo(W - 24, plankTop + 48); g.strokePath();
+    // Top rim highlight
+    g.fillStyle(0xffffff, 0.35);
+    g.fillRoundedRect(20, plankTop + 4, W - 40, 12, 6);
+    // Iron nails at corners
+    const nail = (nx: number, ny: number) => {
+      g.fillStyle(0x000000, 0.4); g.fillCircle(nx + 1, ny + 1, 6);
+      g.fillStyle(0x555555, 1);   g.fillCircle(nx, ny, 5);
+      g.fillStyle(0xd7d7d7, 1);   g.fillCircle(nx - 1, ny - 1, 2);
+    };
+    nail(28, plankTop + 14); nail(W - 28, plankTop + 14);
+    nail(28, plankTop + 82); nail(W - 28, plankTop + 82);
+    // Small leaf accent on left
+    g.fillStyle(COLORS.leafDark, 1);
+    g.fillEllipse(20, plankTop + 4, 22, 12);
+    g.fillStyle(COLORS.leafMid, 1);
+    g.fillEllipse(24, plankTop + 2, 16, 8);
   });
 }
 

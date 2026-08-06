@@ -7,44 +7,26 @@ export class ParallaxJungle extends Phaser.GameObjects.Container {
     super(scene, 0, 0);
 
     const sky = scene.add.image(GAME_WIDTH / 2, GAME_HEIGHT / 2, TX.bgSky).setOrigin(0.5);
-    const far = scene.add.image(GAME_WIDTH / 2, GAME_HEIGHT / 2, TX.bgTreesFar).setOrigin(0.5);
-    const near = scene.add.image(GAME_WIDTH / 2, GAME_HEIGHT / 2, TX.bgTreesNear).setOrigin(0.5);
+    const rays = scene.add.image(GAME_WIDTH / 2, GAME_HEIGHT / 2, TX.bgSunrays).setOrigin(0.5).setBlendMode(Phaser.BlendModes.ADD);
+    const mountains = scene.add.image(GAME_WIDTH / 2, 460, TX.bgMountains).setOrigin(0.5);
+    const far = scene.add.image(GAME_WIDTH / 2, 560, TX.bgTreesFar).setOrigin(0.5, 0.5);
+    // Near trees pinned to the top (canopy + upper trunks only, texture 700 tall)
+    const near = scene.add.image(GAME_WIDTH / 2, 0, TX.bgTreesNear).setOrigin(0.5, 0);
 
-    // River flows across upper mid — behind ground
-    const river = scene.add.image(GAME_WIDTH / 2, 340, TX.bgRiver).setOrigin(0.5).setAlpha(0.9);
-    // Flow illusion: sample two overlapping river tiles offset each other
-    const river2 = scene.add.image(GAME_WIDTH / 2 - 40, 340, TX.bgRiver).setOrigin(0.5).setAlpha(0.55).setScale(1.05, 1);
+    // Ground covers most of the lower half — origin at top so the whole
+    // texture body extends downward past the viewport
+    const ground = scene.add.image(GAME_WIDTH / 2, GAME_HEIGHT - 640, TX.bgGround).setOrigin(0.5, 0);
+    const fg = scene.add.image(GAME_WIDTH / 2, GAME_HEIGHT - 80, TX.bgLeavesFg).setOrigin(0.5);
 
-    const ground = scene.add.image(GAME_WIDTH / 2, GAME_HEIGHT - 350, TX.bgGround).setOrigin(0.5);
-
-    // Hanging vines from the top — three of them
-    const vines: Phaser.GameObjects.Image[] = [];
-    [140, 360, 580].forEach((x, i) => {
-      const v = scene.add.image(x, 0, TX.vine).setOrigin(0.5, 0).setDepth(-500);
-      v.setScale(0.85 + i * 0.07, 0.9 + (i % 2) * 0.1);
-      vines.push(v);
-    });
-
-    const fg = scene.add.image(GAME_WIDTH / 2, GAME_HEIGHT - 130, TX.bgLeavesFg).setOrigin(0.5);
-
-    this.add([sky, far, near, river, river2, ...vines, ground, fg]);
+    this.add([sky, rays, mountains, far, near, ground, fg]);
     scene.add.existing(this);
     this.setDepth(-1000);
 
-    // Ambient motions
+    // Ambient motion
+    scene.tweens.add({ targets: rays, alpha: { from: 0.85, to: 1 }, yoyo: true, repeat: -1, duration: 4000, ease: 'Sine.InOut' });
     scene.tweens.add({ targets: near, x: '+=6', yoyo: true, repeat: -1, duration: 5000, ease: 'Sine.InOut' });
     scene.tweens.add({ targets: far,  x: '-=4', yoyo: true, repeat: -1, duration: 7000, ease: 'Sine.InOut' });
     scene.tweens.add({ targets: fg,   y: '+=3', yoyo: true, repeat: -1, duration: 3200, ease: 'Sine.InOut' });
-    // Flowing river
-    scene.tweens.add({ targets: river,  x: '+=80', repeat: -1, duration: 4000, ease: 'Linear',
-      onRepeat: () => river.setX(GAME_WIDTH / 2 - 80) });
-    scene.tweens.add({ targets: river2, x: '+=120', repeat: -1, duration: 3200, ease: 'Linear',
-      onRepeat: () => river2.setX(GAME_WIDTH / 2 - 160) });
-    // Hanging vine sway
-    vines.forEach((v, i) => {
-      v.setOrigin(0.5, 0);
-      scene.tweens.add({ targets: v, angle: 4, yoyo: true, repeat: -1,
-        duration: 2600 + i * 400, ease: 'Sine.InOut', delay: i * 150 });
-    });
+    scene.tweens.add({ targets: mountains, x: '+=3', yoyo: true, repeat: -1, duration: 9000, ease: 'Sine.InOut' });
   }
 }
