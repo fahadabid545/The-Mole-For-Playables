@@ -1,0 +1,26 @@
+# Netlify build & deploy config for Jungle Mole.
+# Produces the single-HTML Playables build so what ships to Netlify is
+# exactly what would be submitted to Google Playables.
+
+[build]
+  command = "npm run build:playables"
+  publish = "dist"
+
+[build.environment]
+  # Pin a modern LTS Node so builds are reproducible.
+  NODE_VERSION = "20"
+
+# Preview deploys (branch/PR) use the same command; nothing extra needed.
+
+# Sensible caching + safe headers for a single-HTML playable.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    # Always fetch the latest HTML so redeploys are visible immediately.
+    Cache-Control = "no-cache, no-store, must-revalidate"
