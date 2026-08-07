@@ -23,7 +23,15 @@
     </style>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <!-- Fallback text shown until Phaser mounts. If the game never
+           boots (e.g. WebGL blocked, JS error) this at least tells the
+           player something rather than a blank blue page. Phaser wipes
+           it when it inserts its own canvas. -->
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#2b1810;font:600 22px -apple-system,sans-serif;text-align:center;padding:20px;">
+        Loading Jungle Mole…<br><br><span style="font-size:14px;opacity:.7">If nothing appears in 10 seconds, try refreshing the page.</span>
+      </div>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

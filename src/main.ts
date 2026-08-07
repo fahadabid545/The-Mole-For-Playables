@@ -13,8 +13,16 @@ import { ChallengesScene } from './scenes/ChallengesScene';
 import { AchievementsScene } from './scenes/AchievementsScene';
 import { SettingsScene } from './scenes/SettingsScene';
 
+// iOS Safari's WebGL context creation sometimes hangs or silently fails
+// inside portal iframes (CrazyGames player, embedded webviews), leaving
+// the page stuck on the body background color. Detect iOS/iPadOS and
+// force the 2D Canvas renderer, which is slower but boots reliably.
+const ua = navigator.userAgent || '';
+const isIOS = /iP(hone|ad|od)/.test(ua) ||
+              (ua.includes('Mac') && 'ontouchend' in document);
+
 const config: Phaser.Types.Core.GameConfig = {
-  type: Phaser.AUTO,
+  type: isIOS ? Phaser.CANVAS : Phaser.AUTO,
   parent: 'app',
   backgroundColor: '#8fd4e8',
   scale: {
