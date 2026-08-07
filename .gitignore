@@ -10,3 +10,5 @@ dist-playgama
 .env.*
 android
 ios
+dist-crazygames
+dist-poki

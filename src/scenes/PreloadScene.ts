@@ -3,7 +3,7 @@ import { buildAllTextures } from '../objects/TextureFactory';
 import { GAME_WIDTH, GAME_HEIGHT, COLORS } from '../config/GameConfig';
 import { I18n } from '../services/I18nService';
 import { Save } from '../services/SaveService';
-import { Playgama } from '../services/PlaygamaBridge';
+import { Portal } from '../services/Portal';
 
 export class PreloadScene extends Phaser.Scene {
   constructor() { super('Preload'); }
@@ -29,9 +29,9 @@ export class PreloadScene extends Phaser.Scene {
     this.tweens.add({
       targets: label, alpha: 0, duration: 300, delay: 200,
       onComplete: () => {
-        // Tell the portal (Playgama) the game is loaded and playable.
-        // No-op on non-Playgama builds.
-        Playgama.ready();
+        // Tell the portal (CrazyGames / Poki / Playgama) the game is
+        // loaded and playable. No-op on non-portal builds.
+        Portal.ready();
         this.scene.start('Menu');
       },
     });

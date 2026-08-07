@@ -15,7 +15,7 @@ import { Ads } from '../services/AdsService';
 import { I18n } from '../services/I18nService';
 import { TS } from '../config/TextStyles';
 import { LevelCompletePopup } from '../ui/popups/LevelCompletePopup';
-import { Playgama } from '../services/PlaygamaBridge';
+import { Portal } from '../services/Portal';
 import { NamePromptPopup } from '../ui/popups/NamePromptPopup';
 import { Challenge } from '../services/ChallengeService';
 import type { PowerupKind } from '../ui/PowerupBar';
@@ -188,7 +188,7 @@ export class GameScene extends Phaser.Scene {
     this.timerLast = this.time.now;
     this.nextSpawnAt = this.time.now + 300;
     this.showTutorialHint();
-    Playgama.gameplayStart();
+    Portal.gameplayStart();
   }
 
   update(time: number): void {
@@ -301,7 +301,7 @@ export class GameScene extends Phaser.Scene {
     this.endedFlag = true;
     this.levelActive = false;
     this.raccoons.forEach(r => r.forceHide());
-    Playgama.gameplayStop();
+    Portal.gameplayStop();
 
     if (!won) {
       // Level failed — deduct a life once, then decide fail vs out-of-lives.
