@@ -28,10 +28,24 @@ const config: Phaser.Types.Core.GameConfig = {
   scene: [BootScene, PreloadScene, MenuScene, LevelSelectScene, GameScene, HUDScene, ChallengesScene, AchievementsScene, SettingsScene],
 };
 
-function boot() { new Phaser.Game(config); }
+let booted = false;
+function boot() {
+  if (booted) return;
+  booted = true;
+  new Phaser.Game(config);
+}
 
-// Wait for our cartoon font to be ready so first-render text uses it
-// instead of a system-font flash.
+// Wait up to 1.5s for the cartoon font, then boot regardless. On some
+// mobile browsers document.fonts.load() never resolves (and never rejects
+// either), which used to leave the page stuck on the blue background
+// forever. The race guarantees the game starts either way.
 if ('fonts' in document) {
-  (document as any).fonts.load('16px "Luckiest Guy"').then(boot).catch(boot);
-} else { boot(); }
+  Promise.race([
+    (document as any).fonts.load('16px "Luckiest Guy"'),
+    new Promise((res) => setTimeout(res, 1500)),
+  ]).then(boot, boot);
+  // Absolute safety net — even if the Promise machinery is broken.
+  setTimeout(boot, 2500);
+} else {
+  boot();
+}

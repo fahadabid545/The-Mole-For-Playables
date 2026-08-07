@@ -7,8 +7,12 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <title>Jungle Mole</title>
     <style>
-      html, body { margin: 0; padding: 0; height: 100%; background: #8fd4e8; overflow: hidden; touch-action: none; overscroll-behavior: none; }
-      #app { width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; }
+      html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #8fd4e8; overflow: hidden; touch-action: none; overscroll-behavior: none; }
+      /* Full-window canvas host. Phaser's Scale.FIT + CENTER_BOTH handles
+         centering itself, so we do NOT add flexbox here — a double-centering
+         parent (flex) + child (Phaser inline styles) was pushing the canvas
+         to the right on wide viewports. */
+      #app { position: fixed; inset: 0; width: 100%; height: 100%; }
       canvas { display: block; }
       /* Hide the OS cursor only while a level is actually being played;
          the Game scene toggles the `.playing` class on <body>.

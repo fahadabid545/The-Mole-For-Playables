@@ -1,6 +1,8 @@
 node_modules
 dist
 dist-store
+dist-playgama
+*.zip
 .vite
 .DS_Store
 *.log

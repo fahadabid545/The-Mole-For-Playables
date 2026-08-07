@@ -7,6 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "build:playables": "cross-env VITE_BUILD_TARGET=playables vite build",
+    "build:playgama": "cross-env VITE_BUILD_TARGET=playgama vite build",
+    "zip:playables": "cd dist && zip -r -X ../jungle-mole-playables.zip . && cd ..",
+    "zip:playgama":  "cd dist-playgama && zip -r -X ../jungle-mole-playgama.zip . && cd ..",
     "build:store": "cross-env VITE_BUILD_TARGET=store vite build",
     "preview": "vite preview --port 5000",
     "typecheck": "tsc --noEmit"
