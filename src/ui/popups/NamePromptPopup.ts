@@ -90,6 +90,16 @@ export class NamePromptPopup extends Popup {
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.removeInput());
   }
 
+  // Override the base close() so any caller — including finish(), the
+  // scene shutting down, or a future refactor that reaches for
+  // popup.close() directly — always tears the DOM input down first.
+  // Otherwise the fixed-position <input> could be stranded on top of
+  // the next scene at z-index 99999.
+  close(onComplete?: () => void): void {
+    this.removeInput();
+    super.close(onComplete);
+  }
+
   private removeInput(): void {
     if (this.inputEl) {
       const rep = (this.inputEl as any)._reposition as (() => void) | undefined;

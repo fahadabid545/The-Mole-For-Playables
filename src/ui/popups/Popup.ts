@@ -16,6 +16,9 @@ export class Popup extends Phaser.GameObjects.Container {
   protected panelGroup: Phaser.GameObjects.Container;
   protected panel: Phaser.GameObjects.Image;
   protected closeIcon?: Phaser.GameObjects.Image;
+  // Tracks children already shifted from absolute to panel-local coords
+  // so a double addContent() call can't push them off-screen.
+  private shifted = new WeakSet<Phaser.GameObjects.GameObject>();
 
   constructor(scene: Phaser.Scene, opts: PopupOpts = {}) {
     super(scene, 0, 0);
@@ -61,12 +64,16 @@ export class Popup extends Phaser.GameObjects.Container {
   // RELATIVE TO PANEL CENTER (not scene). Callers that use absolute
   // coordinates for backward compat can call addContentAbsolute().
   addContent(...children: Phaser.GameObjects.GameObject[]): void {
-    // Convert absolute scene coords to panel-local coords for existing callers
+    // Convert absolute scene coords to panel-local coords for existing
+    // callers. Guarded so passing the same object twice (or re-parenting
+    // an already-shifted child) can't double-subtract the offset.
     for (const c of children) {
+      if (this.shifted.has(c)) continue;
       const go = c as unknown as Phaser.GameObjects.Components.Transform;
       if (typeof go.x === 'number' && typeof go.y === 'number') {
         go.x -= GAME_WIDTH / 2;
         go.y -= GAME_HEIGHT / 2;
+        this.shifted.add(c);
       }
     }
     this.panelGroup.add(children);

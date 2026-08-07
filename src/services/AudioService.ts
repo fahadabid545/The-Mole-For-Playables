@@ -134,9 +134,13 @@ class AudioServiceImpl {
     };
     setTimeout(scheduleDrum, 2000);
 
-    // Layer 5 — bird chirps scheduled 2–6s apart at random pitches
+    // Layer 5 — bird chirps scheduled 2–6s apart at random pitches.
+    // Keep the timer chain alive across mute/unmute (skip only the audio
+    // emission when muted) — matches how flute/drum handle it, so
+    // unmuting resumes the whole ambience.
     const scheduleBird = () => {
-      if (this.muted || !this.ctx) return;
+      if (!this.ctx) return;
+      if (this.muted) { setTimeout(scheduleBird, 2000 + Math.random() * 4000); return; }
       const t = this.ctx.currentTime + 0.01;
       const osc = this.ctx.createOscillator();
       const g = this.ctx.createGain();

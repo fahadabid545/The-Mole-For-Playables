@@ -18,6 +18,9 @@ import { LevelCompletePopup } from '../ui/popups/LevelCompletePopup';
 import { NamePromptPopup } from '../ui/popups/NamePromptPopup';
 import { Challenge } from '../services/ChallengeService';
 import type { PowerupKind } from '../ui/PowerupBar';
+// PowerupKind is only referenced by grantRandomPowerup, which stashes
+// awarded power-ups into the save file for a future settings/store UI.
+// The in-scene apply-powerup handler was removed with the PowerupBar.
 import { attachAchievementToast } from '../ui/AchievementToast';
 import { checkProgress } from '../services/AchievementService';
 import { LevelFailedPopup } from '../ui/popups/LevelFailedPopup';
@@ -430,33 +433,6 @@ export class GameScene extends Phaser.Scene {
       onRestart: () => this.restart(),
       onQuit: () => this.goMenu(),
     });
-  }
-
-  private applyPowerup(kind: PowerupKind): void {
-    if (!this.levelActive || this.paused) { Save.addPowerup(kind); return; }
-    if (kind === 'freeze') {
-      this.paused = true;
-      this.time.delayedCall(3000, () => { this.paused = false; this.timerLast = this.time.now; });
-      spawnScorePopup(this, GAME_WIDTH / 2, 300, 'TIME FROZEN', '#81d4fa');
-    } else if (kind === 'double') {
-      this.doublePointsActive = true;
-      this.time.delayedCall(10000, () => { this.doublePointsActive = false; });
-      spawnScorePopup(this, GAME_WIDTH / 2, 300, 'x2 SCORE', '#ffca28');
-    } else if (kind === 'auto') {
-      // Instantly finish every currently-up raccoon
-      this.raccoons.forEach(r => {
-        if (!r.isAvailable() && r.getKind() !== 'bomb') {
-          const k = r.getKind();
-          r.forceHide();
-          const pts = k === 'boss' ? 100 : k === 'golden' ? 30 : k === 'frozen' ? 20 : 10;
-          this.hits += k === 'boss' ? 3 : k === 'golden' ? 3 : k === 'frozen' ? 2 : 1;
-          this.score += pts;
-        }
-      });
-      spawnScorePopup(this, GAME_WIDTH / 2, 300, 'AUTO HIT!', '#ef5350');
-      EventBus.emit(EVT.SCORE_CHANGED, this.score, this.hits, this.params.quota);
-      if (this.hits >= this.params.quota) this.endLevel(true);
-    }
   }
 
   private computeStars(): number {

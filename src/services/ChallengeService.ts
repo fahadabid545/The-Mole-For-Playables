@@ -1,5 +1,5 @@
 import { getLevelParams, LevelParams } from '../config/LevelConfig';
-import { FLAGS } from '../config/BuildFlags';
+import { FLAGS, IS_PLAYABLES } from '../config/BuildFlags';
 import { Save } from './SaveService';
 
 export type ChallengeKind = 'daily' | 'weekly';
@@ -42,8 +42,10 @@ export function getChallenge(kind: ChallengeKind): Challenge {
     quota: Math.round(base.quota * 1.1),
   };
   // Ads are disabled in Playables, so challenge completion is the ONLY
-  // way to earn extra lives. Bump the weekly reward accordingly.
-  const rewardLives = kind === 'daily' ? 1 : 3;
+  // way to earn extra lives there — bump the weekly reward accordingly.
+  // Store builds still have rewarded ads for lives, so weekly keeps its
+  // original 2-life payout.
+  const rewardLives = kind === 'daily' ? 1 : (IS_PLAYABLES ? 3 : 2);
   const rewardBonus = kind === 'daily' ? 100 : 500;
   const alreadyDone = kind === 'daily'
     ? Save.get().lastDailyKey === key

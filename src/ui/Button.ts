@@ -39,9 +39,16 @@ export class Button extends Phaser.GameObjects.Container {
     });
     bg.on('pointerdown', () => {
       Audio.play('click');
-      // Plank-drop press: quick down + swing
+      // Plank-drop press: quick down + swing. Force-reset angle at end
+      // so touch taps (which sometimes miss pointerout on scene-transition
+      // buttons that don't unmount, e.g. toggles) don't leave the plank
+      // visibly skewed at ~-6°.
       scene.tweens.add({ targets: this, y: this.y + 4, scale: this.baseScale * 0.94, duration: 70, yoyo: true, ease: 'Quad.Out' });
-      scene.tweens.add({ targets: this, angle: { from: -6, to: 6 }, yoyo: true, repeat: 1, duration: 140, ease: 'Sine.InOut' });
+      scene.tweens.add({
+        targets: this, angle: { from: -6, to: 6 },
+        yoyo: true, repeat: 1, duration: 140, ease: 'Sine.InOut',
+        onComplete: () => this.setAngle(0),
+      });
       opts.onClick();
     });
 
