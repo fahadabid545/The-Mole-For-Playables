@@ -28,6 +28,10 @@ function seed(key: string): number {
   return (h >>> 0) / 0xffffffff;
 }
 
+export function allChallengesDone(): boolean {
+  return getChallenge('daily').alreadyDone && getChallenge('weekly').alreadyDone;
+}
+
 export function getChallenge(kind: ChallengeKind): Challenge {
   const key = kind === 'daily' ? todayKey() : weekKey();
   const s = seed(kind + ':' + key);

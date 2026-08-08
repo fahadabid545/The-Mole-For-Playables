@@ -9,6 +9,8 @@ import { TX } from '../objects/TextureFactory';
 import { AdBanner } from '../ui/AdBanner';
 import { I18n } from '../services/I18nService';
 import { NamePromptPopup } from '../ui/popups/NamePromptPopup';
+import { OutOfLivesPopup } from '../ui/popups/OutOfLivesPopup';
+import { allChallengesDone } from '../services/ChallengeService';
 import { TS } from '../config/TextStyles';
 
 export class MenuScene extends Phaser.Scene {
@@ -36,7 +38,7 @@ export class MenuScene extends Phaser.Scene {
     // fits comfortably above the bottom foreground foliage.
     new Button(this, GAME_WIDTH / 2, 750, {
       label: playLabel,
-      onClick: () => this.scene.start('Game', { level: highest }),
+      onClick: () => this.tryStartLevel(highest),
     });
 
     // Secondary options — same full size as the main CTA. Leaderboard
@@ -72,5 +74,19 @@ export class MenuScene extends Phaser.Scene {
     if (!Save.get().welcomed) {
       new NamePromptPopup(this, '', (n) => { Save.setPlayerName(n); Save.setWelcomed(); });
     }
+  }
+
+  private tryStartLevel(level: number): void {
+    Save.tryRegenLives(allChallengesDone());
+    if (Save.get().lives > 0) {
+      this.scene.start('Game', { level });
+      return;
+    }
+    new OutOfLivesPopup(this, {
+      onWatchAdForLife: () => { /* no-op: ads not shown from menu */ },
+      onChallenges: () => this.scene.start('Challenges'),
+      onLivesRefilled: () => this.scene.start('Game', { level }),
+      onMenu: () => { /* stay on menu */ },
+    });
   }
 }
