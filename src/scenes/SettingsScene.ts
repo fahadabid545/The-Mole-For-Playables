@@ -4,7 +4,7 @@ import { ParallaxJungle } from '../objects/ParallaxJungle';
 import { Button } from '../ui/Button';
 import { Save } from '../services/SaveService';
 import { Audio } from '../services/AudioService';
-import { I18n, LANGS, Lang } from '../services/I18nService';
+import { I18n } from '../services/I18nService';
 import { TS } from '../config/TextStyles';
 import { TX } from '../objects/TextureFactory';
 import { AdBanner } from '../ui/AdBanner';
@@ -32,27 +32,9 @@ export class SettingsScene extends Phaser.Scene {
       soundIcon.setTexture(m ? TX.soundOff : TX.soundOn);
     });
 
-    // Language (store build only)
-    if (!IS_PLAYABLES) {
-      y += 130;
-      this.add.text(80, y, 'Language', TS.h2('#fff8e1')).setOrigin(0, 0.5);
-      LANGS.forEach((l, i) => {
-        const x = 80 + i * 130;
-        const isActive = Save.get().lang === l.code || (!Save.get().lang && l.code === 'en');
-        const chip = this.add.rectangle(x + 55, y + 80, 110, 46,
-          isActive ? 0xffb300 : 0x263238, 0.9).setStrokeStyle(3, 0xffffff);
-        const t = this.add.text(x + 55, y + 80, l.code.toUpperCase(),
-          { ...TS.chipDark(), fontSize: '22px' }).setOrigin(0.5);
-        chip.setInteractive({ useHandCursor: true });
-        chip.on('pointerdown', () => {
-          Audio.play('click');
-          I18n.setLang(l.code as Lang);
-          Save.setLang(l.code as Lang);
-          this.scene.restart();
-        });
-        void t;
-      });
-    }
+    // Language selector removed — game ships single-language for every
+    // portal build. Kept the local `y` cursor untouched so the Reset
+    // Progress button below stays where it was.
 
     // Reset progress
     y = GAME_HEIGHT - 490;

@@ -64,13 +64,9 @@ export class MenuScene extends Phaser.Scene {
     gear.on('pointerdown', () => this.scene.start('Settings'));
     this.tweens.add({ targets: gear, angle: 360, duration: 12000, repeat: -1 });
 
-    // Language chip only in store build (playables ships single-language).
-    if (!IS_PLAYABLES) {
-      const langBtn = this.add.text(70, 70, (Save.get().lang ?? 'en').toUpperCase(), {
-        fontFamily: 'Impact, sans-serif', fontSize: '32px', color: '#fffde7', stroke: '#1b5e20', strokeThickness: 4,
-      }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-      langBtn.on('pointerdown', () => new WelcomePopup(this, { onDone: () => this.scene.restart(), closeable: true }));
-    }
+    // Language chip removed — the game ships single-language for every
+    // portal build now. (Was previously gated on !IS_PLAYABLES which
+    // accidentally exposed it on CrazyGames/Poki/Playgama too.)
 
     new AdBanner(this).show();
 

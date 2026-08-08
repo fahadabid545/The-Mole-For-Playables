@@ -40,6 +40,10 @@ let booted = false;
 function boot() {
   if (booted) return;
   booted = true;
+  // Wipe the static "Loading…" fallback so it doesn't sit next to
+  // Phaser's canvas after the game mounts.
+  const host = document.getElementById('app');
+  if (host) host.innerHTML = '';
   new Phaser.Game(config);
 }
 
