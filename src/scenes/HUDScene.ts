@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { GAME_WIDTH } from '../config/GameConfig';
+import { LivesBar } from '../ui/LivesBar';
 import { EventBus, EVT } from '../utils/EventBus';
 import { TX } from '../objects/TextureFactory';
 import { Audio } from '../services/AudioService';
@@ -45,6 +46,8 @@ export class HUDScene extends Phaser.Scene {
     const barW = 240, barH = 14;
     this.add.rectangle(GAME_WIDTH - 24 - barW, TOP_SAFE + 96, barW, barH, 0x000000, 0.4).setOrigin(0, 0.5);
     this.timeBarFill = this.add.rectangle(GAME_WIDTH - 24 - barW, TOP_SAFE + 96, barW, barH, 0x66bb6a, 1).setOrigin(0, 0.5);
+
+    new LivesBar(this, 40, TOP_SAFE + 140);
 
     // Sound + pause icons, tucked below the wooden bar so nothing overlaps
     const iconY = TOP_SAFE + 190;
