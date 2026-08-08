@@ -8,6 +8,8 @@ import { Button } from '../ui/Button';
 import { Audio } from '../services/AudioService';
 import { AdBanner } from '../ui/AdBanner';
 import { I18n } from '../services/I18nService';
+import { OutOfLivesPopup } from '../ui/popups/OutOfLivesPopup';
+import { allChallengesDone } from '../services/ChallengeService';
 import { TS } from '../config/TextStyles';
 
 export class LevelSelectScene extends Phaser.Scene {
@@ -83,7 +85,7 @@ export class LevelSelectScene extends Phaser.Scene {
         tile.on('pointerup', (p: Phaser.Input.Pointer) => {
           if (Math.hypot(p.x - downX, p.y - downY) > 10) return; // drag, not tap
           Audio.play('click');
-          this.scene.start('Game', { level });
+          this.tryStartLevel(level);
         });
       }
     }
@@ -117,6 +119,20 @@ export class LevelSelectScene extends Phaser.Scene {
     });
 
     new AdBanner(this).show();
+  }
+
+  private tryStartLevel(level: number): void {
+    Save.tryRegenLives(allChallengesDone());
+    if (Save.get().lives > 0) {
+      this.scene.start('Game', { level });
+      return;
+    }
+    new OutOfLivesPopup(this, {
+      onWatchAdForLife: () => { /* no-op: ads handled inside GameScene */ },
+      onChallenges: () => this.scene.start('Challenges'),
+      onLivesRefilled: () => this.scene.start('Game', { level }),
+      onMenu: () => this.scene.start('Menu'),
+    });
   }
 
   private scrollBy(dy: number): void {

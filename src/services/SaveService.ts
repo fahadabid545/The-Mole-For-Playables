@@ -2,10 +2,12 @@ import { FLAGS } from '../config/BuildFlags';
 import type { Lang } from './I18nService';
 
 const KEY = 'mole.v1';
+const LIVES_REGEN_MS = 10 * 60 * 1000;
 
 export interface SaveData {
   highestUnlockedLevel: number;
   lives: number;
+  livesRegenAt?: number;
   muted: boolean;
   perLevelStars: Record<number, number>;
   totalStars: number;
@@ -58,11 +60,30 @@ export const Save = {
 
   setLives(n: number): void {
     const d = read();
-    d.lives = Math.max(0, Math.min(FLAGS.maxLives, n));
+    const clamped = Math.max(0, Math.min(FLAGS.maxLives, n));
+    d.lives = clamped;
+    if (clamped <= 0) {
+      if (!d.livesRegenAt) d.livesRegenAt = Date.now() + LIVES_REGEN_MS;
+    } else {
+      d.livesRegenAt = undefined;
+    }
     write();
   },
   addLife(delta = 1): void { this.setLives(read().lives + delta); },
   loseLife(): void { this.setLives(read().lives - 1); },
+
+  // Auto-refills lives to the starting amount once the regen timer has
+  // elapsed, but only when `canRegen` is true (all challenges done).
+  tryRegenLives(canRegen: boolean): boolean {
+    const d = read();
+    if (d.lives > 0 || !d.livesRegenAt || !canRegen) return false;
+    if (Date.now() < d.livesRegenAt) return false;
+    d.lives = FLAGS.startingLives;
+    d.livesRegenAt = undefined;
+    write();
+    return true;
+  },
+  livesRegenMs(): number { return LIVES_REGEN_MS; },
 
   unlockUpTo(level: number): void {
     const d = read();
