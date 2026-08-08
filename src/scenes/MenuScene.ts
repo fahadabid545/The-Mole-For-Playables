@@ -8,9 +8,7 @@ import { Audio } from '../services/AudioService';
 import { TX } from '../objects/TextureFactory';
 import { AdBanner } from '../ui/AdBanner';
 import { I18n } from '../services/I18nService';
-import { WelcomePopup } from '../ui/popups/WelcomePopup';
 import { NamePromptPopup } from '../ui/popups/NamePromptPopup';
-import { IS_PLAYABLES } from '../config/BuildFlags';
 import { TS } from '../config/TextStyles';
 
 export class MenuScene extends Phaser.Scene {
@@ -70,14 +68,9 @@ export class MenuScene extends Phaser.Scene {
 
     new AdBanner(this).show();
 
-    // First-run onboarding
+    // First-run onboarding — no language picker, jump straight to name.
     if (!Save.get().welcomed) {
-      if (IS_PLAYABLES) {
-        // No language picker in playables — jump straight to name.
-        new NamePromptPopup(this, '', (n) => { Save.setPlayerName(n); Save.setWelcomed(); });
-      } else {
-        new WelcomePopup(this, () => this.scene.restart());
-      }
+      new NamePromptPopup(this, '', (n) => { Save.setPlayerName(n); Save.setWelcomed(); });
     }
   }
 }
