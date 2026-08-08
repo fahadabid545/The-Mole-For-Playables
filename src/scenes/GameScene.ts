@@ -431,10 +431,12 @@ export class GameScene extends Phaser.Scene {
   private openPause(): void {
     if (!this.levelActive || this.paused) return;
     this.paused = true;
+    this.events.emit('hud-icons-hide');
+    const restoreIcons = () => this.events.emit('hud-icons-show');
     new PausePopup(this, {
-      onResume: () => { this.paused = false; this.timerLast = this.time.now; },
-      onRestart: () => this.restart(),
-      onQuit: () => this.goMenu(),
+      onResume: () => { this.paused = false; this.timerLast = this.time.now; restoreIcons(); },
+      onRestart: () => { restoreIcons(); this.restart(); },
+      onQuit: () => { restoreIcons(); this.goMenu(); },
     });
   }
 

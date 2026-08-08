@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
 import { GAME_WIDTH } from '../config/GameConfig';
-import { LivesBar } from '../ui/LivesBar';
 import { EventBus, EVT } from '../utils/EventBus';
 import { TX } from '../objects/TextureFactory';
 import { Audio } from '../services/AudioService';
@@ -47,8 +46,6 @@ export class HUDScene extends Phaser.Scene {
     this.add.rectangle(GAME_WIDTH - 24 - barW, TOP_SAFE + 96, barW, barH, 0x000000, 0.4).setOrigin(0, 0.5);
     this.timeBarFill = this.add.rectangle(GAME_WIDTH - 24 - barW, TOP_SAFE + 96, barW, barH, 0x66bb6a, 1).setOrigin(0, 0.5);
 
-    new LivesBar(this, 28, TOP_SAFE + 130);
-
     // Sound + pause icons, tucked below the wooden bar so nothing overlaps
     const iconY = TOP_SAFE + 190;
     const sound = this.add.image(GAME_WIDTH - 64, iconY, Audio.isMuted() ? TX.soundOff : TX.soundOn)
@@ -64,6 +61,21 @@ export class HUDScene extends Phaser.Scene {
     pauseBg.on('pointerdown', () => this.scene.get('Game').events.emit('request-pause'));
     pauseBg.on('pointerover', () => pause.setScale(1.25));
     pauseBg.on('pointerout',  () => pause.setScale(1.1));
+
+    // Hide the HUD sound + pause icons while a popup covers the game
+    // so the popup's close-X doesn't visually overlap them.
+    const setIconsVisible = (v: boolean) => {
+      sound.setVisible(v);
+      pauseBg.setVisible(v);
+      pause.setVisible(v);
+    };
+    const gameScene = this.scene.get('Game');
+    gameScene.events.on('hud-icons-hide', () => setIconsVisible(false));
+    gameScene.events.on('hud-icons-show', () => setIconsVisible(true));
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      gameScene.events.off('hud-icons-hide');
+      gameScene.events.off('hud-icons-show');
+    });
 
     EventBus.on(EVT.SCORE_CHANGED, (score: number, hits: number, quota: number) => {
       this.scoreText.setText(`${score}`);
