@@ -69,6 +69,12 @@ const outDirs: Record<string, string> = {
 
 export default defineConfig({
   plugins,
+  // Use relative asset URLs so multi-file builds (Playgama, Playgama-style
+  // portals) load their JS/CSS regardless of the host iframe's URL depth.
+  // Absolute `/assets/...` resolved against the portal's root, not the
+  // game's folder, and returned 404s that left the page stuck on the
+  // loading fallback.
+  base: './',
   build: {
     target: 'es2020',
     assetsInlineLimit: 100 * 1024,
