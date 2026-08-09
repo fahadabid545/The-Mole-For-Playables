@@ -26,11 +26,14 @@ export class PreloadScene extends Phaser.Scene {
 
     buildAllTextures(this);
 
+    // Signal readiness to the portal as soon as textures are built so
+    // Playgama's 30-second init watchdog is satisfied even if the intro
+    // fade is slow. Ready is idempotent on the portal side.
+    Portal.ready();
+
     this.tweens.add({
       targets: label, alpha: 0, duration: 300, delay: 200,
       onComplete: () => {
-        // Tell the portal (CrazyGames / Poki / Playgama) the game is
-        // loaded and playable. No-op on non-portal builds.
         Portal.ready();
         this.scene.start('Menu');
       },

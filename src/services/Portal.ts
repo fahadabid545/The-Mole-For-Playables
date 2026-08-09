@@ -46,6 +46,10 @@ interface PGBridge {
     gameplayStart?: () => void;
     gameplayStop?: () => void;
   };
+  platform?: {
+    sendMessage?: (msg: string) => void;
+  };
+  PLATFORM_MESSAGE?: { GAME_READY?: string; GAMEPLAY_STARTED?: string; GAMEPLAY_STOPPED?: string };
   advertisement?: {
     showInterstitial?: (opts: { callbacks: Record<string, () => void> }) => void;
     showRewarded?:     (opts: { callbacks: Record<string, () => void> }) => void;
@@ -76,6 +80,15 @@ async function waitFor<T>(get: () => T | undefined, timeoutMs = 2000): Promise<T
   return get();
 }
 
+// Reject-on-timeout wrapper so a hung SDK init call can never block boot.
+function withTimeout<T>(p: Promise<T> | undefined, ms: number): Promise<T | void> {
+  if (!p) return Promise.resolve();
+  return Promise.race([
+    p,
+    new Promise<void>(resolve => setTimeout(resolve, ms)),
+  ]);
+}
+
 export const Portal = {
   // --- Lifecycle -----------------------------------------------------
 
@@ -91,8 +104,8 @@ export const Portal = {
         await sdk?.init?.();
         sdk?.gameLoadingStart?.();
       } else if (IS_PLAYGAMA) {
-        const b = await waitFor(pg);
-        await b?.initialize?.();
+        const b = await waitFor(pg, 8000);
+        await withTimeout(b?.initialize?.(), 10000);
       }
     } catch { /* ignore — never let SDK errors break boot */ }
   },
@@ -103,7 +116,17 @@ export const Portal = {
     try {
       if (IS_CRAZYGAMES) cg()?.game?.loadingStop?.();
       else if (IS_POKI)  pk()?.gameLoadingFinished?.();
-      else if (IS_PLAYGAMA) pg()?.game?.ready?.();
+      else if (IS_PLAYGAMA) {
+        const b = pg();
+        // Newer Playgama Bridge uses platform.sendMessage(GAME_READY);
+        // older builds exposed bridge.game.ready(). Call both so we
+        // signal readiness regardless of which API is present.
+        try { b?.game?.ready?.(); } catch { /* ignore */ }
+        try {
+          const msg = b?.PLATFORM_MESSAGE?.GAME_READY ?? 'game_ready';
+          b?.platform?.sendMessage?.(msg);
+        } catch { /* ignore */ }
+      }
     } catch { /* ignore */ }
   },
 

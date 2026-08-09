@@ -10,7 +10,11 @@ export class BootScene extends Phaser.Scene {
     // mute-listener so CrazyGames' player-level mute stays in sync with
     // the game's own audio state.
     Portal.onPortalMuteChange((muted) => Audio.setMuted(muted));
-    await Portal.init();
+    // Bounded so a hung SDK init can never stall the boot sequence.
+    await Promise.race([
+      Portal.init(),
+      new Promise(r => setTimeout(r, 10000)),
+    ]);
     Audio.init();
     this.scene.start('Preload');
   }
