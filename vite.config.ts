@@ -1,46 +1,54 @@
 import { defineConfig, Plugin } from 'vite';
 import { viteSingleFile } from 'vite-plugin-singlefile';
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const target = process.env.VITE_BUILD_TARGET ?? 'playables';
 
 // Portal-specific SDK loaders injected right before </head>. CrazyGames
 // and Poki serve their SDKs from their own CDN, so we reference those.
-// The Playgama Bridge is inlined from the installed npm package so the
-// game can never fail on a network hiccup or CSP block reaching the
-// bridge.playgama.com CDN — the SDK is guaranteed to be present.
+// Playgama Bridge is COPIED next to index.html and referenced by a
+// relative <script src> — inlining a 282 KB script with ES2022 private
+// class fields into <script> triggers a Chromium HTML-parser bug
+// ("Private field '#Z' must be declared in an enclosing class") that
+// external scripts do NOT hit.
 const PORTAL_SDK_TAGS: Record<string, string> = {
   crazygames: '<script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>',
   poki:       '<script src="https://game-cdn.poki.com/scripts/v2/poki-sdk.js"></script>',
+  playgama:   '<script src="./playgama-bridge.js"></script>',
 };
-
-function playgamaInlineSdk(): string {
-  const src = resolve('node_modules/@playgama/bridge/dist/playgama-bridge.js');
-  const code = readFileSync(src, 'utf8');
-  return `<script>/*! Playgama Bridge (inlined) */\n${code}\n</script>`;
-}
 
 const injectPortalSdk: Plugin = {
   name: 'inject-portal-sdk',
   transformIndexHtml(html) {
-    if (target === 'playgama') {
-      const tag = playgamaInlineSdk();
-      return html.replace('</head>', `  ${tag}\n</head>`);
-    }
     const tag = PORTAL_SDK_TAGS[target];
     if (!tag) return html;
     return html.replace('</head>', `  ${tag}\n</head>`);
   },
 };
 
-// Playgama Bridge fetches ./playgama-bridge-config.json on init.
-// forciblySetPlatformId: 'playgama' is critical — the bridge has NO
-// auto-detector for Playgama's own hosts (or their QA tool), so without
-// this the game boots the MOCK bridge which never postMessages the
-// initialize / GAME_READY signals to the parent frame, causing the
-// "Platform did not receive the initialization signal" error even when
-// the game itself is running fine.
+// Copy Playgama Bridge JS into the build output so it can be served
+// alongside index.html (relative <script src="./playgama-bridge.js">).
+const copyPlaygamaSdk: Plugin = {
+  name: 'copy-playgama-sdk',
+  apply: 'build',
+  closeBundle() {
+    if (target !== 'playgama') return;
+    const dir = resolve('dist-playgama');
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+    const src = resolve('node_modules/@playgama/bridge/dist/playgama-bridge.js');
+    copyFileSync(src, resolve(dir, 'playgama-bridge.js'));
+  },
+};
+
+// Playgama Bridge fetches ./playgama-bridge-config.json on init. The
+// QA tool watchdog listens for the postMessage handshake that ONLY the
+// QaToolPlatformBridge sends — PlaygamaPlatformBridge fetches Playgama's
+// own SDK from CDN and does not do that handshake, so a 'playgama' value
+// makes the QA tool time out. Force 'qa_tool' so the correct bridge is
+// loaded on the QA testing environment. Playgama replaces this file
+// server-side at final publish time when the game is promoted to
+// production distribution.
 const writePlaygamaConfig: Plugin = {
   name: 'write-playgama-config',
   apply: 'build',
@@ -48,7 +56,7 @@ const writePlaygamaConfig: Plugin = {
     if (target !== 'playgama') return;
     const dir = resolve('dist-playgama');
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-    const cfg = { forciblySetPlatformId: 'playgama' };
+    const cfg = { forciblySetPlatformId: 'qa_tool' };
     writeFileSync(resolve(dir, 'playgama-bridge-config.json'), JSON.stringify(cfg, null, 2) + '\n');
   },
 };
@@ -58,7 +66,7 @@ const writePlaygamaConfig: Plugin = {
 // takes a ZIP with multiple files so it stays as a normal multi-file build.
 const singleFileTargets = new Set(['playables', 'crazygames', 'poki']);
 
-const plugins: Plugin[] = [injectPortalSdk, writePlaygamaConfig];
+const plugins: Plugin[] = [injectPortalSdk, copyPlaygamaSdk, writePlaygamaConfig];
 if (singleFileTargets.has(target)) plugins.push(viteSingleFile());
 
 // Per-target output folder so builds don't clobber each other and we can
