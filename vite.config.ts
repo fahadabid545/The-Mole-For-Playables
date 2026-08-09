@@ -10,7 +10,7 @@ const target = process.env.VITE_BUILD_TARGET ?? 'playables';
 const PORTAL_SDK_TAGS: Record<string, string> = {
   crazygames: '<script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>',
   poki:       '<script src="https://game-cdn.poki.com/scripts/v2/poki-sdk.js"></script>',
-  playgama:   '<script src="https://cdn.jsdelivr.net/npm/@playgama/bridge@latest/dist/index.min.js"></script>',
+  playgama:   '<script src="https://bridge.playgama.com/v2/stable/playgama-bridge.js"></script>',
 };
 
 const injectPortalSdk: Plugin = {
