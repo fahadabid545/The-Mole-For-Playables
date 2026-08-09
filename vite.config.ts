@@ -34,10 +34,13 @@ const injectPortalSdk: Plugin = {
   },
 };
 
-// Playgama Bridge fetches ./playgama-bridge-config.json on init; ship an
-// empty config so the fetch resolves instead of returning 404 (the SDK
-// falls back to defaults on 404 but the noise in the console misleads
-// reviewers).
+// Playgama Bridge fetches ./playgama-bridge-config.json on init.
+// forciblySetPlatformId: 'playgama' is critical — the bridge has NO
+// auto-detector for Playgama's own hosts (or their QA tool), so without
+// this the game boots the MOCK bridge which never postMessages the
+// initialize / GAME_READY signals to the parent frame, causing the
+// "Platform did not receive the initialization signal" error even when
+// the game itself is running fine.
 const writePlaygamaConfig: Plugin = {
   name: 'write-playgama-config',
   apply: 'build',
@@ -45,7 +48,8 @@ const writePlaygamaConfig: Plugin = {
     if (target !== 'playgama') return;
     const dir = resolve('dist-playgama');
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-    writeFileSync(resolve(dir, 'playgama-bridge-config.json'), '{}\n');
+    const cfg = { forciblySetPlatformId: 'playgama' };
+    writeFileSync(resolve(dir, 'playgama-bridge-config.json'), JSON.stringify(cfg, null, 2) + '\n');
   },
 };
 
