@@ -1,24 +1,51 @@
 import { defineConfig, Plugin } from 'vite';
 import { viteSingleFile } from 'vite-plugin-singlefile';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 const target = process.env.VITE_BUILD_TARGET ?? 'playables';
 
-// Portal-specific SDK loaders injected right before </head>. Each script
-// creates a global (window.CrazyGames / PokiSDK / bridge) that our
-// PortalSDK service wraps at runtime. We inline nothing here — the CDN
-// URLs are the officially documented endpoints for each portal.
+// Portal-specific SDK loaders injected right before </head>. CrazyGames
+// and Poki serve their SDKs from their own CDN, so we reference those.
+// The Playgama Bridge is inlined from the installed npm package so the
+// game can never fail on a network hiccup or CSP block reaching the
+// bridge.playgama.com CDN — the SDK is guaranteed to be present.
 const PORTAL_SDK_TAGS: Record<string, string> = {
   crazygames: '<script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>',
   poki:       '<script src="https://game-cdn.poki.com/scripts/v2/poki-sdk.js"></script>',
-  playgama:   '<script src="https://bridge.playgama.com/v2/stable/playgama-bridge.js"></script>',
 };
+
+function playgamaInlineSdk(): string {
+  const src = resolve('node_modules/@playgama/bridge/dist/playgama-bridge.js');
+  const code = readFileSync(src, 'utf8');
+  return `<script>/*! Playgama Bridge (inlined) */\n${code}\n</script>`;
+}
 
 const injectPortalSdk: Plugin = {
   name: 'inject-portal-sdk',
   transformIndexHtml(html) {
+    if (target === 'playgama') {
+      const tag = playgamaInlineSdk();
+      return html.replace('</head>', `  ${tag}\n</head>`);
+    }
     const tag = PORTAL_SDK_TAGS[target];
     if (!tag) return html;
     return html.replace('</head>', `  ${tag}\n</head>`);
+  },
+};
+
+// Playgama Bridge fetches ./playgama-bridge-config.json on init; ship an
+// empty config so the fetch resolves instead of returning 404 (the SDK
+// falls back to defaults on 404 but the noise in the console misleads
+// reviewers).
+const writePlaygamaConfig: Plugin = {
+  name: 'write-playgama-config',
+  apply: 'build',
+  closeBundle() {
+    if (target !== 'playgama') return;
+    const dir = resolve('dist-playgama');
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+    writeFileSync(resolve(dir, 'playgama-bridge-config.json'), '{}\n');
   },
 };
 
@@ -27,7 +54,7 @@ const injectPortalSdk: Plugin = {
 // takes a ZIP with multiple files so it stays as a normal multi-file build.
 const singleFileTargets = new Set(['playables', 'crazygames', 'poki']);
 
-const plugins: Plugin[] = [injectPortalSdk];
+const plugins: Plugin[] = [injectPortalSdk, writePlaygamaConfig];
 if (singleFileTargets.has(target)) plugins.push(viteSingleFile());
 
 // Per-target output folder so builds don't clobber each other and we can

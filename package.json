@@ -6,13 +6,13 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:playables":  "cross-env VITE_BUILD_TARGET=playables  vite build",
+    "build:playables": "cross-env VITE_BUILD_TARGET=playables  vite build",
     "build:crazygames": "cross-env VITE_BUILD_TARGET=crazygames vite build",
-    "build:poki":       "cross-env VITE_BUILD_TARGET=poki       vite build",
-    "build:playgama":   "cross-env VITE_BUILD_TARGET=playgama   vite build",
-    "build:store":      "cross-env VITE_BUILD_TARGET=store      vite build",
-    "build:all":        "npm run build:playables && npm run build:crazygames && npm run build:poki && npm run build:playgama",
-    "zip:playgama":     "cd dist-playgama && zip -r -X ../jungle-mole-playgama.zip . && cd ..",
+    "build:poki": "cross-env VITE_BUILD_TARGET=poki       vite build",
+    "build:playgama": "cross-env VITE_BUILD_TARGET=playgama   vite build",
+    "build:store": "cross-env VITE_BUILD_TARGET=store      vite build",
+    "build:all": "npm run build:playables && npm run build:crazygames && npm run build:poki && npm run build:playgama",
+    "zip:playgama": "cd dist-playgama && zip -r -X ../jungle-mole-playgama.zip . && cd ..",
     "preview": "vite preview --port 5000",
     "typecheck": "tsc --noEmit"
   },
@@ -21,6 +21,7 @@
     "phaser": "^3.80.1"
   },
   "devDependencies": {
+    "@playgama/bridge": "^2.0.2",
     "cross-env": "^7.0.3",
     "typescript": "^5.5.4",
     "vite": "^5.4.0",

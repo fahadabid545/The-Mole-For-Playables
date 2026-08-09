@@ -41,16 +41,9 @@ interface PokiSDK {
 }
 interface PGBridge {
   initialize?: () => Promise<void>;
-  game?: {
-    ready?: () => void;
-    gameReady?: () => void;
-    gameplayStart?: () => void;
-    gameplayStop?: () => void;
-    gameplayStarted?: () => void;
-    gameplayStopped?: () => void;
-  };
+  isInitialized?: boolean;
   platform?: {
-    sendMessage?: (msg: string) => void;
+    sendMessage?: (msg: string) => Promise<unknown>;
   };
   PLATFORM_MESSAGE?: {
     GAME_READY?: string;
@@ -114,13 +107,13 @@ export const Portal = {
         sdk?.gameLoadingStart?.();
       } else if (IS_PLAYGAMA) {
         const b = await waitFor(pg, 8000);
-        await withTimeout(b?.initialize?.(), 10000);
-        // Signal loading has started so the platform's watchdog knows we
-        // reached the Bridge SDK and are still preparing.
-        try {
-          const startMsg = b?.PLATFORM_MESSAGE?.IN_GAME_LOADING_STARTED ?? 'in_game_loading_started';
-          b?.platform?.sendMessage?.(startMsg);
-        } catch { /* ignore */ }
+        if (!b?.initialize) return;
+        // Never wrap initialize in a soft timeout: bridge.platform is
+        // only fully wired to the host after initialize resolves, so a
+        // premature timeout would let sendMessage(GAME_READY) hit an
+        // uninitialised platform bridge and silently drop the message.
+        // The BootScene guards the outer 10s hard cap.
+        await b.initialize();
       }
     } catch { /* ignore — never let SDK errors break boot */ }
   },
@@ -132,21 +125,12 @@ export const Portal = {
       if (IS_CRAZYGAMES) cg()?.game?.loadingStop?.();
       else if (IS_POKI)  pk()?.gameLoadingFinished?.();
       else if (IS_PLAYGAMA) {
+        // Canonical Playgama Bridge v2 required step: signal GAME_READY.
+        // Internally the platform module guards against double-send, so
+        // calling this from the two Preload hooks is safe.
         const b = pg();
-        // Playgama Bridge v2 required steps: signal that the game has
-        // finished loading. Different Bridge versions expose slightly
-        // different method names — call each one that exists.
-        try { b?.game?.gameReady?.(); } catch { /* ignore */ }
-        try { b?.game?.ready?.(); } catch { /* ignore */ }
-        try {
-          // v2 preferred: send a stop-loading message on the platform bus.
-          const stopMsg = b?.PLATFORM_MESSAGE?.IN_GAME_LOADING_STOPPED ?? 'in_game_loading_stopped';
-          b?.platform?.sendMessage?.(stopMsg);
-        } catch { /* ignore */ }
-        try {
-          const readyMsg = b?.PLATFORM_MESSAGE?.GAME_READY ?? 'game_ready';
-          b?.platform?.sendMessage?.(readyMsg);
-        } catch { /* ignore */ }
+        const msg = b?.PLATFORM_MESSAGE?.GAME_READY ?? 'game_ready';
+        b?.platform?.sendMessage?.(msg);
       }
     } catch { /* ignore */ }
   },
@@ -158,12 +142,8 @@ export const Portal = {
       else if (IS_POKI)  pk()?.gameplayStart?.();
       else if (IS_PLAYGAMA) {
         const b = pg();
-        try { b?.game?.gameplayStart?.(); } catch { /* ignore */ }
-        try { b?.game?.gameplayStarted?.(); } catch { /* ignore */ }
-        try {
-          const msg = b?.PLATFORM_MESSAGE?.GAMEPLAY_STARTED ?? 'gameplay_started';
-          b?.platform?.sendMessage?.(msg);
-        } catch { /* ignore */ }
+        const msg = b?.PLATFORM_MESSAGE?.GAMEPLAY_STARTED ?? 'gameplay_started';
+        b?.platform?.sendMessage?.(msg);
       }
     } catch { /* ignore */ }
   },
@@ -174,12 +154,8 @@ export const Portal = {
       else if (IS_POKI)  pk()?.gameplayStop?.();
       else if (IS_PLAYGAMA) {
         const b = pg();
-        try { b?.game?.gameplayStop?.(); } catch { /* ignore */ }
-        try { b?.game?.gameplayStopped?.(); } catch { /* ignore */ }
-        try {
-          const msg = b?.PLATFORM_MESSAGE?.GAMEPLAY_STOPPED ?? 'gameplay_stopped';
-          b?.platform?.sendMessage?.(msg);
-        } catch { /* ignore */ }
+        const msg = b?.PLATFORM_MESSAGE?.GAMEPLAY_STOPPED ?? 'gameplay_stopped';
+        b?.platform?.sendMessage?.(msg);
       }
     } catch { /* ignore */ }
   },
