@@ -204,21 +204,24 @@ export const Portal = {
           b.platform.on(evt, (isPaused: unknown) => {
             if (typeof isPaused === 'boolean') handler(isPaused);
           });
+          // Fire immediately if the host already paused us before this
+          // listener attached (e.g. overlay opened during boot).
+          if (b.platform.isPaused === true) handler(true);
         } catch { /* ignore */ }
       });
     }
   },
 };
 
-// Poll for `window.bridge.platform.on` — becomes available after
-// bridge.initialize() finishes. Retries up to ~10s so the caller can
-// invoke this from BootScene before init resolves.
+// Wait for `bridge.isInitialized === true` before invoking cb with the
+// bridge. Only touches `bridge.platform` after init so we don't spam
+// the SDK's "Before using the SDK you must initialize it" warning.
 function wireOnBridgeReady(cb: (bridge: any) => void): void {
   let attempts = 0;
   const wire = () => {
     const b: any = (window as any).bridge;
-    if (b?.platform?.on) { cb(b); return; }
-    if (attempts++ < 100) setTimeout(wire, 100);
+    if (b?.isInitialized && b?.platform?.on) { cb(b); return; }
+    if (attempts++ < 200) setTimeout(wire, 100);
   };
   wire();
 }
