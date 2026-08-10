@@ -90,7 +90,10 @@ class PokiAdsService implements AdsService {
   }
 }
 
-// ---------- Playgama Bridge ----------------------------------------
+// ---------- Playgama Bridge v2 -------------------------------------
+// v2 API: showInterstitial() / showRewarded() return void. State
+// transitions arrive via advertisement.on(EVENT_NAME.*_STATE_CHANGED,
+// cb). Terminal states resolve the promise.
 class PlaygamaAdsService implements AdsService {
   private get bridge(): any { return (window as any)?.bridge; }
 
@@ -102,31 +105,52 @@ class PlaygamaAdsService implements AdsService {
   }
   async showInterstitial(): Promise<void> {
     const b = this.bridge;
-    if (!b?.advertisement?.showInterstitial) return;
+    const ad = b?.advertisement;
+    if (!ad?.showInterstitial) return;
+    const EVT = b.EVENT_NAME?.INTERSTITIAL_STATE_CHANGED ?? 'interstitial_state_changed';
+    const CLOSED = b.INTERSTITIAL_STATE?.CLOSED ?? 'closed';
+    const FAILED = b.INTERSTITIAL_STATE?.FAILED ?? 'failed';
     await new Promise<void>((resolve) => {
-      try {
-        b.advertisement.showInterstitial({
-          callbacks: { onClose: () => resolve(), onError: () => resolve() },
-        });
-      } catch { resolve(); }
-      setTimeout(resolve, 8000);
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        try { ad.off?.(EVT, onState); } catch { /* ignore */ }
+        resolve();
+      };
+      const onState = (state: string) => {
+        if (state === CLOSED || state === FAILED) finish();
+      };
+      try { ad.on?.(EVT, onState); } catch { /* ignore */ }
+      try { ad.showInterstitial(); } catch { finish(); }
+      setTimeout(finish, 30000);
     });
   }
   async showRewarded(): Promise<AdOutcome> {
     const b = this.bridge;
-    if (!b?.advertisement?.showRewarded) return 'skipped';
+    const ad = b?.advertisement;
+    if (!ad?.showRewarded) return 'skipped';
+    const EVT = b.EVENT_NAME?.REWARDED_STATE_CHANGED ?? 'rewarded_state_changed';
+    const REWARDED = b.REWARDED_STATE?.REWARDED ?? 'rewarded';
+    const CLOSED = b.REWARDED_STATE?.CLOSED ?? 'closed';
+    const FAILED = b.REWARDED_STATE?.FAILED ?? 'failed';
     return new Promise<AdOutcome>((resolve) => {
       let rewarded = false;
-      try {
-        b.advertisement.showRewarded({
-          callbacks: {
-            onRewarded: () => { rewarded = true; },
-            onClose:    () => resolve(rewarded ? 'reward' : 'skipped'),
-            onError:    () => resolve('error'),
-          },
-        });
-      } catch { resolve('error'); }
-      setTimeout(() => resolve(rewarded ? 'reward' : 'skipped'), 30000);
+      let done = false;
+      const finish = (outcome: AdOutcome) => {
+        if (done) return;
+        done = true;
+        try { ad.off?.(EVT, onState); } catch { /* ignore */ }
+        resolve(outcome);
+      };
+      const onState = (state: string) => {
+        if (state === REWARDED) rewarded = true;
+        else if (state === CLOSED) finish(rewarded ? 'reward' : 'skipped');
+        else if (state === FAILED) finish('error');
+      };
+      try { ad.on?.(EVT, onState); } catch { /* ignore */ }
+      try { ad.showRewarded(); } catch { finish('error'); }
+      setTimeout(() => finish(rewarded ? 'reward' : 'skipped'), 60000);
     });
   }
   shouldShowInterstitialForLevel(level: number): boolean {

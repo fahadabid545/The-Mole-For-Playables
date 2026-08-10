@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { Audio } from '../services/AudioService';
 import { Portal } from '../services/Portal';
+import { hydrateFromBridge } from '../services/SaveService';
 
 export class BootScene extends Phaser.Scene {
   constructor() { super('Boot'); }
@@ -14,6 +15,12 @@ export class BootScene extends Phaser.Scene {
     await Promise.race([
       Portal.init(),
       new Promise(r => setTimeout(r, 10000)),
+    ]);
+    // Once the bridge is initialized, pull the cloud save so progress
+    // follows the player across devices. Bounded so it never blocks boot.
+    await Promise.race([
+      hydrateFromBridge(),
+      new Promise(r => setTimeout(r, 3000)),
     ]);
     Audio.init();
     this.scene.start('Preload');
