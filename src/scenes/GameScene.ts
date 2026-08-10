@@ -111,6 +111,29 @@ export class GameScene extends Phaser.Scene {
 
     this.events.on('request-pause', () => this.openPause());
 
+    // Pause the game while any ad is displayed — the timer and taps
+    // freeze exactly like the pause popup, so a mid-game interstitial
+    // never eats the player's clock.
+    const onAdStart = () => {
+      if (this.levelActive && !this.paused) {
+        this.paused = true;
+        this.events.emit('hud-icons-hide');
+      }
+    };
+    const onAdEnd = () => {
+      if (this.levelActive && this.paused) {
+        this.paused = false;
+        this.timerLast = this.time.now;
+        this.events.emit('hud-icons-show');
+      }
+    };
+    EventBus.on(EVT.AD_START, onAdStart);
+    EventBus.on(EVT.AD_END, onAdEnd);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      EventBus.off(EVT.AD_START, onAdStart);
+      EventBus.off(EVT.AD_END, onAdEnd);
+    });
+
     // Small "3-2-1-Go!" countdown, then start
     this.runCountdown(() => this.startLevel());
   }

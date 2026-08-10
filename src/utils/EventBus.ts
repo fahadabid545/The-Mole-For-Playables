@@ -12,4 +12,6 @@ export const EVT = {
   EXTRA_LIFE_AWARDED: 'extra-life-awarded',
   TIMER_TICK: 'timer-tick',
   MUTE_TOGGLED: 'mute-toggled',
+  AD_START: 'ad-start',
+  AD_END:   'ad-end',
 } as const;
