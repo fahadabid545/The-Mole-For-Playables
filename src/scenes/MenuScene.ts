@@ -7,6 +7,8 @@ import { Save } from '../services/SaveService';
 import { Audio } from '../services/AudioService';
 import { TX } from '../objects/TextureFactory';
 import { AdBanner } from '../ui/AdBanner';
+import { Ads } from '../services/AdsService';
+import { EventBus, EVT } from '../utils/EventBus';
 import { I18n } from '../services/I18nService';
 import { NamePromptPopup } from '../ui/popups/NamePromptPopup';
 import { OutOfLivesPopup } from '../ui/popups/OutOfLivesPopup';
@@ -83,7 +85,14 @@ export class MenuScene extends Phaser.Scene {
       return;
     }
     new OutOfLivesPopup(this, {
-      onWatchAdForLife: () => { /* no-op: ads not shown from menu */ },
+      onWatchAdForLife: async () => {
+        const r = await Ads.showRewarded();
+        if (r === 'reward') {
+          Save.addLife(1);
+          EventBus.emit(EVT.LIFE_CHANGED);
+          this.scene.start('Game', { level });
+        }
+      },
       onChallenges: () => this.scene.start('Challenges'),
       onLivesRefilled: () => this.scene.start('Game', { level }),
       onMenu: () => { /* stay on menu */ },
