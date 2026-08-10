@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { Audio } from '../services/AudioService';
 import { Portal } from '../services/Portal';
 import { hydrateFromBridge } from '../services/SaveService';
+import { EventBus, EVT } from '../utils/EventBus';
 
 export class BootScene extends Phaser.Scene {
   constructor() { super('Boot'); }
@@ -11,6 +12,11 @@ export class BootScene extends Phaser.Scene {
     // mute-listener so CrazyGames' player-level mute stays in sync with
     // the game's own audio state.
     Portal.onPortalMuteChange((muted) => Audio.setMuted(muted));
+    // System-overlay pause from the host (Playgama). GameScene listens
+    // for these events and freezes the level timer / input.
+    Portal.onPortalPauseChange((paused) => {
+      EventBus.emit(paused ? EVT.PLATFORM_PAUSE : EVT.PLATFORM_RESUME);
+    });
     // Bounded so a hung SDK init can never stall the boot sequence.
     await Promise.race([
       Portal.init(),
