@@ -39,6 +39,11 @@ const defaults = (): SaveData => ({
 
 let cache: SaveData | null = null;
 
+function bridgeStorage(): any {
+  const b = (typeof window !== 'undefined') ? (window as any).bridge : undefined;
+  return b?.storage;
+}
+
 function read(): SaveData {
   if (cache) return cache;
   try {
@@ -53,6 +58,28 @@ function read(): SaveData {
 function write(): void {
   if (!cache) return;
   try { localStorage.setItem(KEY, JSON.stringify(cache)); } catch { /* ignore */ }
+  // Mirror to Playgama Bridge cloud storage (also intercepted by QA
+  // tool). Fire-and-forget; localStorage remains the sync source of
+  // truth so game code stays synchronous.
+  try { bridgeStorage()?.set?.(KEY, cache); } catch { /* ignore */ }
+}
+
+// Called once from BootScene after bridge.initialize() resolves. Reads
+// the cloud snapshot and merges it into local cache + localStorage so
+// progress follows the player across devices. Newer local wins on the
+// keys that already changed this session.
+export async function hydrateFromBridge(): Promise<void> {
+  const storage = bridgeStorage();
+  if (!storage?.get) return;
+  try {
+    const remote = await storage.get(KEY);
+    if (!remote || typeof remote !== 'object') return;
+    const local = read();
+    // Prefer local values that already exist so an in-session change
+    // isn't overwritten by an older cloud snapshot.
+    cache = { ...defaults(), ...(remote as SaveData), ...local };
+    try { localStorage.setItem(KEY, JSON.stringify(cache)); } catch { /* ignore */ }
+  } catch { /* ignore */ }
 }
 
 export const Save = {
