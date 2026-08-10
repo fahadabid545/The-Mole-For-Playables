@@ -129,9 +129,15 @@ export class GameScene extends Phaser.Scene {
     };
     EventBus.on(EVT.AD_START, onAdStart);
     EventBus.on(EVT.AD_END, onAdEnd);
+    // Host opened a system overlay (Playgama PAUSE_STATE_CHANGED); use
+    // the same freeze/thaw path as ads so the timer + taps stop.
+    EventBus.on(EVT.PLATFORM_PAUSE, onAdStart);
+    EventBus.on(EVT.PLATFORM_RESUME, onAdEnd);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       EventBus.off(EVT.AD_START, onAdStart);
       EventBus.off(EVT.AD_END, onAdEnd);
+      EventBus.off(EVT.PLATFORM_PAUSE, onAdStart);
+      EventBus.off(EVT.PLATFORM_RESUME, onAdEnd);
     });
 
     // Small "3-2-1-Go!" countdown, then start

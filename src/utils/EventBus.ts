@@ -14,4 +14,6 @@ export const EVT = {
   MUTE_TOGGLED: 'mute-toggled',
   AD_START: 'ad-start',
   AD_END:   'ad-end',
+  PLATFORM_PAUSE:  'platform-pause',
+  PLATFORM_RESUME: 'platform-resume',
 } as const;

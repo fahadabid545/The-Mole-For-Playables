@@ -182,22 +182,43 @@ export const Portal = {
       // .platform is a module accessor that becomes usable after
       // Portal.init() awaits bridge.initialize(). Poll briefly since
       // this can be called from BootScene before init resolves.
-      let attempts = 0;
-      const wire = () => {
-        const b: any = (window as any).bridge;
-        const plat = b?.platform;
+      wireOnBridgeReady((b) => {
         const evt = b?.EVENT_NAME?.AUDIO_STATE_CHANGED ?? 'audio_state_changed';
-        if (plat?.on) {
-          try {
-            plat.on(evt, (isEnabled: unknown) => {
-              if (typeof isEnabled === 'boolean') handler(!isEnabled);
-            });
-          } catch { /* ignore */ }
-          return;
-        }
-        if (attempts++ < 100) setTimeout(wire, 100);
-      };
-      wire();
+        try {
+          b.platform.on(evt, (isEnabled: unknown) => {
+            if (typeof isEnabled === 'boolean') handler(!isEnabled);
+          });
+        } catch { /* ignore */ }
+      });
+    }
+  },
+
+  // Called from BootScene. Fires `handler(true)` when the platform
+  // opens a system overlay / pauses the game (Playgama's
+  // PAUSE_STATE_CHANGED), and `handler(false)` when it resumes.
+  onPortalPauseChange(handler: (paused: boolean) => void): void {
+    if (IS_PLAYGAMA) {
+      wireOnBridgeReady((b) => {
+        const evt = b?.EVENT_NAME?.PAUSE_STATE_CHANGED ?? 'pause_state_changed';
+        try {
+          b.platform.on(evt, (isPaused: unknown) => {
+            if (typeof isPaused === 'boolean') handler(isPaused);
+          });
+        } catch { /* ignore */ }
+      });
     }
   },
 };
+
+// Poll for `window.bridge.platform.on` — becomes available after
+// bridge.initialize() finishes. Retries up to ~10s so the caller can
+// invoke this from BootScene before init resolves.
+function wireOnBridgeReady(cb: (bridge: any) => void): void {
+  let attempts = 0;
+  const wire = () => {
+    const b: any = (window as any).bridge;
+    if (b?.platform?.on) { cb(b); return; }
+    if (attempts++ < 100) setTimeout(wire, 100);
+  };
+  wire();
+}
