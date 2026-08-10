@@ -8,8 +8,9 @@ import { I18n } from '../services/I18nService';
 import { TS } from '../config/TextStyles';
 import { TX } from '../objects/TextureFactory';
 import { AdBanner } from '../ui/AdBanner';
-import { IS_PLAYABLES } from '../config/BuildFlags';
 import { Popup } from '../ui/popups/Popup';
+import { Ads } from '../services/AdsService';
+import { EventBus, EVT } from '../utils/EventBus';
 
 // Settings hub. Volume slider, mute toggle, language chooser (store
 // build only), and a reset-progress button behind a confirmation.
@@ -35,6 +36,28 @@ export class SettingsScene extends Phaser.Scene {
     // Language selector removed — game ships single-language for every
     // portal build. Kept the local `y` cursor untouched so the Reset
     // Progress button below stays where it was.
+
+    // Watch a rewarded ad for +1 life (also serves as a always-reachable
+    // trigger the QA tool can invoke).
+    y = 480;
+    new Button(this, GAME_WIDTH / 2, y, {
+      label: '+1 Life (Watch Ad)',
+      onClick: async () => {
+        const r = await Ads.showRewarded();
+        if (r === 'reward') {
+          Save.addLife(1);
+          EventBus.emit(EVT.LIFE_CHANGED);
+        }
+      },
+      scale: 0.9, variant: 'ad',
+    });
+    // Trigger an interstitial ad for QA verification.
+    y = 600;
+    new Button(this, GAME_WIDTH / 2, y, {
+      label: 'Show Ad',
+      onClick: () => { void Ads.showInterstitial(); },
+      scale: 0.85, variant: 'ad',
+    });
 
     // Reset progress
     y = GAME_HEIGHT - 490;
