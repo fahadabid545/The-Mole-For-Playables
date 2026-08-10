@@ -175,6 +175,29 @@ export const Portal = {
           if (detail && typeof detail.isMuted === 'boolean') handler(detail.isMuted);
         });
       } catch { /* ignore */ }
+    } else if (IS_PLAYGAMA) {
+      // Playgama Bridge forwards the host's audio state via
+      // platform.on(AUDIO_STATE_CHANGED, isEnabled: boolean). We only
+      // wire the listener once the bridge finishes initialising —
+      // .platform is a module accessor that becomes usable after
+      // Portal.init() awaits bridge.initialize(). Poll briefly since
+      // this can be called from BootScene before init resolves.
+      let attempts = 0;
+      const wire = () => {
+        const b: any = (window as any).bridge;
+        const plat = b?.platform;
+        const evt = b?.EVENT_NAME?.AUDIO_STATE_CHANGED ?? 'audio_state_changed';
+        if (plat?.on) {
+          try {
+            plat.on(evt, (isEnabled: unknown) => {
+              if (typeof isEnabled === 'boolean') handler(!isEnabled);
+            });
+          } catch { /* ignore */ }
+          return;
+        }
+        if (attempts++ < 100) setTimeout(wire, 100);
+      };
+      wire();
     }
   },
 };
