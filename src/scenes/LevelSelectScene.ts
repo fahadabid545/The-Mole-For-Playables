@@ -49,7 +49,7 @@ export class LevelSelectScene extends Phaser.Scene {
       const c = i % cols, r = Math.floor(i / cols);
       const x = startX + c * (size + gap);
       const y = 70 + r * rowH;
-      const unlocked = level <= save.highestUnlockedLevel;
+      const unlocked = level <= save.categories.easy.highestUnlockedLevel;
 
       const tileKey = unlocked ? TX.tileWood : TX.tileWoodLocked;
       const scale = size / 130;
@@ -59,7 +59,7 @@ export class LevelSelectScene extends Phaser.Scene {
         : this.add.image(x, y, TX.iconLock).setOrigin(0.5).setScale(0.85);
       this.gridContainer.add([tile, numOrLock]);
 
-      const stars = save.perLevelStars[level] ?? 0;
+      const stars = save.categories.easy.perLevelStars[level] ?? 0;
       for (let s = 0; s < 3; s++) {
         const st = this.add.image(x - 24 + s * 24, y + 38, TX.star).setOrigin(0.5).setScale(0.28);
         if (s >= stars) st.setAlpha(0.3);

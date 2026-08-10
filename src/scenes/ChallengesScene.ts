@@ -56,9 +56,9 @@ export class ChallengesScene extends Phaser.Scene {
       this.add.text(h1.x + h1.displayWidth + 6, cy + 60, `+${ch.rewardLives}`, TS.reward()).setOrigin(0, 0.5);
     }
 
-    if (kind === 'daily' && Save.get().dailyStreak > 0) {
+    if (kind === 'daily' && Save.get().challengeStreak > 0) {
       this.add.image(cx + w / 2 - 90, cy - h / 2 + 40, TX.iconFlame).setOrigin(0.5).setScale(0.9);
-      this.add.text(cx + w / 2 - 50, cy - h / 2 + 40, `${Save.get().dailyStreak}`,
+      this.add.text(cx + w / 2 - 50, cy - h / 2 + 40, `${Save.get().challengeStreak}`,
         { ...TS.h2('#ff6f00'), fontSize: '28px' }).setOrigin(0, 0.5);
     }
 

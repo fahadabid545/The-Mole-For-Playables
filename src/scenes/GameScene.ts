@@ -9,7 +9,8 @@ import { Raccoon, RaccoonKind } from '../objects/Raccoon';
 import { Hammer } from '../objects/Hammer';
 import { spawnScorePopup } from '../objects/ScorePopup';
 import { EventBus, EVT } from '../utils/EventBus';
-import { Save } from '../services/SaveService';
+import { Save, EnemyStatKey } from '../services/SaveService';
+import type { CategoryId } from '../config/Theme';
 import { Audio } from '../services/AudioService';
 import { Ads } from '../services/AdsService';
 import { I18n } from '../services/I18nService';
@@ -44,11 +45,13 @@ export class GameScene extends Phaser.Scene {
   private nextSpawnAt = 0;
 
   private level = 1;
+  private category: CategoryId = 'easy';
   private challenge: Challenge | null = null;
+  private runStartMs = 0;
 
   constructor() { super('Game'); }
 
-  create(data: { level: number; challenge?: Challenge }): void {
+  create(data: { level: number; category?: CategoryId; challenge?: Challenge }): void {
     // Phaser recycles the scene instance, so reset per-run state here.
     this.holes = [];
     this.raccoons = [];
@@ -56,7 +59,10 @@ export class GameScene extends Phaser.Scene {
     this.time.removeAllEvents();
 
     this.challenge = data.challenge ?? null;
+    this.category = data.category ?? 'easy';
     this.level = Math.max(1, Math.min(FLAGS.totalLevels, data.level ?? 1));
+    this.runStartMs = Date.now();
+    if (!this.challenge) Save.markPlayed(this.category, this.level);
     this.params = this.challenge ? this.challenge.params : getLevelParams(this.level);
     this.hits = 0;
     this.score = 0;
@@ -240,6 +246,7 @@ export class GameScene extends Phaser.Scene {
 
   private onRaccoonHit(rac: Raccoon, kind: RaccoonKind, points: number): void {
     if (!this.levelActive) return;
+    Save.recordHit(kindToStatKey(kind));
     if (kind === 'bomb') {
       spawnScorePopup(this, rac.x, rac.y - 60, '-3s', '#ff5252');
       Audio.play('lifeLost');
@@ -250,6 +257,7 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     this.combo++;
+    Save.recordCombo(this.combo);
     const shakeIntensity = kind === 'boss' ? 0.010 : kind === 'golden' ? 0.006 : 0.004;
     this.cameras.main.shake(90, shakeIntensity);
     const comboMul = this.combo >= 8 ? 3 : this.combo >= 4 ? 2 : 1;
@@ -272,6 +280,8 @@ export class GameScene extends Phaser.Scene {
     if (!this.levelActive) return;
     this.combo = 0;
     this.misses++;
+    Save.recordEscape();
+    Save.recordMiss();
     this.score = Math.max(0, this.score - 5);
     spawnScorePopup(this, rac.x, rac.y - 20, '-5', '#ffab91');
     EventBus.emit(EVT.SCORE_CHANGED, this.score, this.hits, this.params.quota);
@@ -319,8 +329,10 @@ export class GameScene extends Phaser.Scene {
         });
         return;
       }
-      Save.recordStars(this.level, stars);
-      Save.unlockUpTo(this.level + 1);
+      Save.recordStars(this.category, this.level, stars);
+      Save.unlockUpTo(this.category, this.level + 1);
+      Save.recordLevelClear(!!this.params.isBoss);
+      Save.recordPlayMs(Date.now() - this.runStartMs);
       Save.setBestScore(this.score);
       checkProgress('levelClear', this.level);
       if (this.misses === 0) checkProgress('perfect', 1);
@@ -357,11 +369,11 @@ export class GameScene extends Phaser.Scene {
         onWatchAdToUnlock: async () => {
           const r = await Ads.showRewarded();
           if (r === 'reward') {
-            Save.unlockUpTo(this.level + 1);
+            Save.unlockUpTo(this.category, this.level + 1);
             Save.addLife(1);
             EventBus.emit(EVT.LIFE_CHANGED);
             this.scene.stop('HUD');
-            this.scene.start('Game', { level: this.level + 1 });
+            this.scene.start('Game', { level: this.level + 1, category: this.category });
           } else this.goMenu();
         },
         onChallenges: () => { this.scene.stop('HUD'); this.scene.start('Challenges'); },
@@ -394,7 +406,7 @@ export class GameScene extends Phaser.Scene {
 
   private goNext(next: number): void {
     this.scene.stop('HUD');
-    this.scene.start('Game', { level: next });
+    this.scene.start('Game', { level: next, category: this.category });
   }
   private restart(): void {
     if (Save.get().lives <= 0) {
@@ -409,7 +421,7 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     this.scene.stop('HUD');
-    this.scene.start('Game', { level: this.level });
+    this.scene.start('Game', { level: this.level, category: this.category });
   }
   private goMenu(): void {
     this.scene.stop('HUD');
@@ -433,5 +445,15 @@ export class GameScene extends Phaser.Scene {
     if (timeFrac > 0.5) return 3;
     if (timeFrac > 0.2) return 2;
     return 1;
+  }
+}
+
+function kindToStatKey(k: RaccoonKind): EnemyStatKey {
+  switch (k) {
+    case 'boss': return 'boss';
+    case 'golden': return 'golden';
+    case 'frozen': return 'frozen';
+    case 'bomb': return 'bomb';
+    default: return 'raccoon';
   }
 }

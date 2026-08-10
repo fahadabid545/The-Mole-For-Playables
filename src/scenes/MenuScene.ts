@@ -32,7 +32,8 @@ export class MenuScene extends Phaser.Scene {
     const mascot = this.add.image(GAME_WIDTH / 2, 560, TX.raccoon).setOrigin(0.5).setScale(1.4);
     this.tweens.add({ targets: mascot, angle: -6, yoyo: true, repeat: -1, duration: 900, ease: 'Sine.InOut' });
 
-    const highest = Save.get().highestUnlockedLevel;
+    Save.tickDailyPlayStreak();
+    const highest = Save.get().categories.easy.highestUnlockedLevel;
     const playLabel = highest > 1 ? I18n.t('continue') : I18n.t('play');
 
     new Button(this, GAME_WIDTH / 2, 750, {
