@@ -18,8 +18,6 @@ export interface SaveData {
   lastDailyKey?: string;
   lastWeeklyKey?: string;
   dailyStreak: number;
-  bonusScore: number;
-  powerups: { freeze: number; double: number; auto: number };
   achievements: string[];
 }
 
@@ -32,8 +30,6 @@ const defaults = (): SaveData => ({
   bestScore: 0,
   welcomed: false,
   dailyStreak: 0,
-  bonusScore: 0,
-  powerups: { freeze: 1, double: 1, auto: 0 },
   achievements: [],
 });
 
@@ -58,17 +54,14 @@ function read(): SaveData {
 function write(): void {
   if (!cache) return;
   try { localStorage.setItem(KEY, JSON.stringify(cache)); } catch { /* ignore */ }
-  // Mirror to Playgama Bridge cloud storage (also intercepted by QA
-  // tool). Fire-and-forget; localStorage remains the sync source of
-  // truth so game code stays synchronous.
+  // Fire-and-forget mirror to portal cloud storage; localStorage stays
+  // the sync source of truth so game code stays synchronous.
   try { bridgeStorage()?.set?.(KEY, cache); } catch { /* ignore */ }
 }
 
-// Called once from BootScene after bridge.initialize() resolves. Cloud
-// is the source of truth when it has data, so on a fresh reload the
-// player's progress is restored even if localStorage is empty. Writes
-// are always mirrored to the cloud, so it stays up-to-date. Runs before
-// any Save.get() so overwriting the cache here is safe.
+// Cloud wins when it has data so a fresh device restores prior
+// progress. Must run before any Save.get() so replacing the cache is
+// safe.
 export async function hydrateFromBridge(): Promise<void> {
   const storage = bridgeStorage();
   if (!storage?.get) return;
@@ -97,8 +90,8 @@ export const Save = {
   addLife(delta = 1): void { this.setLives(read().lives + delta); },
   loseLife(): void { this.setLives(read().lives - 1); },
 
-  // Auto-refills lives to the starting amount once the regen timer has
-  // elapsed, but only when `canRegen` is true (all challenges done).
+  // Refill lives to the starting amount once the regen timer elapses,
+  // but only when the caller says regen is allowed.
   tryRegenLives(canRegen: boolean): boolean {
     const d = read();
     if (d.lives > 0 || !d.livesRegenAt || !canRegen) return false;
@@ -134,7 +127,6 @@ export const Save = {
     if (n > d.bestScore) { d.bestScore = n; write(); }
   },
   setWelcomed(): void { const d = read(); d.welcomed = true; write(); },
-  addBonusScore(n: number): void { const d = read(); d.bonusScore += n; write(); },
   markDailyDone(key: string): void {
     const d = read();
     const yest = new Date(); yest.setDate(yest.getDate() - 1);
@@ -143,17 +135,6 @@ export const Save = {
     d.lastDailyKey = key; write();
   },
   markWeeklyDone(key: string): void { const d = read(); d.lastWeeklyKey = key; write(); },
-  addPowerup(kind: 'freeze' | 'double' | 'auto', n = 1): void {
-    const d = read();
-    d.powerups = d.powerups || { freeze: 0, double: 0, auto: 0 };
-    d.powerups[kind] = (d.powerups[kind] || 0) + n; write();
-  },
-  usePowerup(kind: 'freeze' | 'double' | 'auto'): boolean {
-    const d = read();
-    d.powerups = d.powerups || { freeze: 0, double: 0, auto: 0 };
-    if ((d.powerups[kind] || 0) <= 0) return false;
-    d.powerups[kind]--; write(); return true;
-  },
   unlockAchievement(id: string): boolean {
     const d = read();
     d.achievements = d.achievements || [];

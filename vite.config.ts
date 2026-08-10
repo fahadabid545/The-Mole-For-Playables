@@ -76,7 +76,6 @@ const outDirs: Record<string, string> = {
   crazygames: 'dist-crazygames',
   poki:       'dist-poki',
   playgama:   'dist-playgama',
-  store:      'dist-store',
 };
 
 export default defineConfig({

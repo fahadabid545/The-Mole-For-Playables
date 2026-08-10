@@ -5,9 +5,8 @@ import { GAME_WIDTH, GAME_HEIGHT } from '../../config/GameConfig';
 import { I18n } from '../../services/I18nService';
 import { TS } from '../../config/TextStyles';
 
-// Real name-entry popup. Uses a positioned <input> DOM element overlaid
-// on top of the canvas — works inside single-HTML Playables sandboxes
-// and gives the native mobile keyboard on touch devices.
+// Uses a DOM <input> overlaid on the canvas so mobile browsers surface
+// the native keyboard.
 export class NamePromptPopup extends Popup {
   private inputEl?: HTMLInputElement;
 
@@ -23,11 +22,9 @@ export class NamePromptPopup extends Popup {
 
     this.addContent(title, hint);
 
-    // DOM input overlaid on top of the game CANVAS (not the viewport).
-    // The canvas is letterboxed when the browser is wider than 9:16, so
-    // positioning by viewport % floats the input outside the canvas on
-    // the left. Instead, we measure the canvas rect every frame while
-    // the popup is open and pin the input to canvas-center.
+    // Position the input against the canvas rect (not viewport) — the
+    // canvas is letterboxed on wide screens and a viewport-relative
+    // input floats off-canvas.
     const input = document.createElement('input');
     input.type = 'text';
     input.maxLength = 16;
@@ -56,10 +53,6 @@ export class NamePromptPopup extends Popup {
       const canvas = document.querySelector('canvas');
       if (!canvas) return;
       const r = canvas.getBoundingClientRect();
-      // Center the input horizontally on the canvas, and place it
-      // vertically at the same fraction of the canvas as the popup's
-      // input-line (roughly 48% down the game area = around y ~615 of
-      // 1280 tall).
       const cx = r.left + r.width / 2;
       const cy = r.top + r.height * 0.48;
       const iw = 280, ih = 48;
@@ -68,9 +61,7 @@ export class NamePromptPopup extends Popup {
     };
     reposition();
     window.addEventListener('resize', reposition);
-    // Keep track so we can remove the listener on close
     (input as any)._reposition = reposition;
-    // Focus after a tick so mobile keyboards trigger reliably
     setTimeout(() => input.focus(), 60);
 
     const finish = () => {
@@ -86,15 +77,12 @@ export class NamePromptPopup extends Popup {
     });
     this.addContent(ok);
 
-    // Clean up the DOM node if the scene shuts down before submit
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.removeInput());
   }
 
-  // Override the base close() so any caller — including finish(), the
-  // scene shutting down, or a future refactor that reaches for
-  // popup.close() directly — always tears the DOM input down first.
-  // Otherwise the fixed-position <input> could be stranded on top of
-  // the next scene at z-index 99999.
+  // The DOM input outlives Phaser objects, so tear it down before any
+  // close path — including scene shutdown — otherwise it strands on
+  // top of the next scene at z-index 99999.
   close(onComplete?: () => void): void {
     this.removeInput();
     super.close(onComplete);

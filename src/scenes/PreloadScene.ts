@@ -8,12 +8,7 @@ import { Portal } from '../services/Portal';
 export class PreloadScene extends Phaser.Scene {
   constructor() { super('Preload'); }
 
-  preload(): void {
-    // Nothing to preload — placeholder art is generated in create().
-    // If real assets are dropped into public/assets, load them here:
-    //   this.load.image(TX.raccoon, 'assets/images/raccoon/raccoon_idle.png');
-    //   ...
-  }
+  preload(): void {}
 
   create(): void {
     I18n.init(Save.get().lang);
@@ -26,9 +21,8 @@ export class PreloadScene extends Phaser.Scene {
 
     buildAllTextures(this);
 
-    // Signal readiness to the portal as soon as textures are built so
-    // Playgama's 30-second init watchdog is satisfied even if the intro
-    // fade is slow. Ready is idempotent on the portal side.
+    // Signal ready as soon as textures build so portal init watchdogs
+    // (Playgama fires at 30s) fire while the fade still runs.
     Portal.ready();
 
     this.tweens.add({

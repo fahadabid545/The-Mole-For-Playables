@@ -23,7 +23,6 @@ export class MenuScene extends Phaser.Scene {
     new ParallaxJungle(this);
     spawnLeafParticles(this);
 
-    // Title: chunky bevelled logo dropping in with rope-swing feel
     const title = this.add.text(GAME_WIDTH / 2, 260, 'JUNGLE\nMOLE', TS.hero()).setOrigin(0.5);
     title.setY(-100).setAngle(-8);
     this.tweens.add({ targets: title, y: 260, angle: 0, duration: 700, ease: 'Bounce.Out' });
@@ -36,24 +35,17 @@ export class MenuScene extends Phaser.Scene {
     const highest = Save.get().highestUnlockedLevel;
     const playLabel = highest > 1 ? I18n.t('continue') : I18n.t('play');
 
-    // Main CTA (full-size). Lifted a touch so the whole button column
-    // fits comfortably above the bottom foreground foliage.
     new Button(this, GAME_WIDTH / 2, 750, {
       label: playLabel,
       onClick: () => this.tryStartLevel(highest),
     });
 
-    // Secondary options — same full size as the main CTA. Leaderboard
-    // was removed (Playables single-HTML can't reach a shared backend,
-    // so a truly universal leaderboard isn't possible here). Challenges
-    // takes its slot as the highlighted rewards path.
     const gap = 118;
     const secY = 870;
     new Button(this, GAME_WIDTH / 2, secY,           { label: I18n.t('levels'),     onClick: () => this.scene.start('LevelSelect') });
     new Button(this, GAME_WIDTH / 2, secY + gap,     { label: I18n.t('challenges'), onClick: () => this.scene.start('Challenges'), variant: 'ad' });
     new Button(this, GAME_WIDTH / 2, secY + gap * 2, { label: 'Achievements',       onClick: () => this.scene.start('Achievements') });
 
-    // Top-right sound toggle + gear icon — offset below browser chrome
     const topPad = 110;
     const sound = this.add.image(GAME_WIDTH - 70, topPad, Audio.isMuted() ? TX.soundOff : TX.soundOn)
       .setOrigin(0.5).setInteractive({ useHandCursor: true });
@@ -66,13 +58,8 @@ export class MenuScene extends Phaser.Scene {
     gear.on('pointerdown', () => this.scene.start('Settings'));
     this.tweens.add({ targets: gear, angle: 360, duration: 12000, repeat: -1 });
 
-    // Language chip removed — the game ships single-language for every
-    // portal build now. (Was previously gated on !IS_PLAYABLES which
-    // accidentally exposed it on CrazyGames/Poki/Playgama too.)
-
     new AdBanner(this).show();
 
-    // First-run onboarding — no language picker, jump straight to name.
     if (!Save.get().welcomed) {
       new NamePromptPopup(this, '', (n) => { Save.setPlayerName(n); Save.setWelcomed(); });
     }
@@ -95,7 +82,7 @@ export class MenuScene extends Phaser.Scene {
       },
       onChallenges: () => this.scene.start('Challenges'),
       onLivesRefilled: () => this.scene.start('Game', { level }),
-      onMenu: () => { /* stay on menu */ },
+      onMenu: () => {},
     });
   }
 }

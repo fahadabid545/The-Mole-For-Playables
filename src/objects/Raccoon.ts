@@ -7,7 +7,7 @@ export type RaccoonKind = 'normal' | 'golden' | 'bomb' | 'frozen' | 'boss';
 export interface RaccoonHitResult {
   kind: RaccoonKind;
   points: number;
-  finished: boolean;    // whether this hit finished the raccoon off
+  finished: boolean;
 }
 
 const HP_FOR: Record<RaccoonKind, number> = {
@@ -109,7 +109,6 @@ export class Raccoon extends Phaser.GameObjects.Container {
 
     this.hp--;
     Audio.play('hit');
-    // Flash tint on partial hit; last hit does a squash + hide
     if (this.hp > 0) {
       this.sprite.setTint(0xffffff);
       this.scene.tweens.add({ targets: this.sprite, scaleX: 1.15, scaleY: 0.9, duration: 60, yoyo: true,
@@ -119,7 +118,6 @@ export class Raccoon extends Phaser.GameObjects.Container {
       return;
     }
 
-    // Final hit
     this.popState = 'hit';
     this.clearTimers();
     const pts = this.kind === 'boss' ? 100 : this.kind === 'golden' ? 3 : this.kind === 'frozen' ? 2 : 1;

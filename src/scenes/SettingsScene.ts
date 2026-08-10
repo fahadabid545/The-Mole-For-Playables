@@ -12,8 +12,6 @@ import { Popup } from '../ui/popups/Popup';
 import { Ads } from '../services/AdsService';
 import { EventBus, EVT } from '../utils/EventBus';
 
-// Settings hub. Volume slider, mute toggle, language chooser (store
-// build only), and a reset-progress button behind a confirmation.
 export class SettingsScene extends Phaser.Scene {
   constructor() { super('Settings'); }
 
@@ -23,7 +21,6 @@ export class SettingsScene extends Phaser.Scene {
     this.add.image(GAME_WIDTH / 2, 130, TX.iconGear).setOrigin(0.5).setScale(0.9);
     this.add.text(GAME_WIDTH / 2, 220, 'Settings', TS.title('#fff8e1')).setOrigin(0.5);
 
-    // Sound toggle
     let y = 340;
     this.add.text(80, y, 'Sound', TS.h2('#fff8e1')).setOrigin(0, 0.5);
     const soundIcon = this.add.image(GAME_WIDTH - 100, y, Audio.isMuted() ? TX.soundOff : TX.soundOn)
@@ -33,12 +30,6 @@ export class SettingsScene extends Phaser.Scene {
       soundIcon.setTexture(m ? TX.soundOff : TX.soundOn);
     });
 
-    // Language selector removed — game ships single-language for every
-    // portal build. Kept the local `y` cursor untouched so the Reset
-    // Progress button below stays where it was.
-
-    // Watch a rewarded ad for +1 life (also serves as a always-reachable
-    // trigger the QA tool can invoke).
     y = 480;
     new Button(this, GAME_WIDTH / 2, y, {
       label: '+1 Life (Watch Ad)',
@@ -51,7 +42,6 @@ export class SettingsScene extends Phaser.Scene {
       },
       scale: 0.9, variant: 'ad',
     });
-    // Trigger an interstitial ad for QA verification.
     y = 600;
     new Button(this, GAME_WIDTH / 2, y, {
       label: 'Show Ad',
@@ -59,7 +49,6 @@ export class SettingsScene extends Phaser.Scene {
       scale: 0.85, variant: 'ad',
     });
 
-    // Reset progress
     y = GAME_HEIGHT - 490;
     new Button(this, GAME_WIDTH / 2, y, {
       label: 'Reset Progress',
@@ -67,7 +56,6 @@ export class SettingsScene extends Phaser.Scene {
       scale: 0.9, variant: 'ad',
     });
 
-    // Credits
     this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 370,
       'Jungle Mole v0.2\nBuilt with Phaser 3',
       { ...TS.body('#fff8e1'), align: 'center', fontSize: '22px' }).setOrigin(0.5);
@@ -81,8 +69,6 @@ export class SettingsScene extends Phaser.Scene {
   }
 
   private confirmReset(): void {
-    // Use the shared wooden signboard Popup so the confirm dialog matches
-    // the rest of the game (was previously a plain red-bordered box).
     const popup = new Popup(this);
     const title = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 140,
       'Reset ALL progress?',

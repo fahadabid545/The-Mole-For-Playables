@@ -8,16 +8,15 @@ export interface PopupOpts {
   onCloseX?: () => void;
 }
 
-// Panel + close-X live inside `panelGroup` so they scale together as
-// one unit — the close icon stays glued to the panel's top-right
-// corner during entrance/exit animations and at every resolution.
+// Panel + close-X sit inside `panelGroup` so they animate together and
+// the close icon stays glued to the panel's top-right corner.
 export class Popup extends Phaser.GameObjects.Container {
   protected overlay: Phaser.GameObjects.Rectangle;
   protected panelGroup: Phaser.GameObjects.Container;
   protected panel: Phaser.GameObjects.Image;
   protected closeIcon?: Phaser.GameObjects.Image;
-  // Tracks children already shifted from absolute to panel-local coords
-  // so a double addContent() call can't push them off-screen.
+  // Guards addContent() against double-shifting a child that already
+  // moved from absolute to panel-local coords.
   private shifted = new WeakSet<Phaser.GameObjects.GameObject>();
 
   constructor(scene: Phaser.Scene, opts: PopupOpts = {}) {
@@ -34,7 +33,6 @@ export class Popup extends Phaser.GameObjects.Container {
     this.setDepth(20000);
     scene.add.existing(this);
 
-    // Entrance: swing down from above like a hanging sign, then settle
     const restY = this.panelGroup.y;
     this.panelGroup.setY(restY - 260);
     this.panelGroup.setScale(0.85);
@@ -60,13 +58,9 @@ export class Popup extends Phaser.GameObjects.Container {
     }
   }
 
-  // Popup content is added into the panelGroup with coordinates
-  // RELATIVE TO PANEL CENTER (not scene). Callers that use absolute
-  // coordinates for backward compat can call addContentAbsolute().
+  // Accepts children positioned in absolute scene coords and re-parents
+  // them into the panelGroup by subtracting the panel origin once.
   addContent(...children: Phaser.GameObjects.GameObject[]): void {
-    // Convert absolute scene coords to panel-local coords for existing
-    // callers. Guarded so passing the same object twice (or re-parenting
-    // an already-shifted child) can't double-subtract the offset.
     for (const c of children) {
       if (this.shifted.has(c)) continue;
       const go = c as unknown as Phaser.GameObjects.Components.Transform;

@@ -4,9 +4,8 @@ import { EventBus, EVT } from '../utils/EventBus';
 
 export type AdOutcome = 'reward' | 'skipped' | 'error';
 
-// Wrap an ad-showing async call: mute audio + emit AD_START before,
-// restore audio + emit AD_END after. GameScene listens for AD_START /
-// AD_END to pause / resume gameplay so the game freezes during an ad.
+// Mute audio + broadcast AD_START/END around the platform ad call so
+// GameScene can pause the timer and taps while an ad is on screen.
 async function withAdLifecycle<T>(run: () => Promise<T>): Promise<T> {
   const prevMuted = Audio.isMuted();
   try {
@@ -27,7 +26,7 @@ export interface AdsService {
   shouldShowInterstitialForLevel(level: number): boolean;
 }
 
-// ---------- YouTube Playables — no ads path -------------------------
+// YouTube Playables ships without ads.
 class PlayablesAdsService implements AdsService {
   showBanner(): void {}
   hideBanner(): void {}
@@ -36,11 +35,11 @@ class PlayablesAdsService implements AdsService {
   shouldShowInterstitialForLevel(_: number): boolean { return false; }
 }
 
-// ---------- CrazyGames SDK v3 --------------------------------------
 class CrazyGamesAdsService implements AdsService {
   private get sdk(): any { return (window as any)?.CrazyGames?.SDK; }
 
-  showBanner(): void { /* CrazyGames wraps ads outside the frame; no in-game banner API */ }
+  // CrazyGames wraps banners outside the game frame; nothing to wire here.
+  showBanner(): void {}
   hideBanner(): void {}
 
   async showInterstitial(): Promise<void> {
@@ -55,7 +54,7 @@ class CrazyGamesAdsService implements AdsService {
           adError:    done,
         });
       } catch { done(); }
-      setTimeout(done, 8000); // safety timeout
+      setTimeout(done, 8000);
     });
   }
 
@@ -175,20 +174,8 @@ class PlaygamaAdsService implements AdsService {
   }
 }
 
-// ---------- Store (AdMob placeholder) ------------------------------
-class AdMobAdsService implements AdsService {
-  showBanner(): void {}
-  hideBanner(): void {}
-  async showInterstitial(): Promise<void> { return; }
-  async showRewarded(): Promise<AdOutcome> { return 'reward'; }
-  shouldShowInterstitialForLevel(level: number): boolean {
-    return FLAGS.showAds && level > 0 && level % FLAGS.interstitialEveryNLevels === 0;
-  }
-}
-
 export const Ads: AdsService =
   IS_CRAZYGAMES ? new CrazyGamesAdsService() :
   IS_POKI       ? new PokiAdsService() :
   IS_PLAYGAMA   ? new PlaygamaAdsService() :
-  IS_PLAYABLES  ? new PlayablesAdsService() :
-                  new AdMobAdsService();
+                  new PlayablesAdsService();

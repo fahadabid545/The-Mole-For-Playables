@@ -8,26 +8,14 @@
     <title>Jungle Mole</title>
     <style>
       html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #8fd4e8; overflow: hidden; touch-action: none; overscroll-behavior: none; }
-      /* Full-window canvas host. Phaser's Scale.FIT + CENTER_BOTH handles
-         centering itself, so we do NOT add flexbox here — a double-centering
-         parent (flex) + child (Phaser inline styles) was pushing the canvas
-         to the right on wide viewports. */
       #app { position: fixed; inset: 0; width: 100%; height: 100%; }
       canvas { display: block; }
-      /* Hide the OS cursor only while a level is actually being played;
-         the Game scene toggles the `.playing` class on <body>.
-         On menus / popups the OS cursor stays visible so buttons are
-         obviously clickable. */
       body.playing, body.playing canvas, body.playing #app { cursor: none; }
       * { -webkit-tap-highlight-color: transparent; user-select: none; }
     </style>
   </head>
   <body>
     <div id="app">
-      <!-- Fallback text shown until Phaser mounts. If the game never
-           boots (e.g. WebGL blocked, JS error) this at least tells the
-           player something rather than a blank blue page. Phaser wipes
-           it when it inserts its own canvas. -->
       <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#2b1810;font:600 22px -apple-system,sans-serif;text-align:center;padding:20px;gap:10px;">
         <div>Loading Jungle Mole…</div>
         <div style="font-size:14px;opacity:.7;font-weight:400;">If nothing appears in 10 seconds, try refreshing the page.</div>

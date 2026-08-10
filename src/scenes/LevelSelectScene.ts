@@ -27,14 +27,9 @@ export class LevelSelectScene extends Phaser.Scene {
   create(): void {
     new ParallaxJungle(this);
 
-    // Hanging signboard title — pushed below browser top-chrome
     this.add.image(GAME_WIDTH / 2, 160, TX.signHang).setOrigin(0.5, 0.5).setDepth(99);
     this.add.text(GAME_WIDTH / 2, 168, I18n.t('levels'), TS.title('#fff5c9')).setOrigin(0.5).setDepth(100);
 
-    // Grid area clipped between title (bottom) and BACK button (top).
-    // Extra top padding so the first row of tiles isn't chopped off by
-    // the hanging signboard (signboard ends at ~y=230, we start well
-    // below that).
     const topClip = 300;
     const bottomClip = 260;
     const clipH = GAME_HEIGHT - topClip - bottomClip;
@@ -53,25 +48,16 @@ export class LevelSelectScene extends Phaser.Scene {
       const level = i + 1;
       const c = i % cols, r = Math.floor(i / cols);
       const x = startX + c * (size + gap);
-      // Extra headroom inside the container so the first row's tiles
-      // (and their stars underneath) sit clearly below the signboard.
       const y = 70 + r * rowH;
       const unlocked = level <= save.highestUnlockedLevel;
 
-      // Wooden tile background (with locked variant showing leaf overlay).
-      // Texture is 130x130; scale to fit `size` without distorting.
       const tileKey = unlocked ? TX.tileWood : TX.tileWoodLocked;
       const scale = size / 130;
-      const tileImg = this.add.image(x, y, tileKey).setOrigin(0.5).setScale(scale);
-      let numOrLock: Phaser.GameObjects.GameObject;
-      if (unlocked) {
-        numOrLock = this.add.text(x, y - 6, `${level}`, TS.hudBig('#fff5c9')).setOrigin(0.5);
-      } else {
-        numOrLock = this.add.image(x, y, TX.iconLock).setOrigin(0.5).setScale(0.85);
-      }
-      this.gridContainer.add([tileImg, numOrLock]);
-      // Reassign name so pointer hookup below uses the image
-      const tile = tileImg;
+      const tile = this.add.image(x, y, tileKey).setOrigin(0.5).setScale(scale);
+      const numOrLock: Phaser.GameObjects.GameObject = unlocked
+        ? this.add.text(x, y - 6, `${level}`, TS.hudBig('#fff5c9')).setOrigin(0.5)
+        : this.add.image(x, y, TX.iconLock).setOrigin(0.5).setScale(0.85);
+      this.gridContainer.add([tile, numOrLock]);
 
       const stars = save.perLevelStars[level] ?? 0;
       for (let s = 0; s < 3; s++) {
@@ -85,7 +71,7 @@ export class LevelSelectScene extends Phaser.Scene {
         let downX = 0, downY = 0;
         tile.on('pointerdown', (p: Phaser.Input.Pointer) => { downX = p.x; downY = p.y; });
         tile.on('pointerup', (p: Phaser.Input.Pointer) => {
-          if (Math.hypot(p.x - downX, p.y - downY) > 10) return; // drag, not tap
+          if (Math.hypot(p.x - downX, p.y - downY) > 10) return;
           Audio.play('click');
           this.tryStartLevel(level);
         });
@@ -97,13 +83,10 @@ export class LevelSelectScene extends Phaser.Scene {
     this.minY = Math.min(topClip, GAME_HEIGHT - bottomClip - contentH);
     this.maxY = topClip;
 
-    // Rectangle mask so scrolled tiles are clipped inside the viewport.
     const maskShape = this.make.graphics({ x: 0, y: 0 }).fillStyle(0xffffff)
       .fillRect(0, topClip, GAME_WIDTH, clipH);
-    const mask = maskShape.createGeometryMask();
-    this.gridContainer.setMask(mask);
+    this.gridContainer.setMask(maskShape.createGeometryMask());
 
-    // Scroll: pointer drag + mouse wheel
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
       if (p.y >= topClip && p.y <= topClip + clipH) { this.dragging = true; this.lastY = p.y; }
     });
@@ -146,7 +129,6 @@ export class LevelSelectScene extends Phaser.Scene {
 
   private scrollBy(dy: number): void {
     this.scrollY += dy;
-    // Clamp so grid doesn't fly out of view
     const targetY = Math.min(this.maxY, Math.max(this.minY, this.maxY + this.scrollY));
     this.scrollY = targetY - this.maxY;
     this.gridContainer.y = targetY;

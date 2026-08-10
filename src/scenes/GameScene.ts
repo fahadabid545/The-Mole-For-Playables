@@ -18,10 +18,6 @@ import { LevelCompletePopup } from '../ui/popups/LevelCompletePopup';
 import { Portal } from '../services/Portal';
 import { NamePromptPopup } from '../ui/popups/NamePromptPopup';
 import { Challenge } from '../services/ChallengeService';
-import type { PowerupKind } from '../ui/PowerupBar';
-// PowerupKind is only referenced by grantRandomPowerup, which stashes
-// awarded power-ups into the save file for a future settings/store UI.
-// The in-scene apply-powerup handler was removed with the PowerupBar.
 import { attachAchievementToast } from '../ui/AchievementToast';
 import { checkProgress } from '../services/AchievementService';
 import { LevelFailedPopup } from '../ui/popups/LevelFailedPopup';
@@ -49,16 +45,11 @@ export class GameScene extends Phaser.Scene {
 
   private level = 1;
   private challenge: Challenge | null = null;
-  private doublePointsActive = false;
-  private grantRandomPowerup: (() => void) | null = null;
 
   constructor() { super('Game'); }
 
   create(data: { level: number; challenge?: Challenge }): void {
-    // CRITICAL: Phaser recycles the scene instance on restart, so class-field
-    // initialisers only run once. Any array/reference set on `this` from a
-    // previous life is still there. Reset everything here so level N+1
-    // doesn't get polluted with destroyed raccoons from level N.
+    // Phaser recycles the scene instance, so reset per-run state here.
     this.holes = [];
     this.raccoons = [];
     this.tweens.killAll();
@@ -83,14 +74,6 @@ export class GameScene extends Phaser.Scene {
     this.buildGrid();
     this.hammer = new Hammer(this);
     attachAchievementToast(this);
-    // Power-up bar removed from gameplay per playables spec (icons cluttered
-    // the play area). Awarded power-ups still stack in the save so a future
-    // build can surface them again from a settings screen without code
-    // changes.
-    this.grantRandomPowerup = () => {
-      const kinds: PowerupKind[] = ['freeze', 'double', 'auto'];
-      Save.addPowerup(kinds[Math.floor(Math.random() * kinds.length)]);
-    };
     document.body.classList.add('playing');
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => document.body.classList.remove('playing'));
 
@@ -111,9 +94,6 @@ export class GameScene extends Phaser.Scene {
 
     this.events.on('request-pause', () => this.openPause());
 
-    // Pause the game while any ad is displayed — the timer and taps
-    // freeze exactly like the pause popup, so a mid-game interstitial
-    // never eats the player's clock.
     const onAdStart = () => {
       if (this.levelActive && !this.paused) {
         this.paused = true;
@@ -129,8 +109,6 @@ export class GameScene extends Phaser.Scene {
     };
     EventBus.on(EVT.AD_START, onAdStart);
     EventBus.on(EVT.AD_END, onAdEnd);
-    // Host opened a system overlay (Playgama PAUSE_STATE_CHANGED); use
-    // the same freeze/thaw path as ads so the timer + taps stop.
     EventBus.on(EVT.PLATFORM_PAUSE, onAdStart);
     EventBus.on(EVT.PLATFORM_RESUME, onAdEnd);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -140,7 +118,6 @@ export class GameScene extends Phaser.Scene {
       EventBus.off(EVT.PLATFORM_RESUME, onAdEnd);
     });
 
-    // Small "3-2-1-Go!" countdown, then start
     this.runCountdown(() => this.startLevel());
   }
 
@@ -163,7 +140,6 @@ export class GameScene extends Phaser.Scene {
   }
 
   private runCountdown(onDone: () => void): void {
-    // Level intro banner slides in and out first
     const bannerText = this.params.isBoss ? `BOSS LEVEL ${this.level}` : I18n.t('level', { n: this.level });
     const bannerStyle = this.params.isBoss ? { ...TS.banner(), color: '#f8bbd0', stroke: '#4a148c' } : TS.banner();
     const banner = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 200, bannerText, bannerStyle)
@@ -192,7 +168,6 @@ export class GameScene extends Phaser.Scene {
   }
 
   private showTutorialHint(): void {
-    // Level-1 only, on first spawn: pulsing "TAP!" over the active raccoon.
     if (this.level !== 1) return;
     const findActive = () => this.raccoons.find(r => !r.isAvailable());
     const timer = this.time.addEvent({
@@ -240,8 +215,6 @@ export class GameScene extends Phaser.Scene {
     if (free.length === 0) return;
     const rac = Phaser.Utils.Array.GetRandom(free) as Raccoon;
 
-    // Boss levels: spawn a boss occasionally (every ~4th spawn),
-    // otherwise a regular kind so filler raccoons still contribute.
     let kind: RaccoonKind = 'normal';
     if (this.params.isBoss && Math.random() < 0.28 && this.raccoons.every(r => r.getKind() !== 'boss' || r.isAvailable())) {
       kind = 'boss';
@@ -277,13 +250,11 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     this.combo++;
-    // Juice: screen shake + brief camera zoom-punch on hit
     const shakeIntensity = kind === 'boss' ? 0.010 : kind === 'golden' ? 0.006 : 0.004;
     this.cameras.main.shake(90, shakeIntensity);
     const comboMul = this.combo >= 8 ? 3 : this.combo >= 4 ? 2 : 1;
     const base = kind === 'boss' ? 100 : kind === 'golden' ? 30 : kind === 'frozen' ? 20 : 10;
-    const doubleMul = this.doublePointsActive ? 2 : 1;
-    const pts = base * comboMul * doubleMul;
+    const pts = base * comboMul;
     this.hits += points;
     this.score += pts;
     const color = kind === 'boss' ? '#e1bee7' : kind === 'golden' ? '#ffd54f' :
@@ -292,11 +263,7 @@ export class GameScene extends Phaser.Scene {
     if (comboMul > 1) { spawnScorePopup(this, rac.x + 40, rac.y - 110, 'COMBO!', '#ff9800'); Audio.play('combo'); }
     if (kind === 'boss') {
       spawnScorePopup(this, rac.x, rac.y - 150, 'BOSS DOWN!', '#f8bbd0');
-      // Boss down grants a random power-up
-      if (this.grantRandomPowerup) this.grantRandomPowerup();
     }
-    // Combo-10 award: grant power-up
-    if (this.combo === 10 && this.grantRandomPowerup) this.grantRandomPowerup();
     EventBus.emit(EVT.SCORE_CHANGED, this.score, this.hits, this.params.quota);
     if (this.hits >= this.params.quota) this.endLevel(true);
   }
@@ -308,7 +275,7 @@ export class GameScene extends Phaser.Scene {
     this.score = Math.max(0, this.score - 5);
     spawnScorePopup(this, rac.x, rac.y - 20, '-5', '#ffab91');
     EventBus.emit(EVT.SCORE_CHANGED, this.score, this.hits, this.params.quota);
-    // Every 5 escapes costs a life (in addition to the level-fail rule).
+    // Every 5 escapes costs a life on top of the level-fail rule.
     if (this.misses > 0 && this.misses % 5 === 0) {
       Audio.play('lifeLost');
       Save.loseLife();
@@ -319,8 +286,6 @@ export class GameScene extends Phaser.Scene {
   }
 
   private applyBombPenalty(): void {
-    // Bombs give a small time penalty instead of a life, so lives stay
-    // strictly tied to level-fail as the player requested.
     this.timeLeft = Math.max(0, this.timeLeft - 3000);
     EventBus.emit(EVT.TIMER_TICK, this.timeLeft);
   }
@@ -333,7 +298,6 @@ export class GameScene extends Phaser.Scene {
     Portal.gameplayStop();
 
     if (!won) {
-      // Level failed — deduct a life once, then decide fail vs out-of-lives.
       Save.loseLife();
       EventBus.emit(EVT.LIFE_CHANGED);
       Audio.play('lifeLost');
@@ -343,9 +307,7 @@ export class GameScene extends Phaser.Scene {
     if (won) {
       const stars = this.computeStars();
       if (this.challenge) {
-        // Challenge win path: grant reward, mark done, return to Challenge card.
         if (this.challenge.rewardLives > 0) Save.addLife(this.challenge.rewardLives);
-        if (this.challenge.rewardBonus > 0) Save.addBonusScore(this.challenge.rewardBonus);
         if (this.challenge.kind === 'daily') Save.markDailyDone(this.challenge.key);
         else Save.markWeeklyDone(this.challenge.key);
         Save.setBestScore(this.score);
@@ -360,15 +322,12 @@ export class GameScene extends Phaser.Scene {
       Save.recordStars(this.level, stars);
       Save.unlockUpTo(this.level + 1);
       Save.setBestScore(this.score);
-      // Achievement hooks
       checkProgress('levelClear', this.level);
       if (this.misses === 0) checkProgress('perfect', 1);
       if (this.timeLeft / this.params.timeLimitMs > 0.5) checkProgress('speed', 1);
       if (this.params.isBoss) checkProgress('boss', 1);
       if (this.combo >= 10) checkProgress('combo', 10);
       if (!Save.get().playerName) {
-        // First win — capture the player's name so it appears in future
-        // celebrations. No leaderboard submit anymore (removed).
         new NamePromptPopup(this, '', (n) => { Save.setPlayerName(n); });
       }
 

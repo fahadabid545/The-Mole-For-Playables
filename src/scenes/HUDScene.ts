@@ -13,9 +13,7 @@ export interface HUDData {
   timeLimitMs: number;
 }
 
-// Top-safe padding for browser chrome (notch, address bar).
-// Everything HUD-related pushes DOWN by this much so the timer, score,
-// and icons stay fully visible instead of getting cropped at the top.
+// Push HUD elements below browser chrome (notch, address bar).
 const TOP_SAFE = 60;
 
 export class HUDScene extends Phaser.Scene {
@@ -30,8 +28,6 @@ export class HUDScene extends Phaser.Scene {
 
   create(data: HUDData): void {
     this.timeLimitMs = data.timeLimitMs;
-    // Wooden HUD bar background — taller & pushed down so it clears
-    // the browser's top chrome and gives the score/timer room.
     this.add.image(GAME_WIDTH / 2, TOP_SAFE + 90, TX.hudBar).setOrigin(0.5).setDepth(-1);
 
     this.levelText = this.add.text(24, TOP_SAFE + 20, I18n.t('level', { n: data.level }), TS.hudBig());
@@ -42,14 +38,12 @@ export class HUDScene extends Phaser.Scene {
     this.timeText = this.add.text(GAME_WIDTH - 24, TOP_SAFE + 30, this.fmt(data.timeLimitMs),
       { ...TS.hudBig('#fffde7'), stroke: '#b71c1c' }).setOrigin(1, 0);
 
-    // Timer bar under the numeric time
     const barW = 240, barH = 14;
     this.add.rectangle(GAME_WIDTH - 24 - barW, TOP_SAFE + 96, barW, barH, 0x000000, 0.4).setOrigin(0, 0.5);
     this.timeBarFill = this.add.rectangle(GAME_WIDTH - 24 - barW, TOP_SAFE + 96, barW, barH, 0x66bb6a, 1).setOrigin(0, 0.5);
 
     new LivesBar(this, 40, TOP_SAFE + 140);
 
-    // Sound + pause icons, tucked below the wooden bar so nothing overlaps
     const iconY = TOP_SAFE + 190;
     const sound = this.add.image(GAME_WIDTH - 64, iconY, Audio.isMuted() ? TX.soundOff : TX.soundOn)
       .setOrigin(0.5).setInteractive({ useHandCursor: true }).setScale(0.9);
@@ -65,8 +59,8 @@ export class HUDScene extends Phaser.Scene {
     pauseBg.on('pointerover', () => pause.setScale(1.25));
     pauseBg.on('pointerout',  () => pause.setScale(1.1));
 
-    // Hide the HUD sound + pause icons while a popup covers the game
-    // so the popup's close-X doesn't visually overlap them.
+    // Hide HUD icons while a popup is on-screen so the popup close-X
+    // doesn't visually clash with them.
     const setIconsVisible = (v: boolean) => {
       sound.setVisible(v);
       pauseBg.setVisible(v);

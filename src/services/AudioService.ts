@@ -4,10 +4,9 @@ type SfxKind =
   | 'hit' | 'miss' | 'squeak' | 'laugh' | 'lifeLost' | 'extraLife'
   | 'win' | 'fail' | 'click' | 'bomb' | 'golden' | 'tick' | 'combo';
 
-// Audio is fully synthesized via the Web Audio API so the shipped
-// bundle contains no audio files. Ambient jungle is three parallel
-// layers (wind bed + river + bird chirps) with the bird pattern
-// deterministically wandering so it never feels loopy.
+// Audio is synthesised via Web Audio so the shipped bundle contains
+// zero audio files. Ambient jungle stacks wind + river + flute + drum +
+// bird layers.
 class AudioServiceImpl {
   private ctx: AudioContext | null = null;
   private muted = false;
@@ -49,7 +48,7 @@ class AudioServiceImpl {
     this.ambientStarted = true;
     const ctx = this.ctx;
 
-    // Layer 1 — low-frequency wind bed (filtered noise)
+    // wind bed
     const windBuf = ctx.createBuffer(1, 2 * ctx.sampleRate, ctx.sampleRate);
     const wd = windBuf.getChannelData(0);
     let last = 0;
@@ -64,7 +63,7 @@ class AudioServiceImpl {
     wind.connect(wFilt).connect(wGain).connect(this.masterGain);
     wind.start();
 
-    // Layer 2 — river burble (band-passed brighter noise)
+    // river burble
     const rivBuf = ctx.createBuffer(1, 2 * ctx.sampleRate, ctx.sampleRate);
     const rd = rivBuf.getChannelData(0);
     for (let i = 0; i < rd.length; i++) rd[i] = (Math.random() * 2 - 1) * 0.6;
@@ -73,14 +72,13 @@ class AudioServiceImpl {
     const rGain = ctx.createGain(); rGain.gain.value = 0.035;
     riv.connect(rFilt).connect(rGain).connect(this.masterGain);
     riv.start();
-    // Slowly modulate river frequency for gentle burbles
     const lfo = ctx.createOscillator(); lfo.frequency.value = 0.15;
     const lfoGain = ctx.createGain(); lfoGain.gain.value = 200;
     lfo.connect(lfoGain).connect(rFilt.frequency);
     lfo.start();
 
-    // Layer 3 — gentle bamboo-flute melody (pentatonic, drifts, super calm)
-    const flutePool = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50]; // C5 D5 E5 G5 A5 C6
+    // pentatonic bamboo flute (C5 D5 E5 G5 A5 C6)
+    const flutePool = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50];
     let noteIdx = 0;
     const scheduleFlute = () => {
       if (!this.ctx || !this.masterGain) return;
@@ -100,7 +98,6 @@ class AudioServiceImpl {
         g.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
         osc.connect(filt).connect(g).connect(this.masterGain);
         osc.start(t); osc.stop(t + 1.3);
-        // Soft harmonic overtone for warmth
         const oh = this.ctx.createOscillator();
         const gh = this.ctx.createGain();
         oh.type = 'sine'; oh.frequency.setValueAtTime(freq * 2, t);
@@ -114,7 +111,7 @@ class AudioServiceImpl {
     };
     setTimeout(scheduleFlute, 1200);
 
-    // Layer 4 — soft frame drum every ~4s (heartbeat feel)
+    // heartbeat-frame drum every ~4s
     const scheduleDrum = () => {
       if (!this.ctx || !this.masterGain) return;
       if (!this.muted) {
@@ -134,10 +131,8 @@ class AudioServiceImpl {
     };
     setTimeout(scheduleDrum, 2000);
 
-    // Layer 5 — bird chirps scheduled 2–6s apart at random pitches.
-    // Keep the timer chain alive across mute/unmute (skip only the audio
-    // emission when muted) — matches how flute/drum handle it, so
-    // unmuting resumes the whole ambience.
+    // Bird chirps every 2–6s. Timer chain runs even while muted so
+    // unmuting resumes the ambience without re-scheduling.
     const scheduleBird = () => {
       if (!this.ctx) return;
       if (this.muted) { setTimeout(scheduleBird, 2000 + Math.random() * 4000); return; }
@@ -204,12 +199,6 @@ class AudioServiceImpl {
 
     switch (kind) {
       case 'hit':
-        // Deeply satisfying THWACK — layered:
-        //   1) Low body sub-thump (60→30 Hz sweep) — chest hit
-        //   2) Mid wood crack (240→80)
-        //   3) High tick (2400→1200)
-        //   4) Noise slap (wet leaf/dust)
-        //   5) Tiny squeak tail for cuteness
         beep(60,   0.20, 'sine',     0.55, 28);
         beep(240,  0.10, 'triangle', 0.32, 80);
         beep(2400, 0.05, 'triangle', 0.20, 1200);
@@ -217,7 +206,6 @@ class AudioServiceImpl {
         setTimeout(() => beep(1400 + Math.random() * 400, 0.06, 'triangle', 0.14, 900), 60);
         break;
       case 'miss':
-        // Softer dust puff plus a low bonk
         noiseBurst(0.18, 0.25, 200, 1400);
         beep(140, 0.1, 'sine', 0.18, 80);
         break;
@@ -241,7 +229,6 @@ class AudioServiceImpl {
         setTimeout(() => beep(1760, 0.3, 'triangle', 0.28), 300);
         break;
       case 'win': {
-        // Ascending major arpeggio + shimmer noise
         const notes = [523, 659, 784, 1046, 1319];
         notes.forEach((f, i) => setTimeout(() => beep(f, 0.14, 'triangle', 0.32), i * 90));
         setTimeout(() => noiseBurst(0.3, 0.15, 3000, 8000), 400);

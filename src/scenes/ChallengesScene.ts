@@ -10,10 +10,6 @@ import { AdBanner } from '../ui/AdBanner';
 import { TS } from '../config/TextStyles';
 import { TX } from '../objects/TextureFactory';
 
-// Landing page for BOTH daily + weekly challenges shown side by side
-// (vertically stacked cards). Selecting a card starts Game with that
-// challenge; the "come back later" state locks the play button and
-// shows a friendly message.
 export class ChallengesScene extends Phaser.Scene {
   constructor() { super('Challenges'); }
 
@@ -38,44 +34,34 @@ export class ChallengesScene extends Phaser.Scene {
 
   private buildCard(cx: number, cy: number, ch: Challenge, kind: ChallengeKind): void {
     const w = 620, h = 340;
-    // Card shell
-    const shadow = this.add.rectangle(cx + 4, cy + 8, w, h, 0x000000, 0.35).setOrigin(0.5);
-    const bg = this.add.rectangle(cx, cy, w, h, 0xfff8e1, 1).setOrigin(0.5).setStrokeStyle(6, COLORS.woodDark);
-    const rimTop = this.add.rectangle(cx, cy - h / 2 + 40, w - 40, 60, kind === 'daily' ? 0xffb300 : 0xef5350, 1)
+    this.add.rectangle(cx + 4, cy + 8, w, h, 0x000000, 0.35).setOrigin(0.5);
+    this.add.rectangle(cx, cy, w, h, 0xfff8e1, 1).setOrigin(0.5).setStrokeStyle(6, COLORS.woodDark);
+    this.add.rectangle(cx, cy - h / 2 + 40, w - 40, 60, kind === 'daily' ? 0xffb300 : 0xef5350, 1)
       .setOrigin(0.5);
-    const rimTitle = this.add.text(cx, cy - h / 2 + 40,
+    this.add.text(cx, cy - h / 2 + 40,
       kind === 'daily' ? I18n.t('todaysChallenge') : I18n.t('thisWeeksChallenge'),
       { ...TS.h2('#3e2723'), fontSize: '32px' }).setOrigin(0.5);
 
-    // Level + info
     this.add.text(cx, cy - 40, I18n.t('level', { n: ch.params.level }),
       { ...TS.title('#1b5e20'), fontSize: '46px' }).setOrigin(0.5);
     this.add.text(cx, cy + 12,
       `Hit ${ch.params.quota}  •  ${Math.round(ch.params.timeLimitMs / 1000)}s`,
       TS.body('#5d4037')).setOrigin(0.5);
 
-    // Reward line with heart + trophy icons instead of emojis
     const rewardText = `${I18n.t('reward')}:`;
     const label = this.add.text(cx - 220, cy + 60, rewardText, TS.reward()).setOrigin(0, 0.5);
     let xOff = label.x + label.width + 16;
     if (ch.rewardLives > 0) {
       const h1 = this.add.image(xOff, cy + 60, TX.iconHeartIcon).setOrigin(0, 0.5).setScale(0.8);
-      const t1 = this.add.text(h1.x + h1.displayWidth + 6, cy + 60, `+${ch.rewardLives}`, TS.reward()).setOrigin(0, 0.5);
-      xOff = t1.x + t1.width + 24;
-    }
-    if (ch.rewardBonus > 0) {
-      const trophy = this.add.image(xOff, cy + 60, TX.iconTrophy).setOrigin(0, 0.5).setScale(0.5);
-      this.add.text(trophy.x + trophy.displayWidth + 6, cy + 60, `+${ch.rewardBonus}`, TS.reward()).setOrigin(0, 0.5);
+      this.add.text(h1.x + h1.displayWidth + 6, cy + 60, `+${ch.rewardLives}`, TS.reward()).setOrigin(0, 0.5);
     }
 
     if (kind === 'daily' && Save.get().dailyStreak > 0) {
-      const streakIcon = this.add.image(cx + w / 2 - 90, cy - h / 2 + 40, TX.iconFlame).setOrigin(0.5).setScale(0.9);
+      this.add.image(cx + w / 2 - 90, cy - h / 2 + 40, TX.iconFlame).setOrigin(0.5).setScale(0.9);
       this.add.text(cx + w / 2 - 50, cy - h / 2 + 40, `${Save.get().dailyStreak}`,
         { ...TS.h2('#ff6f00'), fontSize: '28px' }).setOrigin(0, 0.5);
-      void streakIcon;
     }
 
-    // CTA
     if (ch.alreadyDone) {
       this.add.text(cx, cy + 115,
         kind === 'daily' ? I18n.t('alreadyDone') : I18n.t('alreadyDoneWeek'),
@@ -92,6 +78,5 @@ export class ChallengesScene extends Phaser.Scene {
         variant: kind === 'daily' ? 'primary' : 'ad',
       });
     }
-    void shadow; void bg; void rimTop; void rimTitle;
   }
 }

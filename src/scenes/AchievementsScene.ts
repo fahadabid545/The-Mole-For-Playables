@@ -25,21 +25,14 @@ export class AchievementsScene extends Phaser.Scene {
       const y = startY + i * rowH;
       const isDone = unlocked.has(a.id);
 
-      // Locked rows now use a light-cream background too (was near-black
-      // with grey text — unreadable). A subtle sepia tint distinguishes
-      // them from the bright gold-bordered unlocked rows.
       const bgColor = isDone ? 0xfff5c9 : 0xefe0b3;
       const bgAlpha = isDone ? 0.98 : 0.95;
       const borderColor = isDone ? 0xffb300 : COLORS.woodDark;
       const bg = this.add.rectangle(GAME_WIDTH / 2, y, GAME_WIDTH - 60, rowH - 10, bgColor, bgAlpha)
         .setStrokeStyle(4, borderColor);
-      // Each achievement has its own themed icon (medal, target, trophy,
-      // shield, flame, bolt, swords, calendar) so the list doesn't just
-      // repeat a generic trophy.
       const icon = this.add.image(90, y, a.icon).setOrigin(0.5).setScale(0.75);
       if (!isDone) icon.setTint(0x8d6e63);
 
-      // Dark text on light bg for both states — always readable.
       const titleColor = isDone ? '#3e2723' : '#5d3a1a';
       const descColor  = isDone ? '#5d4037' : '#7a5a3a';
       const title = this.add.text(160, y - 16, a.title,

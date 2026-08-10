@@ -37,7 +37,6 @@ export class OutOfLivesPopup extends Popup {
     const challengesDone = allChallengesDone();
 
     if (challengesDone) {
-      // All challenges done — user must wait for the 10-min regen timer.
       const info = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 30,
         'Lives refill in', { ...TS.body('#3e2723'), fontSize: '30px' }).setOrigin(0.5);
       const countdown = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 30,

@@ -9,7 +9,6 @@ export interface Challenge {
   key: string;
   params: LevelParams;
   rewardLives: number;
-  rewardBonus: number;
   alreadyDone: boolean;
 }
 
@@ -21,7 +20,6 @@ function weekKey(): string {
   return `${d.getFullYear()}-W${week}`;
 }
 
-// Deterministic pseudo-random from a string key
 function seed(key: string): number {
   let h = 2166136261;
   for (let i = 0; i < key.length; i++) { h ^= key.charCodeAt(i); h = Math.imul(h, 16777619); }
@@ -35,24 +33,19 @@ export function allChallengesDone(): boolean {
 export function getChallenge(kind: ChallengeKind): Challenge {
   const key = kind === 'daily' ? todayKey() : weekKey();
   const s = seed(kind + ':' + key);
-  // Daily uses a mid-range level around 15-25; weekly is harder 30-45.
   const range = kind === 'daily' ? [12, 25] : [30, Math.min(48, FLAGS.totalLevels - 2)];
   const level = Math.max(1, Math.min(FLAGS.totalLevels, Math.floor(range[0] + s * (range[1] - range[0]))));
   const base = getLevelParams(level);
-  // Challenge tightens the level a notch
   const params: LevelParams = {
     ...base,
     timeLimitMs: Math.round(base.timeLimitMs * 0.85),
     quota: Math.round(base.quota * 1.1),
   };
-  // Ads are disabled in Playables, so challenge completion is the ONLY
-  // way to earn extra lives there — bump the weekly reward accordingly.
-  // Store builds still have rewarded ads for lives, so weekly keeps its
-  // original 2-life payout.
+  // Ads are disabled on Playables — bump weekly there so the challenge
+  // path is the only way to earn extra lives.
   const rewardLives = kind === 'daily' ? 1 : (IS_PLAYABLES ? 3 : 2);
-  const rewardBonus = kind === 'daily' ? 100 : 500;
   const alreadyDone = kind === 'daily'
     ? Save.get().lastDailyKey === key
     : Save.get().lastWeeklyKey === key;
-  return { kind, key, params, rewardLives, rewardBonus, alreadyDone };
+  return { kind, key, params, rewardLives, alreadyDone };
 }

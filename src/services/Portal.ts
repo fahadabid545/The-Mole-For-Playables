@@ -1,10 +1,8 @@
 import { IS_CRAZYGAMES, IS_POKI, IS_PLAYGAMA, IS_PORTAL } from '../config/BuildFlags';
 
-// Unified facade over the three portal SDKs (CrazyGames, Poki, Playgama).
-// Every method is safe to call from any build target — on non-portal
-// builds it's a no-op, and on portal builds any missing SDK method (bad
-// version, CDN blocked, embedded on a non-portal host) is caught so it
-// can never crash the game.
+// Unified facade over the CrazyGames / Poki / Playgama SDKs. Every
+// method is a safe no-op on non-portal builds and swallows missing-SDK
+// errors so a bad CDN load or non-portal host can never crash the game.
 
 interface CGSDK {
   init?: () => Promise<void>;
@@ -70,8 +68,7 @@ const cg = () => w?.CrazyGames?.SDK;
 const pk = () => w?.PokiSDK;
 const pg = () => w?.bridge;
 
-// Poll for an SDK global up to `timeoutMs` — some CDN scripts hydrate
-// after the module code runs.
+// Some CDN scripts hydrate after our module code runs, so poll briefly.
 async function waitFor<T>(get: () => T | undefined, timeoutMs = 2000): Promise<T | undefined> {
   const step = 100;
   for (let waited = 0; waited < timeoutMs; waited += step) {
@@ -82,7 +79,6 @@ async function waitFor<T>(get: () => T | undefined, timeoutMs = 2000): Promise<T
   return get();
 }
 
-// Reject-on-timeout wrapper so a hung SDK init call can never block boot.
 function withTimeout<T>(p: Promise<T> | undefined, ms: number): Promise<T | void> {
   if (!p) return Promise.resolve();
   return Promise.race([
@@ -108,26 +104,20 @@ export const Portal = {
       } else if (IS_PLAYGAMA) {
         const b = await waitFor(pg, 8000);
         if (!b?.initialize) return;
-        // Never wrap initialize in a soft timeout: bridge.platform is
-        // only fully wired to the host after initialize resolves, so a
-        // premature timeout would let sendMessage(GAME_READY) hit an
-        // uninitialised platform bridge and silently drop the message.
-        // The BootScene guards the outer 10s hard cap.
+        // Do NOT soft-timeout initialize — bridge.platform is only wired
+        // to the host after it resolves; sendMessage(GAME_READY) sent
+        // early drops silently. BootScene provides the outer 10s cap.
         await b.initialize();
       }
-    } catch { /* ignore — never let SDK errors break boot */ }
+    } catch { /* ignore */ }
   },
 
-  // Called after Preload finishes and Menu is about to appear.
   ready(): void {
     if (!IS_PORTAL) return;
     try {
       if (IS_CRAZYGAMES) cg()?.game?.loadingStop?.();
       else if (IS_POKI)  pk()?.gameLoadingFinished?.();
       else if (IS_PLAYGAMA) {
-        // Canonical Playgama Bridge v2 required step: signal GAME_READY.
-        // Internally the platform module guards against double-send, so
-        // calling this from the two Preload hooks is safe.
         const b = pg();
         const msg = b?.PLATFORM_MESSAGE?.GAME_READY ?? 'game_ready';
         b?.platform?.sendMessage?.(msg);
@@ -160,28 +150,18 @@ export const Portal = {
     } catch { /* ignore */ }
   },
 
-  // --- Portal-driven mute --------------------------------------------
-  // CrazyGames exposes a global "mute audio" toggle in their embed. If
-  // the player toggles it we want our AudioService to follow. Register
-  // a listener here that the caller (BootScene) wires to Audio.setMuted.
-  // Poki has no equivalent — theirs is game-side only.
-
+  // Fire handler(muted) whenever the host portal toggles the mute chrome
+  // around our iframe. CrazyGames uses a window event; Playgama forwards
+  // via bridge.platform.on(AUDIO_STATE_CHANGED). Poki has no equivalent.
   onPortalMuteChange(handler: (muted: boolean) => void): void {
     if (IS_CRAZYGAMES) {
       try {
-        // CrazyGames SDK v3 dispatches a "portalMuteChange" custom event on window.
         window.addEventListener('portalMuteChanged', (e: Event) => {
           const detail = (e as CustomEvent<{ isMuted?: boolean }>).detail;
           if (detail && typeof detail.isMuted === 'boolean') handler(detail.isMuted);
         });
       } catch { /* ignore */ }
     } else if (IS_PLAYGAMA) {
-      // Playgama Bridge forwards the host's audio state via
-      // platform.on(AUDIO_STATE_CHANGED, isEnabled: boolean). We only
-      // wire the listener once the bridge finishes initialising —
-      // .platform is a module accessor that becomes usable after
-      // Portal.init() awaits bridge.initialize(). Poll briefly since
-      // this can be called from BootScene before init resolves.
       wireOnBridgeReady((b) => {
         const evt = b?.EVENT_NAME?.AUDIO_STATE_CHANGED ?? 'audio_state_changed';
         try {
@@ -193,9 +173,9 @@ export const Portal = {
     }
   },
 
-  // Called from BootScene. Fires `handler(true)` when the platform
-  // opens a system overlay / pauses the game (Playgama's
-  // PAUSE_STATE_CHANGED), and `handler(false)` when it resumes.
+  // Fire handler(paused) when the host opens or closes a system overlay
+  // (Playgama's PAUSE_STATE_CHANGED). GameScene freezes the timer/taps
+  // while paused.
   onPortalPauseChange(handler: (paused: boolean) => void): void {
     if (IS_PLAYGAMA) {
       wireOnBridgeReady((b) => {
@@ -204,8 +184,7 @@ export const Portal = {
           b.platform.on(evt, (isPaused: unknown) => {
             if (typeof isPaused === 'boolean') handler(isPaused);
           });
-          // Fire immediately if the host already paused us before this
-          // listener attached (e.g. overlay opened during boot).
+          // Fire immediately if the host was already paused before wire.
           if (b.platform.isPaused === true) handler(true);
         } catch { /* ignore */ }
       });
@@ -213,9 +192,8 @@ export const Portal = {
   },
 };
 
-// Wait for `bridge.isInitialized === true` before invoking cb with the
-// bridge. Only touches `bridge.platform` after init so we don't spam
-// the SDK's "Before using the SDK you must initialize it" warning.
+// Only touch bridge.platform after bridge.isInitialized so we don't
+// trigger the SDK's "Before using the SDK you must initialize it" warn.
 function wireOnBridgeReady(cb: (bridge: any) => void): void {
   let attempts = 0;
   const wire = () => {
