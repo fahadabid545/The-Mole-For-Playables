@@ -35,9 +35,9 @@ builds in isolation.
 3. Merge shared engine improvements from `main` into portal branches
    with a merge commit; never rebase portal branches onto each other.
 
-Jungle Mole grew this rule *after* everything landed on one branch. We
-accept the current mixed state for Jungle Mole; the next game must
-start with the branch layout above.
+From this point on, all portal-specific work MUST be on its dedicated
+`portal/<name>` branch. `main` stays engine-shared. Do not land portal
+code on `main` even for Jungle Mole.
 
 ## Read the platform's official docs BEFORE touching platform code
 
@@ -59,6 +59,39 @@ Before writing or modifying any portal SDK integration:
 
 If a policy or docs page is behind a login the user can access, ask
 them to paste the relevant section before writing code.
+
+## No emojis, use real icon assets
+
+Do not put emojis in code, comments, UI text, popup messages, button
+labels, log lines, or PR/commit bodies for this project. Every visual
+icon in the game must be a real image asset (SVG/PNG bundled through
+TextureFactory or an equivalent asset pipeline) — never a Unicode
+emoji character. Menu chips, hearts, fire streak indicators, medals,
+enemy legends, all must use themed icon art matching the jungle
+theme.
+
+## Every event has a sound
+
+Any noticeable event in the game must play a sound: menu navigation,
+button press, scene scroll, popup open/close, hit, miss, combo, bomb,
+cat/goat penalty, boss hit, boss down, level start, level win, level
+lose, extra life awarded, streak advance, task complete, medal earned,
+milestone celebration, ad start/end. Never add new gameplay code
+without wiring an SFX to it.
+
+## Every event has an animation
+
+Same rule for animation: pair every event with a proportionate animation
+(subtle micro-interaction for small events, screen-shaking celebration
+for milestones). Do not ship an event with sound but no animation, or
+animation but no sound.
+
+## Add to memory (session recap)
+
+At the end of a working session that added new persistent rules or a
+new convention the user asked to remember, update this file (project
+CLAUDE.md) and, if the rule is engine-agnostic, also `~/.claude/CLAUDE.md`.
+Do not require the user to re-state a rule twice.
 
 ## No assumptions
 
