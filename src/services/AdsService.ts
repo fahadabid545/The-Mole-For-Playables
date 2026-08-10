@@ -1,6 +1,23 @@
 import { FLAGS, IS_PLAYABLES, IS_PLAYGAMA, IS_CRAZYGAMES, IS_POKI } from '../config/BuildFlags';
+import { Audio } from './AudioService';
+import { EventBus, EVT } from '../utils/EventBus';
 
 export type AdOutcome = 'reward' | 'skipped' | 'error';
+
+// Wrap an ad-showing async call: mute audio + emit AD_START before,
+// restore audio + emit AD_END after. GameScene listens for AD_START /
+// AD_END to pause / resume gameplay so the game freezes during an ad.
+async function withAdLifecycle<T>(run: () => Promise<T>): Promise<T> {
+  const prevMuted = Audio.isMuted();
+  try {
+    if (!prevMuted) Audio.setMuted(true);
+    EventBus.emit(EVT.AD_START);
+    return await run();
+  } finally {
+    if (!prevMuted) Audio.setMuted(false);
+    EventBus.emit(EVT.AD_END);
+  }
+}
 
 export interface AdsService {
   showBanner(): void;
@@ -107,40 +124,40 @@ class PlaygamaAdsService implements AdsService {
     const b = this.bridge;
     const ad = b?.advertisement;
     if (!ad?.showInterstitial) return;
-    const EVT = b.EVENT_NAME?.INTERSTITIAL_STATE_CHANGED ?? 'interstitial_state_changed';
+    const EVT_STATE = b.EVENT_NAME?.INTERSTITIAL_STATE_CHANGED ?? 'interstitial_state_changed';
     const CLOSED = b.INTERSTITIAL_STATE?.CLOSED ?? 'closed';
     const FAILED = b.INTERSTITIAL_STATE?.FAILED ?? 'failed';
-    await new Promise<void>((resolve) => {
+    return withAdLifecycle(() => new Promise<void>((resolve) => {
       let done = false;
       const finish = () => {
         if (done) return;
         done = true;
-        try { ad.off?.(EVT, onState); } catch { /* ignore */ }
+        try { ad.off?.(EVT_STATE, onState); } catch { /* ignore */ }
         resolve();
       };
       const onState = (state: string) => {
         if (state === CLOSED || state === FAILED) finish();
       };
-      try { ad.on?.(EVT, onState); } catch { /* ignore */ }
+      try { ad.on?.(EVT_STATE, onState); } catch { /* ignore */ }
       try { ad.showInterstitial(); } catch { finish(); }
       setTimeout(finish, 30000);
-    });
+    }));
   }
   async showRewarded(): Promise<AdOutcome> {
     const b = this.bridge;
     const ad = b?.advertisement;
     if (!ad?.showRewarded) return 'skipped';
-    const EVT = b.EVENT_NAME?.REWARDED_STATE_CHANGED ?? 'rewarded_state_changed';
+    const EVT_STATE = b.EVENT_NAME?.REWARDED_STATE_CHANGED ?? 'rewarded_state_changed';
     const REWARDED = b.REWARDED_STATE?.REWARDED ?? 'rewarded';
     const CLOSED = b.REWARDED_STATE?.CLOSED ?? 'closed';
     const FAILED = b.REWARDED_STATE?.FAILED ?? 'failed';
-    return new Promise<AdOutcome>((resolve) => {
+    return withAdLifecycle(() => new Promise<AdOutcome>((resolve) => {
       let rewarded = false;
       let done = false;
       const finish = (outcome: AdOutcome) => {
         if (done) return;
         done = true;
-        try { ad.off?.(EVT, onState); } catch { /* ignore */ }
+        try { ad.off?.(EVT_STATE, onState); } catch { /* ignore */ }
         resolve(outcome);
       };
       const onState = (state: string) => {
@@ -148,10 +165,10 @@ class PlaygamaAdsService implements AdsService {
         else if (state === CLOSED) finish(rewarded ? 'reward' : 'skipped');
         else if (state === FAILED) finish('error');
       };
-      try { ad.on?.(EVT, onState); } catch { /* ignore */ }
+      try { ad.on?.(EVT_STATE, onState); } catch { /* ignore */ }
       try { ad.showRewarded(); } catch { finish('error'); }
       setTimeout(() => finish(rewarded ? 'reward' : 'skipped'), 60000);
-    });
+    }));
   }
   shouldShowInterstitialForLevel(level: number): boolean {
     return level > 0 && level % FLAGS.interstitialEveryNLevels === 0;

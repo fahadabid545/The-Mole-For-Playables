@@ -64,20 +64,18 @@ function write(): void {
   try { bridgeStorage()?.set?.(KEY, cache); } catch { /* ignore */ }
 }
 
-// Called once from BootScene after bridge.initialize() resolves. Reads
-// the cloud snapshot and merges it into local cache + localStorage so
-// progress follows the player across devices. Newer local wins on the
-// keys that already changed this session.
+// Called once from BootScene after bridge.initialize() resolves. Cloud
+// is the source of truth when it has data, so on a fresh reload the
+// player's progress is restored even if localStorage is empty. Writes
+// are always mirrored to the cloud, so it stays up-to-date. Runs before
+// any Save.get() so overwriting the cache here is safe.
 export async function hydrateFromBridge(): Promise<void> {
   const storage = bridgeStorage();
   if (!storage?.get) return;
   try {
     const remote = await storage.get(KEY);
     if (!remote || typeof remote !== 'object') return;
-    const local = read();
-    // Prefer local values that already exist so an in-session change
-    // isn't overwritten by an older cloud snapshot.
-    cache = { ...defaults(), ...(remote as SaveData), ...local };
+    cache = { ...defaults(), ...(remote as SaveData) };
     try { localStorage.setItem(KEY, JSON.stringify(cache)); } catch { /* ignore */ }
   } catch { /* ignore */ }
 }
