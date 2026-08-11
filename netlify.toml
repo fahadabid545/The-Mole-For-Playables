@@ -1,10 +1,10 @@
-# Netlify build & deploy config for Jungle Mole.
-# Produces the single-HTML Playables build so what ships to Netlify is
-# exactly what would be submitted to Google Playables.
+# Netlify build & deploy config for Jungle Mole (portal/crazygames branch).
+# Produces the single-HTML CrazyGames build; a branch preview here is
+# exactly what would be zipped and submitted to CrazyGames.
 
 [build]
-  command = "npm run build:playables"
-  publish = "dist"
+  command = "npm run build:crazygames"
+  publish = "dist-crazygames"
 
 [build.environment]
   # Pin a modern LTS Node so builds are reproducible.
