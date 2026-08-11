@@ -47,9 +47,9 @@ export class StatsScene extends Phaser.Scene {
     let y = 20;
     for (const [k, v] of rows) {
       const plank = this.add.image(GAME_WIDTH / 2, y, TX.tileWood).setOrigin(0.5)
-        .setDisplaySize(GAME_WIDTH - 60, 56);
-      const kt = this.add.text(80, y, k, kStyle).setOrigin(0, 0.5);
-      const vt = this.add.text(GAME_WIDTH - 80, y, v, vStyle).setOrigin(1, 0.5);
+        .setDisplaySize(GAME_WIDTH - 180, 56);
+      const kt = this.add.text(GAME_WIDTH / 2 - (GAME_WIDTH - 180) / 2 + 20, y, k, kStyle).setOrigin(0, 0.5);
+      const vt = this.add.text(GAME_WIDTH / 2 + (GAME_WIDTH - 180) / 2 - 20, y, v, vStyle).setOrigin(1, 0.5);
       container.add([plank, kt, vt]);
       y += 66;
     }

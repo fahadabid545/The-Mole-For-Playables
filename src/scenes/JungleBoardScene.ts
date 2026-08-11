@@ -49,7 +49,7 @@ export class JungleBoardScene extends Phaser.Scene {
   }
 
   private buildTile(x: number, y: number, t: Tile): void {
-    const w = GAME_WIDTH - 90;
+    const w = GAME_WIDTH - 200;
     const h = 170;
     const tile = this.add.image(x, y, TX.tileWood).setOrigin(0.5)
       .setDisplaySize(w, h).setInteractive({ useHandCursor: true });

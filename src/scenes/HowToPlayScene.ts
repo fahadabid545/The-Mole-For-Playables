@@ -32,7 +32,7 @@ export class HowToPlayScene extends Phaser.Scene {
     // Intro on a wooden plank (same theme as rows).
     const introY = 290;
     this.add.image(GAME_WIDTH / 2, introY, TX.tileWood).setOrigin(0.5)
-      .setDisplaySize(GAME_WIDTH - 80, 100);
+      .setDisplaySize(GAME_WIDTH - 180, 100);
     this.add.text(GAME_WIDTH / 2, introY,
       'Tap raccoons as they pop out.\nCombo hits multiply score.',
       { fontFamily: '"Arial Black", Impact, sans-serif', fontSize: '22px',
@@ -41,13 +41,13 @@ export class HowToPlayScene extends Phaser.Scene {
     // Fixed 3-column layout per row: icon | label (left) | effect (right).
     let y = introY + 90;
     const rowH = 74;
-    const iconX = 80;
-    const labelX = 160;
-    const effectX = GAME_WIDTH - 80;
+    const iconX = 130;
+    const labelX = 200;
+    const effectX = GAME_WIDTH - 130;
     for (const row of ROWS) {
       y += rowH;
       this.add.image(GAME_WIDTH / 2, y, TX.tileWood).setOrigin(0.5)
-        .setDisplaySize(GAME_WIDTH - 80, rowH - 10);
+        .setDisplaySize(GAME_WIDTH - 180, rowH - 10);
       this.add.image(iconX, y, row.tex).setOrigin(0.5).setScale(0.3);
       this.add.text(labelX, y, row.label,
         { fontFamily: '"Arial Black", Impact, sans-serif', fontSize: '24px',

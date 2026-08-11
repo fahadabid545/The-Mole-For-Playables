@@ -34,13 +34,13 @@ export class ChallengesScene extends Phaser.Scene {
   }
 
   private buildCard(cx: number, cy: number, ch: Challenge, kind: ChallengeKind): void {
-    const w = 640, h = 380;
+    const w = 540, h = 380;
     // Wooden plank card — replaces the flat rectangle.
     const tile = this.add.image(cx, cy, TX.tileWood).setOrigin(0.5)
       .setDisplaySize(w, h).setTint(0xfff8e1);
     void tile;
     // Header ribbon
-    this.add.rectangle(cx, cy - h / 2 + 42, w - 60, 60, kind === 'daily' ? 0xffb300 : 0xef5350, 1)
+    this.add.rectangle(cx, cy - h / 2 + 42, w - 40, 56, kind === 'daily' ? 0xffb300 : 0xef5350, 1)
       .setOrigin(0.5).setStrokeStyle(4, COLORS.woodDark);
     this.add.text(cx, cy - h / 2 + 42,
       kind === 'daily' ? I18n.t('todaysChallenge') : I18n.t('thisWeeksChallenge'),
