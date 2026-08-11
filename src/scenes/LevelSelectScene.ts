@@ -30,8 +30,8 @@ export class LevelSelectScene extends Phaser.Scene {
     this.category = data?.category ?? 'easy';
     new ParallaxJungle(this);
 
-    this.add.image(GAME_WIDTH / 2, 160, TX.signHang).setOrigin(0.5, 0.5).setDepth(99);
-    this.add.text(GAME_WIDTH / 2, 168, I18n.t('levels'), TS.title('#fff5c9')).setOrigin(0.5).setDepth(100);
+    this.add.image(GAME_WIDTH / 2, 170, TX.signHang).setOrigin(0.5).setDepth(99).setScale(1.1);
+    this.add.text(GAME_WIDTH / 2, 175, I18n.t('levels').toUpperCase(), TS.title()).setOrigin(0.5).setDepth(100);
 
     const topClip = 300;
     const bottomClip = 260;

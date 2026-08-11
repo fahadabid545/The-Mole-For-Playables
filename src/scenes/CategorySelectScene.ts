@@ -29,8 +29,8 @@ export class CategorySelectScene extends Phaser.Scene {
   create(): void {
     new ParallaxJungle(this);
 
-    this.add.image(GAME_WIDTH / 2, 160, TX.signHang).setOrigin(0.5, 0.5).setDepth(99);
-    this.add.text(GAME_WIDTH / 2, 168, 'CATEGORY', TS.title('#fff5c9')).setOrigin(0.5).setDepth(100);
+    this.add.image(GAME_WIDTH / 2, 170, TX.signHang).setOrigin(0.5).setDepth(99).setScale(1.1);
+    this.add.text(GAME_WIDTH / 2, 175, 'CATEGORY', TS.title()).setOrigin(0.5).setDepth(100);
 
     const totalStars = Save.totalStarsAcross();
 

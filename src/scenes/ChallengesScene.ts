@@ -16,7 +16,8 @@ export class ChallengesScene extends Phaser.Scene {
   create(): void {
     new ParallaxJungle(this);
 
-    this.add.text(GAME_WIDTH / 2, 150, I18n.t('challenges'), TS.title('#fff8e1'))
+    this.add.image(GAME_WIDTH / 2, 170, TX.signHang).setOrigin(0.5).setDepth(49).setScale(1.1);
+    this.add.text(GAME_WIDTH / 2, 175, I18n.t('challenges').toUpperCase(), TS.title())
       .setOrigin(0.5).setDepth(50);
 
     const daily = getChallenge('daily');

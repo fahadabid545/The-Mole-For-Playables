@@ -6,6 +6,8 @@ import { TX } from '../objects/TextureFactory';
 import { Audio } from '../services/AudioService';
 import { I18n } from '../services/I18nService';
 import { TS } from '../config/TextStyles';
+import { Save } from '../services/SaveService';
+import { spawnScorePopup } from '../objects/ScorePopup';
 
 export interface HUDData {
   level: number;
@@ -34,6 +36,12 @@ export class HUDScene extends Phaser.Scene {
     this.quotaText = this.add.text(24, TOP_SAFE + 76, I18n.t('hits', { a: 0, b: data.quota }), TS.hudSmall());
 
     this.scoreText = this.add.text(GAME_WIDTH / 2, TOP_SAFE + 30, '0', TS.score()).setOrigin(0.5, 0);
+
+    const startBest = Save.get().bestScore;
+    const bestText = this.add.text(GAME_WIDTH / 2, TOP_SAFE + 6, `BEST ${startBest}`,
+      { fontFamily: '"Luckiest Guy", Impact, sans-serif', fontSize: '18px',
+        color: '#ffd54f', stroke: '#3e2723', strokeThickness: 3 }).setOrigin(0.5, 1);
+    let bestBeatenThisRun = false;
 
     this.timeText = this.add.text(GAME_WIDTH - 24, TOP_SAFE + 30, this.fmt(data.timeLimitMs),
       { ...TS.hudBig('#fffde7'), stroke: '#b71c1c' }).setOrigin(1, 0);
@@ -109,6 +117,21 @@ export class HUDScene extends Phaser.Scene {
     const onScore = (score: number, hits: number, quota: number) => {
       this.scoreText.setText(`${score}`);
       this.quotaText.setText(I18n.t('hits', { a: hits, b: quota }));
+      // Subway-Surfers-style: celebrate the moment the player passes
+      // their all-time best mid-run so the run keeps its own drama.
+      if (!bestBeatenThisRun && startBest > 0 && score > startBest) {
+        bestBeatenThisRun = true;
+        bestText.setText('NEW BEST!').setColor('#66ff8f');
+        this.tweens.add({ targets: bestText, scale: { from: 1, to: 1.6 },
+          yoyo: true, duration: 320, ease: 'Back.Out' });
+        spawnScorePopup(this, GAME_WIDTH / 2, TOP_SAFE + 180, 'NEW BEST!', '#66ff8f');
+        this.cameras.main.flash(180, 200, 255, 200);
+        Audio.play('extraLife');
+      } else if (!bestBeatenThisRun) {
+        bestText.setText(`BEST ${startBest}`);
+      } else {
+        bestText.setText(`NEW BEST ${score}`);
+      }
     };
     const onTick = (msLeft: number) => {
       this.timeText.setText(this.fmt(msLeft));

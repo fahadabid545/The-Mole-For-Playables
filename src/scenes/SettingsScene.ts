@@ -18,8 +18,8 @@ export class SettingsScene extends Phaser.Scene {
   create(): void {
     new ParallaxJungle(this);
 
-    this.add.image(GAME_WIDTH / 2, 130, TX.iconGear).setOrigin(0.5).setScale(0.9);
-    this.add.text(GAME_WIDTH / 2, 220, 'Settings', TS.title('#fff8e1')).setOrigin(0.5);
+    this.add.image(GAME_WIDTH / 2, 170, TX.signHang).setOrigin(0.5).setDepth(99).setScale(1.1);
+    this.add.text(GAME_WIDTH / 2, 175, 'SETTINGS', TS.title()).setOrigin(0.5).setDepth(100);
 
     let y = 340;
     this.add.text(80, y, 'Sound', TS.h2('#fff8e1')).setOrigin(0, 0.5);

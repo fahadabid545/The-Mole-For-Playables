@@ -10,8 +10,14 @@ export const TS = {
     stroke: '#4a1a05', strokeThickness: 16,
     shadow: { offsetX: 0, offsetY: 12, color: '#000000', blur: 18, fill: true }, align: 'center',
   }),
-  title: (color = '#1b5e20'): S => ({
-    fontFamily: FAM, fontSize: '54px', color, stroke: '#fff8e1', strokeThickness: 5,
+  title: (color = '#ffb300'): S => ({
+    fontFamily: FAM, fontSize: '58px', color,
+    stroke: '#4a1a05', strokeThickness: 8,
+    shadow: { offsetX: 0, offsetY: 5, color: '#000000', blur: 8, fill: true },
+    align: 'center',
+  }),
+  panelTitle: (color = '#fff5c9'): S => ({
+    fontFamily: FAM, fontSize: '38px', color, stroke: '#3e2723', strokeThickness: 5,
     shadow: { offsetX: 0, offsetY: 3, color: '#000000', blur: 4, fill: true },
   }),
   h2: (color = '#3e2723'): S => ({

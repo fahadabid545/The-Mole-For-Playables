@@ -24,9 +24,9 @@ export class MenuScene extends Phaser.Scene {
     new ParallaxJungle(this);
     spawnLeafParticles(this);
 
-    const title = this.add.text(GAME_WIDTH / 2, 260, 'JUNGLE\nMOLE', TS.hero()).setOrigin(0.5);
+    const title = this.add.text(GAME_WIDTH / 2, 240, 'JUNGLE\nMOLE', TS.hero()).setOrigin(0.5);
     title.setY(-100).setAngle(-8);
-    this.tweens.add({ targets: title, y: 260, angle: 0, duration: 700, ease: 'Bounce.Out' });
+    this.tweens.add({ targets: title, y: 240, angle: 0, duration: 700, ease: 'Bounce.Out' });
     this.tweens.add({ targets: title, y: '+=14', yoyo: true, repeat: -1, duration: 1600, ease: 'Sine.InOut', delay: 800 });
     this.tweens.add({ targets: title, angle: { from: -3, to: 3 }, yoyo: true, repeat: -1, duration: 2400, ease: 'Sine.InOut', delay: 800 });
 
@@ -34,7 +34,6 @@ export class MenuScene extends Phaser.Scene {
     this.tweens.add({ targets: mascot, angle: -6, yoyo: true, repeat: -1, duration: 900, ease: 'Sine.InOut' });
 
     Save.tickDailyPlayStreak();
-    // Challenge streak reward: every 3 completed challenges → +1 life.
     const cs = Save.get().challengeStreak;
     if (cs > 0 && cs % 3 === 0 && !Save.get().medals.includes(`csr-${cs}`)) {
       Save.addLife(1);
@@ -48,27 +47,34 @@ export class MenuScene extends Phaser.Scene {
     const highestInLast = save.categories[lastCat].highestUnlockedLevel;
     const resumeLevel = Math.max(1, Math.min(lastLevel, highestInLast));
     const hasProgress = highestInLast > 1 || lastLevel > 1;
-    const playLabel = hasProgress ? I18n.t('continue') : I18n.t('play');
 
-    new Button(this, GAME_WIDTH / 2, 750, {
-      label: playLabel,
-      onClick: () => this.tryStartLevel(resumeLevel, lastCat),
+    // Three floating info plaques around the mascot — no dark pill.
+    this.floatChip(GAME_WIDTH / 2 - 260, 460, TX.iconTrophy, `${save.bestScore}`,   'BEST',   -6);
+    this.floatChip(GAME_WIDTH / 2,       420, TX.star,         `${Save.totalStarsAcross()}`, 'STARS', 0);
+    this.floatChip(GAME_WIDTH / 2 + 260, 460, TX.iconFlame,   `${save.playStreak.current}`,  'STREAK', 6);
+
+    // 4 wooden buttons only.
+    const gap = 132;
+    const secY = 780;
+    const primary = hasProgress ? I18n.t('continue') : 'PLAY';
+    new Button(this, GAME_WIDTH / 2, secY, {
+      label: primary,
+      onClick: () => hasProgress
+        ? this.tryStartLevel(resumeLevel, lastCat)
+        : this.scene.start('CategorySelect'),
     });
-
-    const bannerY = 685;
-    this.add.rectangle(GAME_WIDTH / 2, bannerY, GAME_WIDTH - 120, 56, 0x2b1810, 0.75)
-      .setStrokeStyle(3, 0xffb300);
-    const bestBanner = `BEST ${save.bestScore}    STARS ${Save.totalStarsAcross()}    STREAK ${save.playStreak.current}`;
-    this.add.text(GAME_WIDTH / 2, bannerY, bestBanner,
-      { fontFamily: '"Arial Black", Impact, sans-serif', fontSize: '24px', color: '#ffd54f',
-        stroke: '#000000', strokeThickness: 3 }).setOrigin(0.5);
-
-    const gap = 108;
-    const secY = 870;
-    new Button(this, GAME_WIDTH / 2, secY,           { label: I18n.t('levels'),     onClick: () => this.scene.start('CategorySelect') });
-    new Button(this, GAME_WIDTH / 2, secY + gap,     { label: I18n.t('challenges'), onClick: () => this.scene.start('Challenges'), variant: 'ad' });
-    new Button(this, GAME_WIDTH / 2, secY + gap * 2, { label: 'Stats & Medals',     onClick: () => this.scene.start('Stats') });
-    new Button(this, GAME_WIDTH / 2, secY + gap * 3, { label: 'How to Play',        onClick: () => this.scene.start('HowToPlay'), scale: 0.85 });
+    new Button(this, GAME_WIDTH / 2, secY + gap, {
+      label: I18n.t('challenges'), variant: 'ad',
+      onClick: () => this.scene.start('Challenges'),
+    });
+    new Button(this, GAME_WIDTH / 2, secY + gap * 2, {
+      label: 'JUNGLE BOARD',
+      onClick: () => this.scene.start('JungleBoard'),
+    });
+    new Button(this, GAME_WIDTH / 2, secY + gap * 3, {
+      label: 'SETTINGS',
+      onClick: () => this.scene.start('Settings'),
+    });
 
     const topPad = 110;
     const sound = this.add.image(GAME_WIDTH - 70, topPad, Audio.isMuted() ? TX.soundOff : TX.soundOn)
@@ -77,16 +83,24 @@ export class MenuScene extends Phaser.Scene {
       const m = Audio.toggleMute();
       sound.setTexture(m ? TX.soundOff : TX.soundOn);
     });
-    const gear = this.add.image(GAME_WIDTH - 160, topPad, TX.iconGear)
-      .setOrigin(0.5).setInteractive({ useHandCursor: true }).setScale(0.9);
-    gear.on('pointerdown', () => this.scene.start('Settings'));
-    this.tweens.add({ targets: gear, angle: 360, duration: 12000, repeat: -1 });
 
     new AdBanner(this).show();
 
-    if (!Save.get().welcomed) {
-      Save.setWelcomed();
-    }
+    if (!Save.get().welcomed) Save.setWelcomed();
+  }
+
+  // Small icon + number + label chip that gently drifts. No box, no
+  // stroke-pill — just legible text over the parallax.
+  private floatChip(x: number, y: number, iconKey: string, value: string, label: string, angle: number): void {
+    const icon = this.add.image(x, y - 4, iconKey).setOrigin(0.5).setScale(0.55);
+    const num = this.add.text(x, y + 30, value,
+      { fontFamily: '"Luckiest Guy", Impact, sans-serif', fontSize: '32px', color: '#ffd54f',
+        stroke: '#3e2723', strokeThickness: 5 }).setOrigin(0.5).setAngle(angle);
+    const lbl = this.add.text(x, y + 60, label,
+      { fontFamily: '"Luckiest Guy", Impact, sans-serif', fontSize: '18px', color: '#fff5c9',
+        stroke: '#3e2723', strokeThickness: 3 }).setOrigin(0.5).setAngle(angle);
+    this.tweens.add({ targets: [icon, num, lbl], y: '+=6', yoyo: true, repeat: -1,
+      duration: 1400 + Math.random() * 600, ease: 'Sine.InOut' });
   }
 
   private tryStartLevel(level: number, category: CategoryId = 'easy'): void {

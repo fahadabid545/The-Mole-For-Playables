@@ -25,8 +25,8 @@ export class HowToPlayScene extends Phaser.Scene {
   create(): void {
     new ParallaxJungle(this);
 
-    this.add.image(GAME_WIDTH / 2, 160, TX.signHang).setOrigin(0.5, 0.5).setDepth(99);
-    this.add.text(GAME_WIDTH / 2, 168, 'HOW TO PLAY', TS.title('#fff5c9')).setOrigin(0.5).setDepth(100);
+    this.add.image(GAME_WIDTH / 2, 170, TX.signHang).setOrigin(0.5).setDepth(99).setScale(1.1);
+    this.add.text(GAME_WIDTH / 2, 175, 'HOW TO PLAY', { ...TS.title(), fontSize: '46px' }).setOrigin(0.5).setDepth(100);
 
     let y = 280;
     this.add.rectangle(GAME_WIDTH / 2, y, GAME_WIDTH - 80, 100, 0x2b1810, 0.75)
@@ -60,7 +60,7 @@ export class HowToPlayScene extends Phaser.Scene {
         color: '#ffd54f', align: 'center', wordWrap: { width: GAME_WIDTH - 100 } }).setOrigin(0.5);
 
     new Button(this, GAME_WIDTH / 2, GAME_HEIGHT - 220, {
-      label: I18n.t('back'), onClick: () => this.scene.start('Menu'), scale: 0.8,
+      label: I18n.t('back'), onClick: () => this.scene.start('JungleBoard'), scale: 0.8,
     });
     new AdBanner(this).show();
   }

@@ -14,8 +14,8 @@ export class AchievementsScene extends Phaser.Scene {
 
   create(): void {
     new ParallaxJungle(this);
-    this.add.image(GAME_WIDTH / 2, 160, TX.signHang).setOrigin(0.5).setDepth(99);
-    this.add.text(GAME_WIDTH / 2, 168, 'Achievements', TS.title('#fff5c9')).setOrigin(0.5).setDepth(100);
+    this.add.image(GAME_WIDTH / 2, 170, TX.signHang).setOrigin(0.5).setDepth(99).setScale(1.1);
+    this.add.text(GAME_WIDTH / 2, 180, 'ACHIEVE-\nMENTS', TS.title()).setOrigin(0.5).setDepth(100);
 
     const unlocked = new Set(Save.get().achievements ?? []);
     const topClip = 260;
@@ -75,7 +75,7 @@ export class AchievementsScene extends Phaser.Scene {
     this.input.on('wheel', (_: unknown, __: unknown, ___: number, dy: number) => scrollBy(-dy));
 
     new Button(this, GAME_WIDTH / 2, GAME_HEIGHT - 220, {
-      label: I18n.t('back'), onClick: () => this.scene.start('Menu'), scale: 0.8,
+      label: I18n.t('back'), onClick: () => this.scene.start('JungleBoard'), scale: 0.8,
     });
     new AdBanner(this).show();
   }

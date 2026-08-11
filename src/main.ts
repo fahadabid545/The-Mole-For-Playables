@@ -14,6 +14,8 @@ import { AchievementsScene } from './scenes/AchievementsScene';
 import { SettingsScene } from './scenes/SettingsScene';
 import { StatsScene } from './scenes/StatsScene';
 import { HowToPlayScene } from './scenes/HowToPlayScene';
+import { JungleBoardScene } from './scenes/JungleBoardScene';
+import { MedalsScene } from './scenes/MedalsScene';
 import { EventBus, EVT } from './utils/EventBus';
 
 // iOS Safari WebGL context creation hangs inside some portal iframes.
@@ -34,7 +36,7 @@ const config: Phaser.Types.Core.GameConfig = {
   },
   input: { activePointers: 2 },
   render: { antialias: true, pixelArt: false, roundPixels: false },
-  scene: [BootScene, PreloadScene, MenuScene, CategorySelectScene, LevelSelectScene, GameScene, HUDScene, ChallengesScene, AchievementsScene, SettingsScene, StatsScene, HowToPlayScene],
+  scene: [BootScene, PreloadScene, MenuScene, CategorySelectScene, LevelSelectScene, GameScene, HUDScene, ChallengesScene, AchievementsScene, SettingsScene, StatsScene, HowToPlayScene, JungleBoardScene, MedalsScene],
 };
 
 document.addEventListener('visibilitychange', () => {
