@@ -16,4 +16,6 @@ export const EVT = {
   AD_END:   'ad-end',
   PLATFORM_PAUSE:  'platform-pause',
   PLATFORM_RESUME: 'platform-resume',
+  COMBO_CHANGED: 'combo-changed',
+  BOSS_HP: 'boss-hp',
 } as const;

@@ -52,6 +52,8 @@ export class GameScene extends Phaser.Scene {
   private runStartMs = 0;
   private lastComboMs = 0;
   private readonly COMBO_DECAY_MS = 4500;
+  private bossMaxHp = 0;
+  private bossCurHp = 0;
 
   constructor() { super('Game'); }
 
@@ -78,6 +80,13 @@ export class GameScene extends Phaser.Scene {
     this.levelActive = false;
     this.timeLeft = this.params.timeLimitMs;
     this.input.enabled = true;
+    if (this.params.isBoss) {
+      this.bossMaxHp = this.params.quota;
+      this.bossCurHp = this.bossMaxHp;
+    } else {
+      this.bossMaxHp = 0;
+      this.bossCurHp = 0;
+    }
 
     new ParallaxJungle(this);
     spawnLeafParticles(this);
@@ -161,6 +170,14 @@ export class GameScene extends Phaser.Scene {
       this.tweens.add({ targets: banner, alpha: 0, y: '-=40', duration: 250,
         onComplete: () => banner.destroy() });
     });
+    if (this.params.isBoss) {
+      const dim = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x000000, 0.5)
+        .setDepth(14000);
+      this.cameras.main.shake(400, 0.008);
+      this.tweens.add({ targets: dim, alpha: 0, duration: 900, delay: 500,
+        onComplete: () => dim.destroy() });
+      Audio.play('bomb');
+    }
 
     const t = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, '3', TS.countdown())
       .setOrigin(0.5).setDepth(15000);
@@ -214,7 +231,10 @@ export class GameScene extends Phaser.Scene {
     this.timeLeft -= dt;
     EventBus.emit(EVT.TIMER_TICK, this.timeLeft);
     if (this.timeLeft <= 0) { this.timeLeft = 0; this.endLevel(false); return; }
-    if (this.combo > 0 && time - this.lastComboMs > this.COMBO_DECAY_MS) this.combo = 0;
+    if (this.combo > 0 && time - this.lastComboMs > this.COMBO_DECAY_MS) {
+      this.combo = 0;
+      EventBus.emit(EVT.COMBO_CHANGED, 0);
+    }
 
     if (time >= this.nextSpawnAt) {
       const activeCount = this.raccoons.filter(r => !r.isAvailable()).length;
@@ -284,6 +304,7 @@ export class GameScene extends Phaser.Scene {
     this.combo++;
     this.lastComboMs = this.time.now;
     Save.recordCombo(this.combo);
+    EventBus.emit(EVT.COMBO_CHANGED, this.combo);
     try { navigator.vibrate?.(20); } catch { /* ignore */ }
     const shakeIntensity = kind === 'boss' ? 0.010 : kind === 'golden' ? 0.006 : 0.004;
     this.cameras.main.shake(90, shakeIntensity);
@@ -296,6 +317,10 @@ export class GameScene extends Phaser.Scene {
                   kind === 'frozen' ? '#81d4fa' : comboMul > 1 ? '#ffeb3b' : '#fff176';
     spawnScorePopup(this, rac.x, rac.y - 60, `+${pts}${comboMul > 1 ? ` x${comboMul}` : ''}`, color);
     if (comboMul > 1) { spawnScorePopup(this, rac.x + 40, rac.y - 110, 'COMBO!', '#ff9800'); Audio.play('combo'); }
+    if (this.params.isBoss && (kind === 'boss' || kind === 'normal' || kind === 'golden' || kind === 'frozen')) {
+      this.bossCurHp = Math.max(0, this.bossCurHp - points);
+      EventBus.emit(EVT.BOSS_HP, this.bossCurHp, this.bossMaxHp);
+    }
     if (kind === 'boss') {
       spawnScorePopup(this, rac.x, rac.y - 150, 'BOSS DOWN!', '#f8bbd0');
     }
@@ -305,7 +330,7 @@ export class GameScene extends Phaser.Scene {
 
   private onRaccoonEscape(rac: Raccoon): void {
     if (!this.levelActive) return;
-    this.combo = 0;
+    if (this.combo > 0) { this.combo = 0; EventBus.emit(EVT.COMBO_CHANGED, 0); }
     this.misses++;
     Save.recordEscape();
     Save.recordMiss();
@@ -352,6 +377,10 @@ export class GameScene extends Phaser.Scene {
         return;
       }
       Save.recordStars(this.category, this.level, stars);
+      if (stars === 3) {
+        this.cameras.main.flash(220, 255, 220, 120);
+        this.cameras.main.shake(180, 0.006);
+      }
       Save.unlockUpTo(this.category, this.level + 1);
       Save.recordLevelClear(!!this.params.isBoss);
       Save.recordPlayMs(Date.now() - this.runStartMs);

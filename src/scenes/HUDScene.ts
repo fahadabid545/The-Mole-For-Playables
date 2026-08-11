@@ -74,6 +74,38 @@ export class HUDScene extends Phaser.Scene {
       gameScene.events.off('hud-icons-show');
     });
 
+    // Combo meter (below the score)
+    const comboBarW = 200, comboBarH = 10;
+    const comboBg = this.add.rectangle(GAME_WIDTH / 2, TOP_SAFE + 96, comboBarW, comboBarH, 0x000000, 0.4).setOrigin(0.5);
+    const comboFill = this.add.rectangle(GAME_WIDTH / 2 - comboBarW / 2, TOP_SAFE + 96, 0, comboBarH, 0xffca28, 1).setOrigin(0, 0.5);
+    const comboLbl = this.add.text(GAME_WIDTH / 2, TOP_SAFE + 76, '', { ...TS.hudSmall('#ffd54f') }).setOrigin(0.5, 1);
+    void comboBg;
+
+    // Boss HP bar (hidden until first boss-hp event)
+    const bossBarW = GAME_WIDTH - 80, bossBarH = 18;
+    const bossLbl = this.add.text(GAME_WIDTH / 2, TOP_SAFE + 250, '', { ...TS.hudSmall('#f8bbd0') }).setOrigin(0.5).setVisible(false);
+    const bossBg = this.add.rectangle(GAME_WIDTH / 2, TOP_SAFE + 280, bossBarW, bossBarH, 0x000000, 0.5).setOrigin(0.5).setVisible(false);
+    const bossFill = this.add.rectangle(GAME_WIDTH / 2 - bossBarW / 2, TOP_SAFE + 280, 0, bossBarH, 0xef5350, 1).setOrigin(0, 0.5).setVisible(false);
+
+    const onCombo = (combo: number) => {
+      const cap = 20;
+      const frac = Math.min(1, combo / cap);
+      comboFill.width = comboBarW * frac;
+      comboLbl.setText(combo > 1 ? `COMBO x${combo >= 8 ? 3 : combo >= 4 ? 2 : 1}` : '');
+    };
+    EventBus.on(EVT.COMBO_CHANGED, onCombo);
+
+    const onBossHp = (currentHp: number, maxHp: number) => {
+      bossLbl.setVisible(true); bossBg.setVisible(true); bossFill.setVisible(true);
+      const frac = Math.max(0, Math.min(1, currentHp / maxHp));
+      bossFill.width = bossBarW * frac;
+      bossLbl.setText(currentHp > 0 ? `BOSS HP  ${currentHp} / ${maxHp}` : 'BOSS DOWN!');
+      if (currentHp <= 0) {
+        this.time.delayedCall(900, () => { bossLbl.setVisible(false); bossBg.setVisible(false); bossFill.setVisible(false); });
+      }
+    };
+    EventBus.on(EVT.BOSS_HP, onBossHp);
+
     const onScore = (score: number, hits: number, quota: number) => {
       this.scoreText.setText(`${score}`);
       this.quotaText.setText(I18n.t('hits', { a: hits, b: quota }));
@@ -91,6 +123,8 @@ export class HUDScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       EventBus.off(EVT.SCORE_CHANGED, onScore);
       EventBus.off(EVT.TIMER_TICK, onTick);
+      EventBus.off(EVT.COMBO_CHANGED, onCombo);
+      EventBus.off(EVT.BOSS_HP, onBossHp);
     });
   }
 
