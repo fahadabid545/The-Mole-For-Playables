@@ -10,13 +10,13 @@ import { TS } from '../config/TextStyles';
 interface Row { tex: string; label: string; effect: string; color: string; }
 
 const ROWS: Row[] = [
-  { tex: 'tx-raccoon',         label: 'Raccoon',     effect: '+10',        color: '#a5d6a7' },
-  { tex: 'tx-raccoon-golden',  label: 'Golden',      effect: '+30',        color: '#ffd54f' },
-  { tex: 'tx-raccoon-frozen',  label: 'Frozen',      effect: '+20 (2 hits)', color: '#81d4fa' },
-  { tex: 'tx-raccoon-boss',    label: 'Boss',        effect: '+100 (3 hits)', color: '#f8bbd0' },
-  { tex: 'tx-bomb',            label: 'Bomb',        effect: '-1 LIFE',    color: '#ef5350' },
-  { tex: 'tx-cat',             label: 'Cat',         effect: '-2s / -10',  color: '#ffab91' },
-  { tex: 'tx-goat',            label: 'Goat',        effect: '-2s / -10',  color: '#ffab91' },
+  { tex: 'tx-raccoon',         label: 'Raccoon',   effect: '+10',           color: '#a5d6a7' },
+  { tex: 'tx-raccoon-golden',  label: 'Golden',    effect: '+30',           color: '#ffd54f' },
+  { tex: 'tx-raccoon-frozen',  label: 'Frozen',    effect: '+20 · 2 hits',  color: '#81d4fa' },
+  { tex: 'tx-raccoon-boss',    label: 'Boss',      effect: '+100 · 3 hits', color: '#f8bbd0' },
+  { tex: 'tx-bomb',            label: 'Bomb',      effect: '-1 LIFE',       color: '#ef5350' },
+  { tex: 'tx-cat',             label: 'Cat',       effect: '-2s / -10',     color: '#ffab91' },
+  { tex: 'tx-goat',            label: 'Goat',      effect: '-2s / -10',     color: '#ffab91' },
 ];
 
 export class HowToPlayScene extends Phaser.Scene {
@@ -25,42 +25,40 @@ export class HowToPlayScene extends Phaser.Scene {
   create(): void {
     new ParallaxJungle(this);
 
-    this.add.image(GAME_WIDTH / 2, 170, TX.signHang).setOrigin(0.5).setDepth(99).setScale(1.1);
-    this.add.text(GAME_WIDTH / 2, 175, 'HOW TO PLAY', { ...TS.title(), fontSize: '46px' }).setOrigin(0.5).setDepth(100);
+    this.add.image(GAME_WIDTH / 2, 170, TX.signHang).setOrigin(0.5).setDepth(99).setScale(1.15);
+    this.add.text(GAME_WIDTH / 2, 175, 'HOW TO PLAY',
+      { ...TS.title(), fontSize: '40px', strokeThickness: 6 }).setOrigin(0.5).setDepth(100);
 
-    let y = 280;
-    this.add.rectangle(GAME_WIDTH / 2, y, GAME_WIDTH - 80, 100, 0x2b1810, 0.75)
-      .setStrokeStyle(3, 0x8d6e63);
-    this.add.text(GAME_WIDTH / 2, y,
-      'Tap raccoons as they pop out.\nCombo hits multiply score. Beat the quota before time runs out.',
-      { fontFamily: '"Arial Black", Impact, sans-serif', fontSize: '20px',
-        color: '#fff8e1', align: 'center', wordWrap: { width: GAME_WIDTH - 120 } }).setOrigin(0.5);
-    y += 90;
+    // Intro on a wooden plank (same theme as rows).
+    const introY = 290;
+    this.add.image(GAME_WIDTH / 2, introY, TX.tileWood).setOrigin(0.5)
+      .setDisplaySize(GAME_WIDTH - 80, 100);
+    this.add.text(GAME_WIDTH / 2, introY,
+      'Tap raccoons as they pop out.\nCombo hits multiply score.',
+      { fontFamily: '"Arial Black", Impact, sans-serif', fontSize: '22px',
+        color: '#fff8e1', align: 'center', stroke: '#3e2723', strokeThickness: 3 }).setOrigin(0.5);
 
-    const rowH = 78;
+    // Fixed 3-column layout per row: icon | label (left) | effect (right).
+    let y = introY + 90;
+    const rowH = 74;
+    const iconX = 80;
+    const labelX = 160;
+    const effectX = GAME_WIDTH - 80;
     for (const row of ROWS) {
       y += rowH;
-      this.add.rectangle(GAME_WIDTH / 2, y, GAME_WIDTH - 80, rowH - 8, 0xfff5c9, 0.94)
-        .setStrokeStyle(3, 0x5d3a1a);
-      this.add.image(80, y, row.tex).setOrigin(0.5).setScale(0.32);
-      this.add.text(160, y, row.label,
+      this.add.image(GAME_WIDTH / 2, y, TX.tileWood).setOrigin(0.5)
+        .setDisplaySize(GAME_WIDTH - 80, rowH - 10);
+      this.add.image(iconX, y, row.tex).setOrigin(0.5).setScale(0.3);
+      this.add.text(labelX, y, row.label,
         { fontFamily: '"Arial Black", Impact, sans-serif', fontSize: '24px',
-          color: '#3e2723' }).setOrigin(0, 0.5);
-      this.add.text(GAME_WIDTH - 60, y, row.effect,
+          color: '#fff8e1', stroke: '#3e2723', strokeThickness: 3 }).setOrigin(0, 0.5);
+      this.add.text(effectX, y, row.effect,
         { fontFamily: '"Arial Black", Impact, sans-serif', fontSize: '22px',
           color: row.color, stroke: '#3e2723', strokeThickness: 3 }).setOrigin(1, 0.5);
     }
 
-    y += rowH + 20;
-    this.add.rectangle(GAME_WIDTH / 2, y, GAME_WIDTH - 80, 80, 0x2b1810, 0.75)
-      .setStrokeStyle(3, 0x8d6e63);
-    this.add.text(GAME_WIDTH / 2, y,
-      'EASY 3x3    HARD 4x3 faster    SUPER HARD penalty enemies',
-      { fontFamily: '"Arial Black", Impact, sans-serif', fontSize: '18px',
-        color: '#ffd54f', align: 'center', wordWrap: { width: GAME_WIDTH - 100 } }).setOrigin(0.5);
-
-    new Button(this, GAME_WIDTH / 2, GAME_HEIGHT - 220, {
-      label: I18n.t('back'), onClick: () => this.scene.start('JungleBoard'), scale: 0.8,
+    new Button(this, GAME_WIDTH / 2, GAME_HEIGHT - 240, {
+      label: I18n.t('back'), onClick: () => this.scene.start('Menu'), scale: 0.8,
     });
     new AdBanner(this).show();
   }

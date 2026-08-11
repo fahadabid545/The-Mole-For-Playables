@@ -33,6 +33,16 @@ export class Popup extends Phaser.GameObjects.Container {
     this.setDepth(20000);
     scene.add.existing(this);
 
+    // Hide HUD icons for any active HUD scene so the popup close-X and
+    // action buttons never hide behind the sound/pause icons.
+    const gameScene: any = scene.scene.get?.('Game');
+    if (gameScene?.events) {
+      gameScene.events.emit('hud-icons-hide');
+      this.once(Phaser.GameObjects.Events.DESTROY, () => {
+        gameScene.events.emit('hud-icons-show');
+      });
+    }
+
     const restY = this.panelGroup.y;
     this.panelGroup.setY(restY - 260);
     this.panelGroup.setScale(0.85);

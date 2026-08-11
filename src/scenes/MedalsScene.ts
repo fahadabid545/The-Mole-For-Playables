@@ -41,9 +41,14 @@ export class MedalsScene extends Phaser.Scene {
       const y = 20 + r * (size + gap + 40) + size / 2;
       const has = owned.has(m.id);
 
-      const disc = this.add.circle(x, y, size / 2, has ? 0x8d6e63 : 0x1e120a, 0.95)
+      // Wooden plaque behind each medal disc for the jungle look.
+      const plaque = this.add.image(x, y, TX.tileWood).setOrigin(0.5)
+        .setDisplaySize(size + 20, size + 20);
+      if (!has) plaque.setTint(0x5d3a1a);
+      const disc = this.add.circle(x, y, size / 2 - 6, has ? 0x8d6e63 : 0x1e120a, 0.95)
         .setStrokeStyle(5, has ? 0xffd54f : 0x5d3a1a);
       const icon = this.add.image(x, y - 6, TX.iconMedal).setOrigin(0.5).setScale(0.9);
+      container.add(plaque);
       if (!has) icon.setAlpha(0.25);
       const label = this.add.text(x, y + size / 2 + 8, m.title,
         { fontFamily: '"Arial Black", Impact, sans-serif',

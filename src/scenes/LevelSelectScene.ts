@@ -113,12 +113,30 @@ export class LevelSelectScene extends Phaser.Scene {
       label: I18n.t('back'), onClick: () => this.scene.start('CategorySelect'), scale: 0.8,
     });
 
+    // Small down/up arrow on the right edge — click to jump-scroll,
+    // rotates 180° once user has scrolled to the bottom.
     if (contentH > clipH) {
-      const hintY = topClip + clipH - 20;
-      const hint = this.add.text(GAME_WIDTH / 2, hintY, 'scroll for more',
-        { fontFamily: 'Impact, sans-serif', fontSize: '20px', color: '#fff5c9' })
-        .setOrigin(0.5).setAlpha(0.85);
-      this.tweens.add({ targets: hint, y: hintY + 8, yoyo: true, repeat: -1, duration: 700, ease: 'Sine.InOut' });
+      const arrow = this.add.text(GAME_WIDTH - 40, topClip + clipH - 40, '▼',
+        { fontFamily: 'Impact, sans-serif', fontSize: '38px', color: '#ffd54f',
+          stroke: '#3e2723', strokeThickness: 4 })
+        .setOrigin(0.5).setInteractive({ useHandCursor: true });
+      let pointingDown = true;
+      this.tweens.add({ targets: arrow, y: arrow.y + 8, yoyo: true, repeat: -1,
+        duration: 700, ease: 'Sine.InOut' });
+      arrow.on('pointerdown', () => {
+        Audio.play('click');
+        const jump = clipH * 0.7;
+        this.scrollBy(pointingDown ? -jump : jump);
+      });
+      const refreshArrow = () => {
+        const atBottom = this.gridContainer.y - this.minY < 4;
+        const wantDown = !atBottom;
+        if (wantDown !== pointingDown) {
+          pointingDown = wantDown;
+          arrow.setAngle(pointingDown ? 0 : 180);
+        }
+      };
+      this.events.on('update', refreshArrow);
     }
 
     new AdBanner(this).show();

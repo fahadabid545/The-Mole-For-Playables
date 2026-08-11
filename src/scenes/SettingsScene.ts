@@ -11,6 +11,7 @@ import { AdBanner } from '../ui/AdBanner';
 import { Popup } from '../ui/popups/Popup';
 import { Ads } from '../services/AdsService';
 import { EventBus, EVT } from '../utils/EventBus';
+import { IS_PORTAL } from '../config/BuildFlags';
 
 export class SettingsScene extends Phaser.Scene {
   constructor() { super('Settings'); }
@@ -44,12 +45,14 @@ export class SettingsScene extends Phaser.Scene {
       },
       scale: 0.9, variant: 'ad',
     });
-    y = 600;
-    new Button(this, GAME_WIDTH / 2, y, {
-      label: 'Show Ad',
-      onClick: () => { void Ads.showInterstitial(); },
-      scale: 0.85, variant: 'ad',
-    });
+    if (!IS_PORTAL) {
+      y = 600;
+      new Button(this, GAME_WIDTH / 2, y, {
+        label: 'Show Ad (test)',
+        onClick: () => { void Ads.showInterstitial(); },
+        scale: 0.85, variant: 'ad',
+      });
+    }
 
     y = GAME_HEIGHT - 600;
     new Button(this, GAME_WIDTH / 2, y, {
@@ -66,10 +69,6 @@ export class SettingsScene extends Phaser.Scene {
       onClick: () => this.confirmReset(),
       scale: 0.9, variant: 'ad',
     });
-
-    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 370,
-      'Jungle Mole v0.2\nBuilt with Phaser 3',
-      { ...TS.body('#fff8e1'), align: 'center', fontSize: '22px' }).setOrigin(0.5);
 
     new Button(this, GAME_WIDTH / 2, GAME_HEIGHT - 240, {
       label: I18n.t('back'), onClick: () => this.scene.start('Menu'), scale: 0.8,

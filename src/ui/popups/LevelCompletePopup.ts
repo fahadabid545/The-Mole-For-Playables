@@ -40,14 +40,14 @@ export class LevelCompletePopup extends Popup {
     const scoreText = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 40, I18n.t('score', { n: o.score }),
       { ...TS.h2('#3e2723'), fontSize: '36px' }).setOrigin(0.5);
 
-    const nextBtn = new Button(scene, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 120, {
+    const nextBtn = new Button(scene, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 110, {
       label: I18n.t('next'), onClick: () => this.close(o.onNext),
     });
-    const replayBtn = new Button(scene, GAME_WIDTH / 2 - 120, GAME_HEIGHT / 2 + 220, {
-      label: 'Replay', onClick: () => this.close(o.onReplay ?? (() => {})), scale: 0.7,
+    const replayBtn = new Button(scene, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 210, {
+      label: 'REPLAY', onClick: () => this.close(o.onReplay ?? (() => {})), scale: 0.75,
     });
-    const menuBtn = new Button(scene, GAME_WIDTH / 2 + 120, GAME_HEIGHT / 2 + 220, {
-      label: I18n.t('menu'), onClick: () => this.close(o.onMenu), scale: 0.7,
+    const menuBtn = new Button(scene, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 300, {
+      label: I18n.t('menu'), onClick: () => this.close(o.onMenu), scale: 0.75,
     });
 
     this.addContent(title, ...starObjs, scoreText, nextBtn, replayBtn, menuBtn);

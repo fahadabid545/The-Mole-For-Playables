@@ -40,6 +40,7 @@ export class GameScene extends Phaser.Scene {
   private combo = 0;
   private levelActive = false;
   private paused = false;
+  private pauseReasons = new Set<string>();
   private endedFlag = false;
 
   private timeLeft = 0;
@@ -76,6 +77,7 @@ export class GameScene extends Phaser.Scene {
     this.misses = 0;
     this.combo = 0;
     this.paused = false;
+    this.pauseReasons.clear();
     this.endedFlag = false;
     this.levelActive = false;
     this.timeLeft = this.params.timeLimitMs;
@@ -114,29 +116,43 @@ export class GameScene extends Phaser.Scene {
 
     this.events.on('request-pause', () => this.openPause());
 
-    const onAdStart = () => {
-      if (this.levelActive && !this.paused) {
+    const addReason = (reason: string) => {
+      if (!this.levelActive) return;
+      const wasPaused = this.pauseReasons.size > 0;
+      this.pauseReasons.add(reason);
+      if (!wasPaused) {
         this.paused = true;
         this.events.emit('hud-icons-hide');
       }
     };
-    const onAdEnd = () => {
-      if (this.levelActive && this.paused) {
+    const dropReason = (reason: string) => {
+      if (!this.pauseReasons.has(reason)) return;
+      this.pauseReasons.delete(reason);
+      if (this.pauseReasons.size === 0 && this.paused) {
         this.paused = false;
         this.timerLast = this.time.now;
         this.events.emit('hud-icons-show');
       }
     };
+    const onAdStart      = () => addReason('ad');
+    const onAdEnd        = () => dropReason('ad');
+    const onPlatformP    = () => addReason('platform');
+    const onPlatformR    = () => dropReason('platform');
     EventBus.on(EVT.AD_START, onAdStart);
     EventBus.on(EVT.AD_END, onAdEnd);
-    EventBus.on(EVT.PLATFORM_PAUSE, onAdStart);
-    EventBus.on(EVT.PLATFORM_RESUME, onAdEnd);
+    EventBus.on(EVT.PLATFORM_PAUSE, onPlatformP);
+    EventBus.on(EVT.PLATFORM_RESUME, onPlatformR);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       EventBus.off(EVT.AD_START, onAdStart);
       EventBus.off(EVT.AD_END, onAdEnd);
-      EventBus.off(EVT.PLATFORM_PAUSE, onAdStart);
-      EventBus.off(EVT.PLATFORM_RESUME, onAdEnd);
+      EventBus.off(EVT.PLATFORM_PAUSE, onPlatformP);
+      EventBus.off(EVT.PLATFORM_RESUME, onPlatformR);
+      this.pauseReasons.clear();
+      this.paused = false;
     });
+    // Expose so openPause() and popups can add/drop via same ref-count.
+    (this as any)._addPauseReason  = addReason;
+    (this as any)._dropPauseReason = dropReason;
 
     this.runCountdown(() => this.startLevel());
   }
@@ -367,8 +383,7 @@ export class GameScene extends Phaser.Scene {
         if (this.challenge.rewardLives > 0) Save.addLife(this.challenge.rewardLives);
         if (this.challenge.kind === 'daily') Save.markDailyDone(this.challenge.key);
         else Save.markWeeklyDone(this.challenge.key);
-        Save.setBestScore(this.score);
-        EventBus.emit(EVT.LIFE_CHANGED);
+          EventBus.emit(EVT.LIFE_CHANGED);
         new LevelCompletePopup(this, {
           level: this.level, stars, score: this.score,
           onNext: () => { this.scene.stop('HUD'); this.scene.start('Challenges'); },
@@ -384,7 +399,6 @@ export class GameScene extends Phaser.Scene {
       Save.unlockUpTo(this.category, this.level + 1);
       Save.recordLevelClear(!!this.params.isBoss);
       Save.recordPlayMs(Date.now() - this.runStartMs);
-      Save.setBestScore(this.score);
       checkProgress('levelClear', this.level);
       if (this.misses === 0) checkProgress('perfect', 1);
       if (this.timeLeft / this.params.timeLimitMs > 0.5) checkProgress('speed', 1);
@@ -473,6 +487,13 @@ export class GameScene extends Phaser.Scene {
       });
       return;
     }
+    // Preserve challenge context on retry so a mid-challenge fail doesn't
+    // silently drop into plain-level mode.
+    if (this.challenge) {
+      this.scene.stop('HUD');
+      this.scene.start('Game', { level: this.level, challenge: this.challenge });
+      return;
+    }
     this.scene.stop('HUD');
     this.scene.start('Game', { level: this.level, category: this.category });
   }
@@ -483,13 +504,11 @@ export class GameScene extends Phaser.Scene {
 
   private openPause(): void {
     if (!this.levelActive || this.paused) return;
-    this.paused = true;
-    this.events.emit('hud-icons-hide');
-    const restoreIcons = () => this.events.emit('hud-icons-show');
+    (this as any)._addPauseReason?.('manual');
     new PausePopup(this, {
-      onResume: () => { this.paused = false; this.timerLast = this.time.now; restoreIcons(); },
-      onRestart: () => { restoreIcons(); this.restart(); },
-      onQuit: () => { restoreIcons(); this.goMenu(); },
+      onResume: () => (this as any)._dropPauseReason?.('manual'),
+      onRestart: () => { (this as any)._dropPauseReason?.('manual'); this.restart(); },
+      onQuit: () => { (this as any)._dropPauseReason?.('manual'); this.goMenu(); },
     });
   }
 

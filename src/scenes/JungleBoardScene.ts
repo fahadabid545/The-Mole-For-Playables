@@ -8,6 +8,7 @@ import { I18n } from '../services/I18nService';
 import { TS } from '../config/TextStyles';
 import { Save } from '../services/SaveService';
 import { ALL_MEDALS } from '../services/MedalService';
+import { ACHIEVEMENTS } from '../services/AchievementService';
 import { Audio } from '../services/AudioService';
 
 interface Tile {
@@ -24,31 +25,22 @@ export class JungleBoardScene extends Phaser.Scene {
     new ParallaxJungle(this);
 
     this.add.image(GAME_WIDTH / 2, 170, TX.signHang).setOrigin(0.5).setDepth(99).setScale(1.1);
-    this.add.text(GAME_WIDTH / 2, 180, 'JUNGLE\nBOARD', TS.title()).setOrigin(0.5).setDepth(100);
+    this.add.text(GAME_WIDTH / 2, 175, 'JUNGLE BOARD',
+      { ...TS.title(), fontSize: '44px' }).setOrigin(0.5).setDepth(100);
 
     const d = Save.get();
-    const totalStars = Save.totalStarsAcross();
-    const medalsOwned = d.medals.filter(id => ALL_MEDALS.some(m => m.id === id)).length;
+    const totalMedals = d.medals.filter(id => ALL_MEDALS.some(m => m.id === id)).length;
     const achievements = (d.achievements ?? []).length;
 
     const tiles: Tile[] = [
-      { title: 'STATS',        subtitle: `Best ${d.bestScore}`,         scene: 'Stats',        color: 0xffd54f },
-      { title: 'MEDALS',       subtitle: `${medalsOwned} / ${ALL_MEDALS.length}`, scene: 'Medals', color: 0xffb300 },
-      { title: 'ACHIEVEMENTS', subtitle: `${achievements} unlocked`,    scene: 'Achievements', color: 0x66bb6a },
-      { title: 'HOW TO PLAY',  subtitle: `${totalStars} stars total`,   scene: 'HowToPlay',    color: 0x81d4fa },
+      { title: 'ACHIEVEMENTS', subtitle: `${achievements} / ${ACHIEVEMENTS.length} unlocked`, scene: 'Achievements', color: 0x66bb6a },
+      { title: 'STATS',        subtitle: `${d.stats.levelsCleared} levels cleared`,            scene: 'Stats',        color: 0xffd54f },
+      { title: 'MEDALS',       subtitle: `${totalMedals} / ${ALL_MEDALS.length} earned`,       scene: 'Medals',       color: 0xffb300 },
     ];
 
-    const tileW = (GAME_WIDTH - 90) / 2;
-    const tileH = 230;
-    const gap = 30;
-    const startX = 45 + tileW / 2;
-    const startY = 420;
-    tiles.forEach((t, i) => {
-      const col = i % 2, row = Math.floor(i / 2);
-      const x = startX + col * (tileW + gap);
-      const y = startY + row * (tileH + gap);
-      this.buildTile(x, y, tileW, tileH, t);
-    });
+    const startY = 360;
+    const gap = 220;
+    tiles.forEach((t, i) => this.buildTile(GAME_WIDTH / 2, startY + i * gap, t));
 
     new Button(this, GAME_WIDTH / 2, GAME_HEIGHT - 240, {
       label: I18n.t('back'), onClick: () => this.scene.start('Menu'), scale: 0.8,
@@ -56,21 +48,25 @@ export class JungleBoardScene extends Phaser.Scene {
     new AdBanner(this).show();
   }
 
-  private buildTile(x: number, y: number, w: number, h: number, t: Tile): void {
-    const bg = this.add.rectangle(x, y, w, h, 0x2b1810, 0.9)
-      .setStrokeStyle(5, t.color).setInteractive({ useHandCursor: true });
-    this.add.text(x, y - 50, t.title,
-      { ...TS.panelTitle('#fff5c9'), fontSize: '30px', align: 'center',
-        wordWrap: { width: w - 24 } }).setOrigin(0.5);
+  private buildTile(x: number, y: number, t: Tile): void {
+    const w = GAME_WIDTH - 90;
+    const h = 170;
+    const tile = this.add.image(x, y, TX.tileWood).setOrigin(0.5)
+      .setDisplaySize(w, h).setInteractive({ useHandCursor: true });
+
+    this.add.text(x, y - 30, t.title,
+      { ...TS.title('#fff5c9'), fontSize: '40px', strokeThickness: 6 }).setOrigin(0.5);
     this.add.text(x, y + 30, t.subtitle,
       { fontFamily: '"Arial Black", Impact, sans-serif', fontSize: '22px',
-        color: '#ffd54f', stroke: '#000000', strokeThickness: 3 }).setOrigin(0.5);
+        color: '#ffd54f', stroke: '#3e2723', strokeThickness: 3 }).setOrigin(0.5);
 
-    bg.on('pointerover', () => this.tweens.add({ targets: bg, scale: 1.04, duration: 120 }));
-    bg.on('pointerout',  () => this.tweens.add({ targets: bg, scale: 1, duration: 120 }));
-    bg.on('pointerdown', () => {
-      Audio.play('click');
-      this.scene.start(t.scene);
-    });
+    // Colored highlight strip on the left edge of each tile.
+    this.add.rectangle(x - w / 2 + 12, y, 8, h - 24, t.color, 0.9).setOrigin(0, 0.5);
+
+    tile.on('pointerover', () => this.tweens.add({ targets: tile, scaleX: (w / tile.width) * 1.02,
+      scaleY: (h / tile.height) * 1.02, duration: 120 }));
+    tile.on('pointerout',  () => this.tweens.add({ targets: tile, scaleX: (w / tile.width),
+      scaleY: (h / tile.height), duration: 120 }));
+    tile.on('pointerdown', () => { Audio.play('click'); this.scene.start(t.scene); });
   }
 }

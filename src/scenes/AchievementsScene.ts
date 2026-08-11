@@ -14,8 +14,9 @@ export class AchievementsScene extends Phaser.Scene {
 
   create(): void {
     new ParallaxJungle(this);
-    this.add.image(GAME_WIDTH / 2, 170, TX.signHang).setOrigin(0.5).setDepth(99).setScale(1.1);
-    this.add.text(GAME_WIDTH / 2, 180, 'ACHIEVE-\nMENTS', TS.title()).setOrigin(0.5).setDepth(100);
+    this.add.image(GAME_WIDTH / 2, 170, TX.signHang).setOrigin(0.5).setDepth(99).setScale(1.15);
+    this.add.text(GAME_WIDTH / 2, 175, 'ACHIEVEMENTS',
+      { ...TS.title(), fontSize: '38px', strokeThickness: 6 }).setOrigin(0.5).setDepth(100);
 
     const unlocked = new Set(Save.get().achievements ?? []);
     const topClip = 260;

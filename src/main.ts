@@ -39,8 +39,20 @@ const config: Phaser.Types.Core.GameConfig = {
   scene: [BootScene, PreloadScene, MenuScene, CategorySelectScene, LevelSelectScene, GameScene, HUDScene, ChallengesScene, AchievementsScene, SettingsScene, StatsScene, HowToPlayScene, JungleBoardScene, MedalsScene],
 };
 
+// Only pause when the tab is HIDDEN. Some browsers fire visibilitychange
+// during scene transitions or dev-tool docking — those must never leave
+// the game paused, so we always emit the paired RESUME when it returns.
+let _tabHidden = false;
 document.addEventListener('visibilitychange', () => {
-  EventBus.emit(document.hidden ? EVT.PLATFORM_PAUSE : EVT.PLATFORM_RESUME);
+  const nowHidden = document.hidden === true;
+  if (nowHidden === _tabHidden) return;
+  _tabHidden = nowHidden;
+  EventBus.emit(nowHidden ? EVT.PLATFORM_PAUSE : EVT.PLATFORM_RESUME);
+});
+window.addEventListener('focus', () => {
+  if (!_tabHidden) return;
+  _tabHidden = false;
+  EventBus.emit(EVT.PLATFORM_RESUME);
 });
 
 let booted = false;

@@ -8,8 +8,8 @@ import { Audio } from '../services/AudioService';
 import { AdBanner } from '../ui/AdBanner';
 import { I18n } from '../services/I18nService';
 import { TS } from '../config/TextStyles';
-import { FLAGS } from '../config/BuildFlags';
 import { Theme, type CategoryId } from '../config/Theme';
+import { Popup } from '../ui/popups/Popup';
 
 interface CategoryCard {
   id: CategoryId;
@@ -33,61 +33,71 @@ export class CategorySelectScene extends Phaser.Scene {
     this.add.text(GAME_WIDTH / 2, 175, 'CATEGORY', TS.title()).setOrigin(0.5).setDepth(100);
 
     const totalStars = Save.totalStarsAcross();
-
-    const cardStartY = 320;
-    const gap = 220;
+    const cardStartY = 340;
+    const gap = 230;
     CARDS.forEach((card, i) => {
       const y = cardStartY + i * gap;
-      const stars = Save.get().categories[card.id].totalStars;
-      const unlockedByStars = totalStars >= card.unlockStars;
-      const unlocked = card.id === 'easy' || unlockedByStars;
-      this.buildCard(y, card, stars, unlocked);
+      const unlocked = totalStars >= card.unlockStars;
+      this.buildCard(y, card, unlocked, totalStars);
     });
 
     new Button(this, GAME_WIDTH / 2, GAME_HEIGHT - 220, {
       label: I18n.t('back'), onClick: () => this.scene.start('Menu'), scale: 0.8,
     });
-
     new AdBanner(this).show();
   }
 
-  private buildCard(y: number, card: CategoryCard, stars: number, unlocked: boolean): void {
-    const w = GAME_WIDTH - 120;
-    const h = 180;
+  private buildCard(y: number, card: CategoryCard, unlocked: boolean, totalStars: number): void {
     const x = GAME_WIDTH / 2;
 
+    // Wooden plank tile for every category — same shape, jungle theme.
+    const tile = this.add.image(x, y, TX.tileWood).setOrigin(0.5).setScale(2.6, 1.5);
+    if (!unlocked) tile.setTint(0x8d6e63);
+
     const palette = Theme.palette(card.id);
-    const panelBg = this.add.rectangle(x, y, w, h, palette.panelBg, 0.96)
-      .setStrokeStyle(6, palette.panelBorder);
-    panelBg.setInteractive({ useHandCursor: unlocked });
-
     this.add.text(x, y - 42, card.title,
-      { ...TS.title(Theme.hex(palette.accent)), fontSize: '46px', strokeThickness: 4 }).setOrigin(0.5);
-
-    const starText = `${stars} / ${FLAGS.totalLevels * 3}`;
-    this.add.image(x - 60, y + 8, TX.star).setOrigin(0.5).setScale(0.32);
-    this.add.text(x - 20, y + 8, starText,
-      { fontFamily: '"Arial Black", Impact, sans-serif', fontSize: '26px',
-        color: Theme.hex(palette.textDark) }).setOrigin(0, 0.5);
+      { ...TS.title(Theme.hex(palette.accent)), fontSize: '46px', strokeThickness: 6 }).setOrigin(0.5);
 
     if (unlocked) {
-      new Button(this, x, y + 62, {
-        label: 'PLAY', scale: 0.6,
+      new Button(this, x, y + 46, {
+        label: 'PLAY', scale: 0.65,
         onClick: () => {
           Audio.play('click');
           this.scene.start('LevelSelect', { category: card.id });
         },
       });
-      panelBg.on('pointerdown', () => {
-        Audio.play('click');
-        this.scene.start('LevelSelect', { category: card.id });
-      });
     } else {
-      const lock = this.add.image(x - 90, y + 62, TX.iconLock).setOrigin(0.5).setScale(0.75);
-      this.add.text(x - 60, y + 62, `Need ${card.unlockStars} stars`,
-        { fontFamily: '"Arial Black", Impact, sans-serif', fontSize: '22px',
-          color: '#ffd54f', stroke: '#000000', strokeThickness: 3 }).setOrigin(0, 0.5);
-      void lock;
+      this.add.image(x, y + 46, TX.iconLock).setOrigin(0.5).setScale(0.9);
+      tile.setInteractive({ useHandCursor: true });
+      tile.on('pointerdown', () => this.openLockedPopup(card, totalStars));
     }
+  }
+
+  // Locked-category popup: pretty star icon + count + how-many-more line.
+  private openLockedPopup(card: CategoryCard, totalStars: number): void {
+    const popup = new Popup(this, { closeable: true });
+    const cx = GAME_WIDTH / 2;
+    const cy = GAME_HEIGHT / 2;
+    const need = Math.max(0, card.unlockStars - totalStars);
+
+    const title = this.add.text(cx, cy - 200, `${card.title} LOCKED`,
+      { ...TS.title('#b71c1c'), fontSize: '48px', strokeThickness: 6 }).setOrigin(0.5);
+
+    const star = this.add.image(cx, cy - 80, TX.star).setOrigin(0.5).setScale(0.9);
+    this.tweens.add({ targets: star, angle: { from: -8, to: 8 }, yoyo: true, repeat: -1, duration: 900, ease: 'Sine.InOut' });
+
+    const count = this.add.text(cx, cy + 20, `${totalStars} / ${card.unlockStars}`,
+      { fontFamily: '"Luckiest Guy", Impact, sans-serif', fontSize: '54px',
+        color: '#ffd54f', stroke: '#3e2723', strokeThickness: 6 }).setOrigin(0.5);
+
+    const hint = this.add.text(cx, cy + 100,
+      need > 0 ? `NEED ${need} MORE STARS\nTO UNLOCK THIS CATEGORY` : 'READY TO UNLOCK',
+      { fontFamily: '"Arial Black", Impact, sans-serif', fontSize: '24px',
+        color: '#3e2723', align: 'center' }).setOrigin(0.5);
+
+    const ok = new Button(this, cx, cy + 220, {
+      label: 'OK', onClick: () => popup.close(), scale: 0.8,
+    });
+    popup.addContent(title, star, count, hint, ok);
   }
 }

@@ -19,7 +19,6 @@ export class StatsScene extends Phaser.Scene {
     const d = Save.get();
     const s = d.stats;
     const rows: [string, string][] = [
-      ['Best score',       String(d.bestScore)],
       ['Total stars',      `${Save.totalStarsAcross()} / 450`],
       ['Play streak',      `${d.playStreak.current} (best ${d.playStreak.longest})`],
       ['Challenge streak', `${d.challengeStreak}`],
@@ -47,12 +46,12 @@ export class StatsScene extends Phaser.Scene {
 
     let y = 20;
     for (const [k, v] of rows) {
-      const bg = this.add.rectangle(GAME_WIDTH / 2, y, GAME_WIDTH - 80, 46, 0x2b1810, 0.7)
-        .setStrokeStyle(2, 0x5d3a1a);
+      const plank = this.add.image(GAME_WIDTH / 2, y, TX.tileWood).setOrigin(0.5)
+        .setDisplaySize(GAME_WIDTH - 60, 56);
       const kt = this.add.text(80, y, k, kStyle).setOrigin(0, 0.5);
       const vt = this.add.text(GAME_WIDTH - 80, y, v, vStyle).setOrigin(1, 0.5);
-      container.add([bg, kt, vt]);
-      y += 52;
+      container.add([plank, kt, vt]);
+      y += 66;
     }
 
     const contentH = y;
