@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
-import { GAME_WIDTH, GAME_HEIGHT, GRID } from '../config/GameConfig';
+import { GAME_WIDTH, GAME_HEIGHT } from '../config/GameConfig';
 import { getLevelParams, LevelParams } from '../config/LevelConfig';
+import { Theme } from '../config/Theme';
 import { FLAGS } from '../config/BuildFlags';
 import { ParallaxJungle } from '../objects/ParallaxJungle';
 import { spawnLeafParticles } from '../objects/LeafParticles';
@@ -63,7 +64,8 @@ export class GameScene extends Phaser.Scene {
     this.level = Math.max(1, Math.min(FLAGS.totalLevels, data.level ?? 1));
     this.runStartMs = Date.now();
     if (!this.challenge) Save.markPlayed(this.category, this.level);
-    this.params = this.challenge ? this.challenge.params : getLevelParams(this.level);
+    this.params = this.challenge ? this.challenge.params : getLevelParams(this.level, this.category);
+    Theme.set(this.category);
     this.hits = 0;
     this.score = 0;
     this.misses = 0;
@@ -128,14 +130,15 @@ export class GameScene extends Phaser.Scene {
   }
 
   private buildGrid(): void {
-    const cellW = (GAME_WIDTH - GRID.paddingX * 2) / GRID.cols;
-    const usableH = GAME_HEIGHT - GRID.paddingTop - GRID.paddingBottom;
-    const cellH = usableH / GRID.rows;
+    const g = this.params.grid;
+    const cellW = (GAME_WIDTH - g.paddingX * 2) / g.cols;
+    const usableH = GAME_HEIGHT - g.paddingTop - g.paddingBottom;
+    const cellH = usableH / g.rows;
     let idx = 0;
-    for (let r = 0; r < GRID.rows; r++) {
-      for (let c = 0; c < GRID.cols; c++) {
-        const x = GRID.paddingX + cellW / 2 + c * cellW;
-        const y = GRID.paddingTop + cellH / 2 + r * cellH;
+    for (let r = 0; r < g.rows; r++) {
+      for (let c = 0; c < g.cols; c++) {
+        const x = g.paddingX + cellW / 2 + c * cellW;
+        const y = g.paddingTop + cellH / 2 + r * cellH;
         const hole = new Hole(this, x, y, idx);
         const rac = new Raccoon(this, x, y);
         this.holes.push(hole);
@@ -229,9 +232,13 @@ export class GameScene extends Phaser.Scene {
       const bombEnd = this.params.bombChance;
       const goldenEnd = bombEnd + this.params.goldenChance;
       const frozenEnd = goldenEnd + this.params.frozenChance;
+      const catEnd = frozenEnd + this.params.catChance;
+      const goatEnd = catEnd + this.params.goatChance;
       if (roll < bombEnd) kind = 'bomb';
       else if (roll < goldenEnd) kind = 'golden';
       else if (roll < frozenEnd) kind = 'frozen';
+      else if (roll < catEnd) kind = 'cat';
+      else if (roll < goatEnd) kind = 'goat';
     }
 
     rac.spawn(kind, this.params.popupVisibleMs,
@@ -254,6 +261,17 @@ export class GameScene extends Phaser.Scene {
       this.cameras.main.flash(120, 255, 80, 80);
       this.combo = 0;
       this.applyBombPenalty();
+      return;
+    }
+    if (kind === 'cat' || kind === 'goat') {
+      spawnScorePopup(this, rac.x, rac.y - 60, '-2s -10', '#ff5252');
+      Audio.play('miss');
+      this.cameras.main.shake(120, 0.008);
+      this.combo = 0;
+      this.score = Math.max(0, this.score - 10);
+      this.timeLeft = Math.max(0, this.timeLeft - 2000);
+      EventBus.emit(EVT.SCORE_CHANGED, this.score, this.hits, this.params.quota);
+      EventBus.emit(EVT.TIMER_TICK, this.timeLeft);
       return;
     }
     this.combo++;
@@ -454,6 +472,8 @@ function kindToStatKey(k: RaccoonKind): EnemyStatKey {
     case 'golden': return 'golden';
     case 'frozen': return 'frozen';
     case 'bomb': return 'bomb';
+    case 'cat': return 'cat';
+    case 'goat': return 'goat';
     default: return 'raccoon';
   }
 }

@@ -28,6 +28,8 @@ export const TX = {
   raccoonFrozen: 'tx-raccoon-frozen',
   raccoonBoss: 'tx-raccoon-boss',
   bomb: 'tx-bomb',
+  cat: 'tx-cat',
+  goat: 'tx-goat',
   hammer: 'tx-hammer',
   spark: 'tx-spark',
   dust: 'tx-dust',
@@ -92,6 +94,8 @@ export function buildAllTextures(scene: Phaser.Scene): void {
   buildRaccoon(scene, TX.raccoonFrozen, 0x81d4fa, 0xe1f5fe, false);
   buildBossRaccoon(scene);
   buildBomb(scene);
+  buildCat(scene);
+  buildGoat(scene);
   buildHammer(scene);
   buildSpark(scene);
   buildDust(scene);
@@ -599,6 +603,46 @@ function buildBomb(scene: Phaser.Scene) {
     g.fillTriangle(100, 100, 82, 108, 100, 116);
     g.lineStyle(3, 0xff5252, 1);
     g.strokeRect(72, 128, 16, 4);
+  });
+}
+
+function buildCat(scene: Phaser.Scene) {
+  makeTexture(scene, TX.cat, 200, 220, g => {
+    const body = 0xf5f5f5, shade = 0xd0d0d0, dark = 0x2b1810;
+    g.fillStyle(shade, 1); g.fillEllipse(100, 168, 110, 40);
+    g.fillStyle(body, 1); g.fillEllipse(100, 130, 120, 100);
+    g.fillTriangle(46, 88, 66, 44, 82, 82);
+    g.fillTriangle(154, 88, 134, 44, 118, 82);
+    g.fillStyle(0xffb3ba, 1);
+    g.fillTriangle(54, 82, 66, 56, 76, 78);
+    g.fillTriangle(146, 82, 134, 56, 124, 78);
+    g.fillStyle(0x66bb6a, 1); g.fillCircle(76, 122, 12); g.fillCircle(124, 122, 12);
+    g.fillStyle(dark, 1); g.fillEllipse(76, 124, 6, 12); g.fillEllipse(124, 124, 6, 12);
+    g.fillStyle(0xffb3ba, 1); g.fillTriangle(94, 142, 106, 142, 100, 152);
+    g.lineStyle(3, dark, 1);
+    g.beginPath(); g.moveTo(60, 138); g.lineTo(30, 132); g.strokePath();
+    g.beginPath(); g.moveTo(60, 148); g.lineTo(28, 148); g.strokePath();
+    g.beginPath(); g.moveTo(140, 138); g.lineTo(170, 132); g.strokePath();
+    g.beginPath(); g.moveTo(140, 148); g.lineTo(172, 148); g.strokePath();
+  });
+}
+
+function buildGoat(scene: Phaser.Scene) {
+  makeTexture(scene, TX.goat, 200, 220, g => {
+    const body = 0xf1e6cf, shade = 0xc9b48a, dark = 0x2b1810, horn = 0x8d6e63;
+    g.fillStyle(shade, 1); g.fillEllipse(100, 172, 108, 34);
+    g.fillStyle(body, 1); g.fillEllipse(100, 128, 118, 100);
+    g.fillStyle(horn, 1);
+    g.fillTriangle(60, 60, 78, 20, 74, 74);
+    g.fillTriangle(140, 60, 122, 20, 126, 74);
+    g.fillStyle(body, 1); g.fillEllipse(100, 148, 76, 60);
+    g.fillStyle(dark, 1);
+    g.fillCircle(80, 126, 7); g.fillCircle(120, 126, 7);
+    g.fillEllipse(100, 158, 12, 6);
+    g.fillStyle(shade, 1);
+    g.fillTriangle(94, 176, 106, 176, 100, 196);
+    g.fillStyle(body, 1);
+    g.fillEllipse(72, 202, 22, 12); g.fillEllipse(128, 202, 22, 12);
   });
 }
 

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT, COLORS } from '../config/GameConfig';
+import type { CategoryId } from '../config/Theme';
 import { ParallaxJungle } from '../objects/ParallaxJungle';
 import { Save } from '../services/SaveService';
 import { FLAGS } from '../config/BuildFlags';
@@ -21,10 +22,12 @@ export class LevelSelectScene extends Phaser.Scene {
   private maxY = 0;
   private dragging = false;
   private lastY = 0;
+  private category: CategoryId = 'easy';
 
   constructor() { super('LevelSelect'); }
 
-  create(): void {
+  create(data?: { category?: CategoryId }): void {
+    this.category = data?.category ?? 'easy';
     new ParallaxJungle(this);
 
     this.add.image(GAME_WIDTH / 2, 160, TX.signHang).setOrigin(0.5, 0.5).setDepth(99);
@@ -49,7 +52,7 @@ export class LevelSelectScene extends Phaser.Scene {
       const c = i % cols, r = Math.floor(i / cols);
       const x = startX + c * (size + gap);
       const y = 70 + r * rowH;
-      const unlocked = level <= save.categories.easy.highestUnlockedLevel;
+      const unlocked = level <= save.categories[this.category].highestUnlockedLevel;
 
       const tileKey = unlocked ? TX.tileWood : TX.tileWoodLocked;
       const scale = size / 130;
@@ -59,7 +62,7 @@ export class LevelSelectScene extends Phaser.Scene {
         : this.add.image(x, y, TX.iconLock).setOrigin(0.5).setScale(0.85);
       this.gridContainer.add([tile, numOrLock]);
 
-      const stars = save.categories.easy.perLevelStars[level] ?? 0;
+      const stars = save.categories[this.category].perLevelStars[level] ?? 0;
       for (let s = 0; s < 3; s++) {
         const st = this.add.image(x - 24 + s * 24, y + 38, TX.star).setOrigin(0.5).setScale(0.28);
         if (s >= stars) st.setAlpha(0.3);
@@ -100,7 +103,7 @@ export class LevelSelectScene extends Phaser.Scene {
     this.input.on('wheel', (_: unknown, __: unknown, ___: number, dy: number) => this.scrollBy(-dy));
 
     new Button(this, GAME_WIDTH / 2, GAME_HEIGHT - 220, {
-      label: I18n.t('back'), onClick: () => this.scene.start('Menu'), scale: 0.8,
+      label: I18n.t('back'), onClick: () => this.scene.start('CategorySelect'), scale: 0.8,
     });
 
     new AdBanner(this).show();
@@ -109,7 +112,7 @@ export class LevelSelectScene extends Phaser.Scene {
   private tryStartLevel(level: number): void {
     Save.tryRegenLives(allChallengesDone());
     if (Save.get().lives > 0) {
-      this.scene.start('Game', { level });
+      this.scene.start('Game', { level, category: this.category });
       return;
     }
     new OutOfLivesPopup(this, {
@@ -118,11 +121,11 @@ export class LevelSelectScene extends Phaser.Scene {
         if (r === 'reward') {
           Save.addLife(1);
           EventBus.emit(EVT.LIFE_CHANGED);
-          this.scene.start('Game', { level });
+          this.scene.start('Game', { level, category: this.category });
         }
       },
       onChallenges: () => this.scene.start('Challenges'),
-      onLivesRefilled: () => this.scene.start('Game', { level }),
+      onLivesRefilled: () => this.scene.start('Game', { level, category: this.category }),
       onMenu: () => this.scene.start('Menu'),
     });
   }
