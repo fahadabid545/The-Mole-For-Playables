@@ -53,8 +53,13 @@ export class LevelFailedPopup extends Popup {
         this.addContent(chalBtn);
       }
     } else {
+      // Ad button is fire-and-forget — see OutOfLivesPopup for the
+      // same pattern: popup stays visible until the scene restarts,
+      // so a stalled or skipped ad can never leave the game frozen
+      // with no UI.
       const adBtn = new Button(scene, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 180, {
-        label: I18n.t('plusOneLifeAd'), onClick: () => this.close(o.onWatchAdForLife), variant: 'ad',
+        label: I18n.t('plusOneLifeAd'), variant: 'ad',
+        onClick: () => o.onWatchAdForLife(),
       });
       this.addContent(adBtn);
     }

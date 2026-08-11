@@ -73,14 +73,20 @@ export class OutOfLivesPopup extends Popup {
       const msg = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 20, I18n.t('watchAdKeep'),
         { ...TS.body('#3e2723'), align: 'center', fontSize: '28px' }).setOrigin(0.5);
       this.addContent(msg);
+      // Ad buttons DO NOT close the popup. Handler is fire-and-forget:
+      // - On reward, GameScene.restart() shuts down the scene which
+      //   destroys the popup for us.
+      // - On skip/error, the popup stays visible so the player can
+      //   click Menu, X, or try the ad again — no stalled-close race.
       const adLife = new Button(scene, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 60, {
-        label: I18n.t('plusOneLifeAd'), onClick: () => this.close(o.onWatchAdForLife), variant: 'ad',
+        label: I18n.t('plusOneLifeAd'), variant: 'ad',
+        onClick: () => o.onWatchAdForLife(),
       });
       this.addContent(adLife);
       if (o.levelToUnlock && o.onWatchAdToUnlock) {
         const unlock = new Button(scene, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 170, {
           label: I18n.t('unlockNextAd', { n: o.levelToUnlock }),
-          onClick: () => this.close(o.onWatchAdToUnlock),
+          onClick: () => o.onWatchAdToUnlock!(),
           variant: 'ad',
         });
         this.addContent(unlock);

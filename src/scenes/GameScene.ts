@@ -434,6 +434,9 @@ export class GameScene extends Phaser.Scene {
       new LevelFailedPopup(this, {
         level: this.level,
         onRetry: () => this.restart(),
+        // Fire-and-forget: the popup stays open while the ad plays.
+        // Restart on any outcome (retry-with-life on reward, plain
+        // retry on skip) so the popup is destroyed by scene teardown.
         onWatchAdForLife: async () => {
           const r = await Ads.showRewarded();
           if (r === 'reward') { Save.addLife(1); EventBus.emit(EVT.LIFE_CHANGED); }
@@ -486,17 +489,17 @@ export class GameScene extends Phaser.Scene {
     const nextLvl = this.level + 1 <= FLAGS.totalLevels ? this.level + 1 : undefined;
     new OutOfLivesPopup(this, {
       levelToUnlock: nextLvl,
+      // Ad buttons in the popup are fire-and-forget: the popup does
+      // NOT close itself. Reward path restarts the scene (destroying
+      // the popup with it). Skip/error path leaves the popup visible
+      // so the player can pick Menu, X, or hit the ad button again —
+      // no stalled-close hang possible.
       onWatchAdForLife: async () => {
         const r = await Ads.showRewarded();
         if (r === 'reward') {
           Save.addLife(1);
           EventBus.emit(EVT.LIFE_CHANGED);
           this.restart();
-        } else {
-          // Ad failed / was skipped — re-show the same popup so the
-          // player picks Menu or retries. Never drop them into a
-          // levelActive=false Game scene with no visible UI.
-          this.showOutOfLivesPopup();
         }
       },
       onWatchAdToUnlock: nextLvl ? async () => {
@@ -507,8 +510,6 @@ export class GameScene extends Phaser.Scene {
           EventBus.emit(EVT.LIFE_CHANGED);
           this.scene.stop('HUD');
           this.scene.start('Game', { level: nextLvl, category: this.category });
-        } else {
-          this.showOutOfLivesPopup();
         }
       } : undefined,
       onChallenges: () => { this.scene.stop('HUD'); this.scene.start('Challenges'); },
