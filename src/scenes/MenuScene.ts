@@ -11,10 +11,10 @@ import { Ads } from '../services/AdsService';
 import { EventBus, EVT } from '../utils/EventBus';
 import { I18n } from '../services/I18nService';
 import type { CategoryId } from '../config/Theme';
-import { NamePromptPopup } from '../ui/popups/NamePromptPopup';
 import { OutOfLivesPopup } from '../ui/popups/OutOfLivesPopup';
 import { allChallengesDone } from '../services/ChallengeService';
 import { TS } from '../config/TextStyles';
+import { checkMedals } from '../services/MedalService';
 
 export class MenuScene extends Phaser.Scene {
   constructor() { super('Menu'); }
@@ -34,6 +34,14 @@ export class MenuScene extends Phaser.Scene {
     this.tweens.add({ targets: mascot, angle: -6, yoyo: true, repeat: -1, duration: 900, ease: 'Sine.InOut' });
 
     Save.tickDailyPlayStreak();
+    // Challenge streak reward: every 3 completed challenges → +1 life.
+    const cs = Save.get().challengeStreak;
+    if (cs > 0 && cs % 3 === 0 && !Save.get().medals.includes(`csr-${cs}`)) {
+      Save.addLife(1);
+      Save.awardMedal(`csr-${cs}`);
+      EventBus.emit(EVT.LIFE_CHANGED);
+    }
+    checkMedals();
     const save = Save.get();
     const lastCat = save.lastPlayedCategory ?? 'easy';
     const lastLevel = save.lastPlayedLevel ?? 1;
@@ -47,11 +55,16 @@ export class MenuScene extends Phaser.Scene {
       onClick: () => this.tryStartLevel(resumeLevel, lastCat),
     });
 
-    const gap = 118;
+    const bestBanner = `Best ${save.bestScore}   |   Stars ${Save.totalStarsAcross()}   |   Streak ${save.playStreak.current}`;
+    this.add.text(GAME_WIDTH / 2, 690, bestBanner,
+      { ...TS.body('#fff5c9'), fontSize: '24px' }).setOrigin(0.5);
+
+    const gap = 108;
     const secY = 870;
     new Button(this, GAME_WIDTH / 2, secY,           { label: I18n.t('levels'),     onClick: () => this.scene.start('CategorySelect') });
     new Button(this, GAME_WIDTH / 2, secY + gap,     { label: I18n.t('challenges'), onClick: () => this.scene.start('Challenges'), variant: 'ad' });
-    new Button(this, GAME_WIDTH / 2, secY + gap * 2, { label: 'Achievements',       onClick: () => this.scene.start('Achievements') });
+    new Button(this, GAME_WIDTH / 2, secY + gap * 2, { label: 'Stats & Medals',     onClick: () => this.scene.start('Stats') });
+    new Button(this, GAME_WIDTH / 2, secY + gap * 3, { label: 'How to Play',        onClick: () => this.scene.start('HowToPlay'), scale: 0.85 });
 
     const topPad = 110;
     const sound = this.add.image(GAME_WIDTH - 70, topPad, Audio.isMuted() ? TX.soundOff : TX.soundOn)
@@ -68,7 +81,7 @@ export class MenuScene extends Phaser.Scene {
     new AdBanner(this).show();
 
     if (!Save.get().welcomed) {
-      new NamePromptPopup(this, '', (n) => { Save.setPlayerName(n); Save.setWelcomed(); });
+      Save.setWelcomed();
     }
   }
 

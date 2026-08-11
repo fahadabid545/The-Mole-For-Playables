@@ -13,6 +13,7 @@ interface Opts {
   score: number;
   onNext: () => void;
   onMenu: () => void;
+  onReplay?: () => void;
 }
 
 export class LevelCompletePopup extends Popup {
@@ -42,11 +43,14 @@ export class LevelCompletePopup extends Popup {
     const nextBtn = new Button(scene, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 120, {
       label: I18n.t('next'), onClick: () => this.close(o.onNext),
     });
-    const menuBtn = new Button(scene, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 220, {
-      label: I18n.t('menu'), onClick: () => this.close(o.onMenu), scale: 0.8,
+    const replayBtn = new Button(scene, GAME_WIDTH / 2 - 120, GAME_HEIGHT / 2 + 220, {
+      label: 'Replay', onClick: () => this.close(o.onReplay ?? (() => {})), scale: 0.7,
+    });
+    const menuBtn = new Button(scene, GAME_WIDTH / 2 + 120, GAME_HEIGHT / 2 + 220, {
+      label: I18n.t('menu'), onClick: () => this.close(o.onMenu), scale: 0.7,
     });
 
-    this.addContent(title, ...starObjs, scoreText, nextBtn, menuBtn);
+    this.addContent(title, ...starObjs, scoreText, nextBtn, replayBtn, menuBtn);
     this.spawnConfetti();
   }
 

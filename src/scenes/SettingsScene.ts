@@ -23,9 +23,11 @@ export class SettingsScene extends Phaser.Scene {
 
     let y = 340;
     this.add.text(80, y, 'Sound', TS.h2('#fff8e1')).setOrigin(0, 0.5);
+    const soundBg = this.add.circle(GAME_WIDTH - 100, y, 42, 0x2b1810, 0.55)
+      .setStrokeStyle(3, 0xffb300).setInteractive({ useHandCursor: true });
     const soundIcon = this.add.image(GAME_WIDTH - 100, y, Audio.isMuted() ? TX.soundOff : TX.soundOn)
-      .setOrigin(0.5).setInteractive({ useHandCursor: true });
-    soundIcon.on('pointerdown', () => {
+      .setOrigin(0.5);
+    soundBg.on('pointerdown', () => {
       const m = Audio.toggleMute();
       soundIcon.setTexture(m ? TX.soundOff : TX.soundOn);
     });
@@ -49,6 +51,15 @@ export class SettingsScene extends Phaser.Scene {
       scale: 0.85, variant: 'ad',
     });
 
+    y = GAME_HEIGHT - 600;
+    new Button(this, GAME_WIDTH / 2, y, {
+      label: 'Reset Stats Only',
+      onClick: () => {
+        Save.resetStatsOnly();
+        this.scene.restart();
+      },
+      scale: 0.85,
+    });
     y = GAME_HEIGHT - 490;
     new Button(this, GAME_WIDTH / 2, y, {
       label: 'Reset Progress',

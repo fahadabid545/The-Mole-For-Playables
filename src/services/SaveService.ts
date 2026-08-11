@@ -94,6 +94,30 @@ function bridgeStorage(): any {
   return b?.storage;
 }
 
+function cgData(): any {
+  const w: any = typeof window !== 'undefined' ? window : undefined;
+  return w?.CrazyGames?.SDK?.data;
+}
+
+async function cloudGet(key: string): Promise<any> {
+  const bs = bridgeStorage();
+  if (bs?.get) { try { return await bs.get(key); } catch { /* ignore */ } }
+  const cg = cgData();
+  if (cg?.getItem) {
+    try {
+      const raw = await cg.getItem(key);
+      if (typeof raw === 'string') return JSON.parse(raw);
+    } catch { /* ignore */ }
+  }
+  return null;
+}
+
+function cloudSet(key: string, value: any): void {
+  try { bridgeStorage()?.set?.(key, value); } catch { /* ignore */ }
+  const cg = cgData();
+  if (cg?.setItem) { try { cg.setItem(key, JSON.stringify(value)); } catch { /* ignore */ } }
+}
+
 // Merge remote/local data into the defaults so old snapshots pick up
 // new fields automatically. Nested objects also fall back to defaults.
 function hydrate(raw: unknown): SaveData {
@@ -165,25 +189,21 @@ function read(): SaveData {
 function write(): void {
   if (!cache) return;
   try { localStorage.setItem(KEY, JSON.stringify(cache)); } catch { /* ignore */ }
-  try { bridgeStorage()?.set?.(KEY, cache); } catch { /* ignore */ }
+  cloudSet(KEY, cache);
 }
 
 export async function hydrateFromBridge(): Promise<void> {
-  const storage = bridgeStorage();
-  if (!storage?.get) return;
   try {
-    // Prefer v2 in the cloud; fall back to migrating a v1 snapshot.
-    const v2remote = await storage.get(KEY);
+    const v2remote = await cloudGet(KEY);
     if (v2remote && typeof v2remote === 'object') {
       cache = hydrate(v2remote);
       try { localStorage.setItem(KEY, JSON.stringify(cache)); } catch { /* ignore */ }
       return;
     }
-    const v1remote = await storage.get(KEY_V1);
+    const v1remote = await cloudGet(KEY_V1);
     if (v1remote && typeof v1remote === 'object') {
       cache = migrateV1(v1remote);
       try { localStorage.setItem(KEY, JSON.stringify(cache)); } catch { /* ignore */ }
-      // Push migrated payload back to the cloud on next write.
       write();
     }
   } catch { /* ignore */ }

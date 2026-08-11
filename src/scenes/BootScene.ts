@@ -7,7 +7,7 @@ import { EventBus, EVT } from '../utils/EventBus';
 export class BootScene extends Phaser.Scene {
   constructor() { super('Boot'); }
   async create(): Promise<void> {
-    Portal.onPortalMuteChange((muted) => Audio.setMuted(muted));
+    Portal.onPortalMuteChange((muted) => Audio.setMuted(muted, false));
     Portal.onPortalPauseChange((paused) => {
       EventBus.emit(paused ? EVT.PLATFORM_PAUSE : EVT.PLATFORM_RESUME);
     });

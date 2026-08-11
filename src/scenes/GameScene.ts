@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT } from '../config/GameConfig';
 import { getLevelParams, LevelParams } from '../config/LevelConfig';
 import { Theme } from '../config/Theme';
-import { FLAGS } from '../config/BuildFlags';
+import { FLAGS, IS_PORTAL } from '../config/BuildFlags';
 import { ParallaxJungle } from '../objects/ParallaxJungle';
 import { spawnLeafParticles } from '../objects/LeafParticles';
 import { Hole } from '../objects/Hole';
@@ -22,6 +22,7 @@ import { NamePromptPopup } from '../ui/popups/NamePromptPopup';
 import { Challenge } from '../services/ChallengeService';
 import { attachAchievementToast } from '../ui/AchievementToast';
 import { checkProgress } from '../services/AchievementService';
+import { checkMedals } from '../services/MedalService';
 import { LevelFailedPopup } from '../ui/popups/LevelFailedPopup';
 import { OutOfLivesPopup } from '../ui/popups/OutOfLivesPopup';
 import { ExtraLifePopup } from '../ui/popups/ExtraLifePopup';
@@ -49,6 +50,8 @@ export class GameScene extends Phaser.Scene {
   private category: CategoryId = 'easy';
   private challenge: Challenge | null = null;
   private runStartMs = 0;
+  private lastComboMs = 0;
+  private readonly COMBO_DECAY_MS = 4500;
 
   constructor() { super('Game'); }
 
@@ -211,6 +214,7 @@ export class GameScene extends Phaser.Scene {
     this.timeLeft -= dt;
     EventBus.emit(EVT.TIMER_TICK, this.timeLeft);
     if (this.timeLeft <= 0) { this.timeLeft = 0; this.endLevel(false); return; }
+    if (this.combo > 0 && time - this.lastComboMs > this.COMBO_DECAY_MS) this.combo = 0;
 
     if (time >= this.nextSpawnAt) {
       const activeCount = this.raccoons.filter(r => !r.isAvailable()).length;
@@ -255,12 +259,15 @@ export class GameScene extends Phaser.Scene {
     if (!this.levelActive) return;
     Save.recordHit(kindToStatKey(kind));
     if (kind === 'bomb') {
-      spawnScorePopup(this, rac.x, rac.y - 60, '-3s', '#ff5252');
+      spawnScorePopup(this, rac.x, rac.y - 60, '-1 LIFE', '#ff5252');
       Audio.play('lifeLost');
-      this.cameras.main.shake(180, 0.012);
-      this.cameras.main.flash(120, 255, 80, 80);
+      try { navigator.vibrate?.(120); } catch { /* ignore */ }
+      this.cameras.main.shake(220, 0.014);
+      this.cameras.main.flash(140, 255, 80, 80);
       this.combo = 0;
-      this.applyBombPenalty();
+      Save.loseLife();
+      EventBus.emit(EVT.LIFE_CHANGED);
+      if (Save.get().lives <= 0) this.endLevel(false, true);
       return;
     }
     if (kind === 'cat' || kind === 'goat') {
@@ -275,7 +282,9 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     this.combo++;
+    this.lastComboMs = this.time.now;
     Save.recordCombo(this.combo);
+    try { navigator.vibrate?.(20); } catch { /* ignore */ }
     const shakeIntensity = kind === 'boss' ? 0.010 : kind === 'golden' ? 0.006 : 0.004;
     this.cameras.main.shake(90, shakeIntensity);
     const comboMul = this.combo >= 8 ? 3 : this.combo >= 4 ? 2 : 1;
@@ -311,11 +320,6 @@ export class GameScene extends Phaser.Scene {
       spawnScorePopup(this, GAME_WIDTH / 2, GAME_HEIGHT / 2 - 100, '-1 LIFE!', '#ef5350');
       if (Save.get().lives <= 0) this.endLevel(false, true);
     }
-  }
-
-  private applyBombPenalty(): void {
-    this.timeLeft = Math.max(0, this.timeLeft - 3000);
-    EventBus.emit(EVT.TIMER_TICK, this.timeLeft);
   }
 
   private endLevel(won: boolean, outOfLives = false): void {
@@ -357,7 +361,8 @@ export class GameScene extends Phaser.Scene {
       if (this.timeLeft / this.params.timeLimitMs > 0.5) checkProgress('speed', 1);
       if (this.params.isBoss) checkProgress('boss', 1);
       if (this.combo >= 10) checkProgress('combo', 10);
-      if (!Save.get().playerName) {
+      checkMedals();
+      if (!IS_PORTAL && !Save.get().playerName) {
         new NamePromptPopup(this, '', (n) => { Save.setPlayerName(n); });
       }
 
@@ -374,6 +379,7 @@ export class GameScene extends Phaser.Scene {
       new LevelCompletePopup(this, {
         level: this.level, stars, score: this.score,
         onNext: () => proceed(),
+        onReplay: () => this.restart(),
         onMenu: () => this.goMenu(),
       });
     } else if (outOfLives || Save.get().lives <= 0) {

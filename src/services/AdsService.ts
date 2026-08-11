@@ -45,33 +45,36 @@ class CrazyGamesAdsService implements AdsService {
   async showInterstitial(): Promise<void> {
     const ad = this.sdk?.ad;
     if (!ad?.requestAd) return;
-    await new Promise<void>((resolve) => {
-      const done = () => resolve();
+    return withAdLifecycle(() => new Promise<void>((resolve) => {
+      let done = false;
+      const finish = () => { if (done) return; done = true; resolve(); };
       try {
         ad.requestAd('midgame', {
           adStarted:  () => {},
-          adFinished: done,
-          adError:    done,
+          adFinished: finish,
+          adError:    finish,
         });
-      } catch { done(); }
-      setTimeout(done, 8000);
-    });
+      } catch { finish(); }
+      setTimeout(finish, 45000);
+    }));
   }
 
   async showRewarded(): Promise<AdOutcome> {
     const ad = this.sdk?.ad;
     if (!ad?.requestAd) return 'skipped';
-    return new Promise<AdOutcome>((resolve) => {
+    return withAdLifecycle(() => new Promise<AdOutcome>((resolve) => {
+      let done = false;
       let outcome: AdOutcome = 'skipped';
+      const finish = (o: AdOutcome) => { if (done) return; done = true; resolve(o); };
       try {
         ad.requestAd('rewarded', {
           adStarted:  () => {},
-          adFinished: () => { outcome = 'reward'; resolve('reward'); },
-          adError:    () => resolve('error'),
+          adFinished: () => { outcome = 'reward'; finish('reward'); },
+          adError:    () => finish('error'),
         });
-      } catch { resolve('error'); }
-      setTimeout(() => resolve(outcome), 30000);
-    });
+      } catch { finish('error'); }
+      setTimeout(() => finish(outcome), 60000);
+    }));
   }
 
   shouldShowInterstitialForLevel(level: number): boolean {

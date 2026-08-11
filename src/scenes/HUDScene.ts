@@ -45,15 +45,15 @@ export class HUDScene extends Phaser.Scene {
     new LivesBar(this, 40, TOP_SAFE + 140);
 
     const iconY = TOP_SAFE + 190;
-    const sound = this.add.image(GAME_WIDTH - 64, iconY, Audio.isMuted() ? TX.soundOff : TX.soundOn)
+    const sound = this.add.image(GAME_WIDTH - 92, iconY, Audio.isMuted() ? TX.soundOff : TX.soundOn)
       .setOrigin(0.5).setInteractive({ useHandCursor: true }).setScale(0.9);
     sound.on('pointerdown', () => {
       const m = Audio.toggleMute();
       sound.setTexture(m ? TX.soundOff : TX.soundOn);
     });
-    const pauseBg = this.add.circle(GAME_WIDTH - 64, iconY + 80, 36, 0x263238, 0.85)
+    const pauseBg = this.add.circle(GAME_WIDTH - 92, iconY + 80, 36, 0x263238, 0.85)
       .setStrokeStyle(3, 0xffb300);
-    const pause = this.add.image(GAME_WIDTH - 64, iconY + 80, TX.pause).setOrigin(0.5).setScale(1.1);
+    const pause = this.add.image(GAME_WIDTH - 92, iconY + 80, TX.pause).setOrigin(0.5).setScale(1.1);
     pauseBg.setInteractive({ useHandCursor: true });
     pauseBg.on('pointerdown', () => this.scene.get('Game').events.emit('request-pause'));
     pauseBg.on('pointerover', () => pause.setScale(1.25));
@@ -74,21 +74,23 @@ export class HUDScene extends Phaser.Scene {
       gameScene.events.off('hud-icons-show');
     });
 
-    EventBus.on(EVT.SCORE_CHANGED, (score: number, hits: number, quota: number) => {
+    const onScore = (score: number, hits: number, quota: number) => {
       this.scoreText.setText(`${score}`);
       this.quotaText.setText(I18n.t('hits', { a: hits, b: quota }));
-    });
-    EventBus.on(EVT.TIMER_TICK, (msLeft: number) => {
+    };
+    const onTick = (msLeft: number) => {
       this.timeText.setText(this.fmt(msLeft));
       this.timeText.setColor(msLeft < 5000 ? '#ff5252' : '#fffde7');
       const frac = Math.max(0, Math.min(1, msLeft / this.timeLimitMs));
       this.timeBarFill.width = 240 * frac;
       this.timeBarFill.fillColor = msLeft < 5000 ? 0xef5350 : msLeft < 10000 ? 0xffb300 : 0x66bb6a;
-    });
+    };
+    EventBus.on(EVT.SCORE_CHANGED, onScore);
+    EventBus.on(EVT.TIMER_TICK, onTick);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      EventBus.off(EVT.SCORE_CHANGED);
-      EventBus.off(EVT.TIMER_TICK);
+      EventBus.off(EVT.SCORE_CHANGED, onScore);
+      EventBus.off(EVT.TIMER_TICK, onTick);
     });
   }
 

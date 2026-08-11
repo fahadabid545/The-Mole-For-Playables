@@ -12,6 +12,9 @@ import { HUDScene } from './scenes/HUDScene';
 import { ChallengesScene } from './scenes/ChallengesScene';
 import { AchievementsScene } from './scenes/AchievementsScene';
 import { SettingsScene } from './scenes/SettingsScene';
+import { StatsScene } from './scenes/StatsScene';
+import { HowToPlayScene } from './scenes/HowToPlayScene';
+import { EventBus, EVT } from './utils/EventBus';
 
 // iOS Safari WebGL context creation hangs inside some portal iframes.
 // Fall back to Canvas — slower but boots reliably.
@@ -31,8 +34,12 @@ const config: Phaser.Types.Core.GameConfig = {
   },
   input: { activePointers: 2 },
   render: { antialias: true, pixelArt: false, roundPixels: false },
-  scene: [BootScene, PreloadScene, MenuScene, CategorySelectScene, LevelSelectScene, GameScene, HUDScene, ChallengesScene, AchievementsScene, SettingsScene],
+  scene: [BootScene, PreloadScene, MenuScene, CategorySelectScene, LevelSelectScene, GameScene, HUDScene, ChallengesScene, AchievementsScene, SettingsScene, StatsScene, HowToPlayScene],
 };
+
+document.addEventListener('visibilitychange', () => {
+  EventBus.emit(document.hidden ? EVT.PLATFORM_PAUSE : EVT.PLATFORM_RESUME);
+});
 
 let booted = false;
 function boot() {

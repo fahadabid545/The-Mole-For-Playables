@@ -34,13 +34,20 @@ class AudioServiceImpl {
     window.addEventListener('keydown', unlock, { once: false, passive: true });
   }
 
-  setMuted(m: boolean): void {
+  setMuted(m: boolean, persist = true): void {
     this.muted = m;
-    Save.setMuted(m);
-    if (this.masterGain) this.masterGain.gain.value = m ? 0 : 0.55;
+    if (persist) Save.setMuted(m);
+    if (this.masterGain && this.ctx) {
+      if (m) {
+        try { this.masterGain.disconnect(); } catch { /* ignore */ }
+      } else {
+        try { this.masterGain.connect(this.ctx.destination); } catch { /* ignore */ }
+      }
+      this.masterGain.gain.value = m ? 0 : 0.55;
+    }
   }
 
-  toggleMute(): boolean { this.setMuted(!this.muted); return this.muted; }
+  toggleMute(): boolean { this.setMuted(!this.muted, true); return this.muted; }
   isMuted(): boolean { return this.muted; }
 
   private startAmbient(): void {

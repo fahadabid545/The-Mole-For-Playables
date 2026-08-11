@@ -78,6 +78,13 @@ export class LevelSelectScene extends Phaser.Scene {
           Audio.play('click');
           this.tryStartLevel(level);
         });
+      } else {
+        tile.setInteractive({ useHandCursor: false });
+        tile.on('pointerdown', () => {
+          Audio.play('miss');
+          this.tweens.add({ targets: tile, angle: { from: -6, to: 6 }, yoyo: true, repeat: 1, duration: 60,
+            onComplete: () => tile.setAngle(0) });
+        });
       }
     }
 
@@ -106,6 +113,14 @@ export class LevelSelectScene extends Phaser.Scene {
       label: I18n.t('back'), onClick: () => this.scene.start('CategorySelect'), scale: 0.8,
     });
 
+    if (contentH > clipH) {
+      const hintY = topClip + clipH - 20;
+      const hint = this.add.text(GAME_WIDTH / 2, hintY, 'scroll for more',
+        { fontFamily: 'Impact, sans-serif', fontSize: '20px', color: '#fff5c9' })
+        .setOrigin(0.5).setAlpha(0.85);
+      this.tweens.add({ targets: hint, y: hintY + 8, yoyo: true, repeat: -1, duration: 700, ease: 'Sine.InOut' });
+    }
+
     new AdBanner(this).show();
   }
 
@@ -130,10 +145,15 @@ export class LevelSelectScene extends Phaser.Scene {
     });
   }
 
+  private lastTickY = 0;
   private scrollBy(dy: number): void {
     this.scrollY += dy;
     const targetY = Math.min(this.maxY, Math.max(this.minY, this.maxY + this.scrollY));
     this.scrollY = targetY - this.maxY;
     this.gridContainer.y = targetY;
+    if (Math.abs(targetY - this.lastTickY) > 30) {
+      this.lastTickY = targetY;
+      Audio.play('tick');
+    }
   }
 }

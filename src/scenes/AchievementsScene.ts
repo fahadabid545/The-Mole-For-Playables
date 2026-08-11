@@ -18,11 +18,14 @@ export class AchievementsScene extends Phaser.Scene {
     this.add.text(GAME_WIDTH / 2, 168, 'Achievements', TS.title('#fff5c9')).setOrigin(0.5).setDepth(100);
 
     const unlocked = new Set(Save.get().achievements ?? []);
-    const startY = 260;
+    const topClip = 260;
+    const bottomClip = 300;
+    const clipH = GAME_HEIGHT - topClip - bottomClip;
+    const container = this.add.container(0, topClip);
     const rowH = 82;
 
     ACHIEVEMENTS.forEach((a, i) => {
-      const y = startY + i * rowH;
+      const y = i * rowH + rowH / 2;
       const isDone = unlocked.has(a.id);
 
       const bgColor = isDone ? 0xfff5c9 : 0xefe0b3;
@@ -40,12 +43,36 @@ export class AchievementsScene extends Phaser.Scene {
       const desc = this.add.text(160, y + 18, a.desc,
         TS.body(descColor)).setOrigin(0, 0.5);
 
+      container.add([bg, icon, title, desc]);
       if (isDone) {
         const check = this.add.image(GAME_WIDTH - 60, y, TX.iconCheck).setOrigin(0.5);
-        void check;
+        container.add(check);
       }
-      void bg; void title; void desc;
     });
+
+    const contentH = ACHIEVEMENTS.length * rowH;
+    const minY = Math.min(topClip, GAME_HEIGHT - bottomClip - contentH);
+    const maxY = topClip;
+    const mask = this.make.graphics({ x: 0, y: 0 }).fillStyle(0xffffff)
+      .fillRect(0, topClip, GAME_WIDTH, clipH);
+    container.setMask(mask.createGeometryMask());
+
+    let scrollY = 0, dragging = false, lastY = 0;
+    const scrollBy = (dy: number) => {
+      scrollY += dy;
+      const t = Math.min(maxY, Math.max(minY, maxY + scrollY));
+      scrollY = t - maxY;
+      container.y = t;
+    };
+    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
+      if (p.y >= topClip && p.y <= topClip + clipH) { dragging = true; lastY = p.y; }
+    });
+    this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
+      if (!dragging || !p.isDown) return;
+      const dy = p.y - lastY; lastY = p.y; scrollBy(dy);
+    });
+    this.input.on('pointerup', () => { dragging = false; });
+    this.input.on('wheel', (_: unknown, __: unknown, ___: number, dy: number) => scrollBy(-dy));
 
     new Button(this, GAME_WIDTH / 2, GAME_HEIGHT - 220, {
       label: I18n.t('back'), onClick: () => this.scene.start('Menu'), scale: 0.8,

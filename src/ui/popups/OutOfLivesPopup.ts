@@ -21,7 +21,7 @@ interface Opts {
 
 export class OutOfLivesPopup extends Popup {
   constructor(scene: Phaser.Scene, o: Opts) {
-    super(scene);
+    super(scene, { closeable: true, onCloseX: () => o.onMenu() });
 
     const title = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 200, I18n.t('outOfLives'),
       TS.title('#b71c1c')).setOrigin(0.5);
@@ -50,7 +50,7 @@ export class OutOfLivesPopup extends Popup {
         const m = Math.floor(s / 60);
         const sec = s % 60;
         countdown.setText(`${m}:${sec.toString().padStart(2, '0')}`);
-        if (Save.tryRegenLives(true)) {
+        if (Save.tryRegenLives(challengesDone)) {
           EventBus.emit(EVT.LIFE_CHANGED);
           this.close(o.onLivesRefilled ?? o.onMenu);
         }

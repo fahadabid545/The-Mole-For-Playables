@@ -15,7 +15,7 @@ export const IS_PORTAL = IS_PLAYGAMA || IS_CRAZYGAMES || IS_POKI;
 export const FLAGS = {
   showAds: IS_PORTAL,
   bottomBanner: IS_PORTAL,
-  interstitialEveryNLevels: 5,
+  interstitialEveryNLevels: 8,
   bombsFromLevel: 10,
   frozenFromLevel: 30,
   goldenRaccoonFromLevel: 5,

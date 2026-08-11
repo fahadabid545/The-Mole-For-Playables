@@ -160,6 +160,10 @@ export const Portal = {
           const detail = (e as CustomEvent<{ isMuted?: boolean }>).detail;
           if (detail && typeof detail.isMuted === 'boolean') handler(detail.isMuted);
         });
+        waitFor(cg).then(sdk => {
+          const initial = (sdk as any)?.game?.isMuted;
+          if (typeof initial === 'boolean') handler(initial);
+        });
       } catch { /* ignore */ }
     } else if (IS_PLAYGAMA) {
       wireOnBridgeReady((b) => {

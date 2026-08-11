@@ -97,7 +97,7 @@ export class Raccoon extends Phaser.GameObjects.Container {
   }
 
   private hit(): void {
-    if (this.popState !== 'up' && this.popState !== 'rising') return;
+    if (this.popState !== 'up') return;
 
     if (this.kind === 'bomb' || this.kind === 'cat' || this.kind === 'goat') {
       this.popState = 'hit';
