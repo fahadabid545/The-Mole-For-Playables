@@ -30,8 +30,10 @@ export const TS = {
     fontFamily: FAM, fontSize: '48px', color, stroke: '#3e2723', strokeThickness: 6,
   }),
   buttonLabel: (): S => ({
-    fontFamily: FAM, fontSize: '34px', color: '#fffde7',
-    stroke: '#3e2723', strokeThickness: 5, align: 'center',
+    fontFamily: '"Arial Black", Impact, sans-serif',
+    fontSize: '30px', color: '#fff8e1',
+    stroke: '#3e2723', strokeThickness: 4, align: 'center',
+    shadow: { offsetX: 0, offsetY: 2, color: '#000000', blur: 3, fill: true },
   }),
   countdown: (): S => ({
     fontFamily: FAM, fontSize: '220px', color: '#fffde7',

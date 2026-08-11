@@ -14,14 +14,13 @@ import { Theme, type CategoryId } from '../config/Theme';
 interface CategoryCard {
   id: CategoryId;
   title: string;
-  tagline: string;
   unlockStars: number;
 }
 
 const CARDS: CategoryCard[] = [
-  { id: 'easy',      title: 'EASY',       tagline: '3x3 holes  |  chill pace',            unlockStars: 0 },
-  { id: 'hard',      title: 'HARD',       tagline: '4x3 holes  |  faster spawns',         unlockStars: 30 },
-  { id: 'superHard', title: 'SUPER HARD', tagline: 'Cats and goats cost time and score',  unlockStars: 75 },
+  { id: 'easy',      title: 'EASY',       unlockStars: 0 },
+  { id: 'hard',      title: 'HARD',       unlockStars: 30 },
+  { id: 'superHard', title: 'SUPER HARD', unlockStars: 75 },
 ];
 
 export class CategorySelectScene extends Phaser.Scene {
@@ -33,17 +32,13 @@ export class CategorySelectScene extends Phaser.Scene {
     this.add.image(GAME_WIDTH / 2, 160, TX.signHang).setOrigin(0.5, 0.5).setDepth(99);
     this.add.text(GAME_WIDTH / 2, 168, 'CATEGORY', TS.title('#fff5c9')).setOrigin(0.5).setDepth(100);
 
-    const easyStars = Save.get().categories.easy.totalStars;
-    const hardStars = Save.get().categories.hard.totalStars;
     const totalStars = Save.totalStarsAcross();
 
-    const cardStartY = 340;
-    const gap = 260;
+    const cardStartY = 320;
+    const gap = 220;
     CARDS.forEach((card, i) => {
       const y = cardStartY + i * gap;
-      const stars = card.id === 'easy' ? easyStars
-                  : card.id === 'hard' ? hardStars
-                  : Save.get().categories.superHard.totalStars;
+      const stars = Save.get().categories[card.id].totalStars;
       const unlockedByStars = totalStars >= card.unlockStars;
       const unlocked = card.id === 'easy' || unlockedByStars;
       this.buildCard(y, card, stars, unlocked);
@@ -58,7 +53,7 @@ export class CategorySelectScene extends Phaser.Scene {
 
   private buildCard(y: number, card: CategoryCard, stars: number, unlocked: boolean): void {
     const w = GAME_WIDTH - 120;
-    const h = 220;
+    const h = 180;
     const x = GAME_WIDTH / 2;
 
     const palette = Theme.palette(card.id);
@@ -66,19 +61,18 @@ export class CategorySelectScene extends Phaser.Scene {
       .setStrokeStyle(6, palette.panelBorder);
     panelBg.setInteractive({ useHandCursor: unlocked });
 
-    this.add.text(x, y - 60, card.title,
-      { ...TS.title(Theme.hex(palette.accent)), fontSize: '56px' }).setOrigin(0.5);
-    this.add.text(x, y - 8, card.tagline,
-      { ...TS.body(Theme.hex(palette.textDark)), fontSize: '22px', align: 'center' }).setOrigin(0.5);
+    this.add.text(x, y - 42, card.title,
+      { ...TS.title(Theme.hex(palette.accent)), fontSize: '46px', strokeThickness: 4 }).setOrigin(0.5);
 
-    const starLabel = `${stars} / ${FLAGS.totalLevels * 3} stars`;
-    this.add.text(x, y + 34, starLabel,
-      { ...TS.body(Theme.hex(palette.textDark)), fontSize: '22px' }).setOrigin(0.5);
-    this.add.image(x - 90, y + 36, TX.star).setOrigin(0.5).setScale(0.28);
+    const starText = `${stars} / ${FLAGS.totalLevels * 3}`;
+    this.add.image(x - 60, y + 8, TX.star).setOrigin(0.5).setScale(0.32);
+    this.add.text(x - 20, y + 8, starText,
+      { fontFamily: '"Arial Black", Impact, sans-serif', fontSize: '26px',
+        color: Theme.hex(palette.textDark) }).setOrigin(0, 0.5);
 
     if (unlocked) {
-      new Button(this, x, y + 82, {
-        label: 'PLAY', scale: 0.65,
+      new Button(this, x, y + 62, {
+        label: 'PLAY', scale: 0.6,
         onClick: () => {
           Audio.play('click');
           this.scene.start('LevelSelect', { category: card.id });
@@ -89,9 +83,11 @@ export class CategorySelectScene extends Phaser.Scene {
         this.scene.start('LevelSelect', { category: card.id });
       });
     } else {
-      this.add.image(x - 30, y + 82, TX.iconLock).setOrigin(0.5).setScale(0.9);
-      this.add.text(x + 10, y + 82, `Need ${card.unlockStars} stars total`,
-        { ...TS.body('#3e2723'), fontSize: '22px' }).setOrigin(0, 0.5);
+      const lock = this.add.image(x - 90, y + 62, TX.iconLock).setOrigin(0.5).setScale(0.75);
+      this.add.text(x - 60, y + 62, `Need ${card.unlockStars} stars`,
+        { fontFamily: '"Arial Black", Impact, sans-serif', fontSize: '22px',
+          color: '#ffd54f', stroke: '#000000', strokeThickness: 3 }).setOrigin(0, 0.5);
+      void lock;
     }
   }
 }

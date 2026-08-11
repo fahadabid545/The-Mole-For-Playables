@@ -55,9 +55,13 @@ export class MenuScene extends Phaser.Scene {
       onClick: () => this.tryStartLevel(resumeLevel, lastCat),
     });
 
-    const bestBanner = `Best ${save.bestScore}   |   Stars ${Save.totalStarsAcross()}   |   Streak ${save.playStreak.current}`;
-    this.add.text(GAME_WIDTH / 2, 690, bestBanner,
-      { ...TS.body('#fff5c9'), fontSize: '24px' }).setOrigin(0.5);
+    const bannerY = 685;
+    this.add.rectangle(GAME_WIDTH / 2, bannerY, GAME_WIDTH - 120, 56, 0x2b1810, 0.75)
+      .setStrokeStyle(3, 0xffb300);
+    const bestBanner = `BEST ${save.bestScore}    STARS ${Save.totalStarsAcross()}    STREAK ${save.playStreak.current}`;
+    this.add.text(GAME_WIDTH / 2, bannerY, bestBanner,
+      { fontFamily: '"Arial Black", Impact, sans-serif', fontSize: '24px', color: '#ffd54f',
+        stroke: '#000000', strokeThickness: 3 }).setOrigin(0.5);
 
     const gap = 108;
     const secY = 870;

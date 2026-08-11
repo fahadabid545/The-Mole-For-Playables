@@ -20,8 +20,11 @@ export class Button extends Phaser.GameObjects.Container {
 
     const key = opts.variant === 'ad' ? TX.buttonAd : TX.button;
     const bg = scene.add.image(0, 0, key).setOrigin(0.5);
-    // Nudge label 14px down — button art has ropes above center.
-    const label = scene.add.text(0, 14, opts.label, TS.buttonLabel()).setOrigin(0.5);
+    const displayLabel = opts.label.toUpperCase();
+    const label = scene.add.text(0, 14, displayLabel, TS.buttonLabel()).setOrigin(0.5);
+    // Auto-shrink label if it overflows the plank.
+    const maxW = bg.displayWidth - 60;
+    if (label.width > maxW) label.setScale(maxW / label.width);
 
     bg.setInteractive({ useHandCursor: true });
 
