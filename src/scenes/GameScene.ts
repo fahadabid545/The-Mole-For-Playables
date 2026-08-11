@@ -117,7 +117,10 @@ export class GameScene extends Phaser.Scene {
     this.events.on('request-pause', () => this.openPause());
 
     const addReason = (reason: string) => {
-      if (!this.levelActive) return;
+      // Ad / platform reasons must register even before the level is
+      // active, otherwise a stalled ad callback can leave the scene
+      // with no visible pause overlay but with input still hitting
+      // input handlers.
       const wasPaused = this.pauseReasons.size > 0;
       this.pauseReasons.add(reason);
       if (!wasPaused) {
@@ -426,26 +429,7 @@ export class GameScene extends Phaser.Scene {
         onMenu: () => this.goMenu(),
       });
     } else if (outOfLives || Save.get().lives <= 0) {
-      new OutOfLivesPopup(this, {
-        levelToUnlock: this.level + 1 <= FLAGS.totalLevels ? this.level + 1 : undefined,
-        onWatchAdForLife: async () => {
-          const r = await Ads.showRewarded();
-          if (r === 'reward') { Save.addLife(1); EventBus.emit(EVT.LIFE_CHANGED); this.restart(); }
-          else this.goMenu();
-        },
-        onWatchAdToUnlock: async () => {
-          const r = await Ads.showRewarded();
-          if (r === 'reward') {
-            Save.unlockUpTo(this.category, this.level + 1);
-            Save.addLife(1);
-            EventBus.emit(EVT.LIFE_CHANGED);
-            this.scene.stop('HUD');
-            this.scene.start('Game', { level: this.level + 1, category: this.category });
-          } else this.goMenu();
-        },
-        onChallenges: () => { this.scene.stop('HUD'); this.scene.start('Challenges'); },
-        onMenu: () => this.goMenu(),
-      });
+      this.showOutOfLivesPopup();
     } else {
       new LevelFailedPopup(this, {
         level: this.level,
@@ -477,14 +461,7 @@ export class GameScene extends Phaser.Scene {
   }
   private restart(): void {
     if (Save.get().lives <= 0) {
-      new OutOfLivesPopup(this, {
-        onWatchAdForLife: async () => {
-          const r = await Ads.showRewarded();
-          if (r === 'reward') { Save.addLife(1); EventBus.emit(EVT.LIFE_CHANGED); this.restart(); }
-          else this.goMenu();
-        },
-        onMenu: () => this.goMenu(),
-      });
+      this.showOutOfLivesPopup();
       return;
     }
     // Preserve challenge context on retry so a mid-challenge fail doesn't
@@ -500,6 +477,44 @@ export class GameScene extends Phaser.Scene {
   private goMenu(): void {
     this.scene.stop('HUD');
     this.scene.start('Menu');
+  }
+
+  // Central OutOfLives handler. On ad skip/error the popup reopens so
+  // the player is never trapped in a stalled-ad-frozen scene: they can
+  // retry the ad, hit Menu, or wait for lives to regen.
+  private showOutOfLivesPopup(): void {
+    const nextLvl = this.level + 1 <= FLAGS.totalLevels ? this.level + 1 : undefined;
+    new OutOfLivesPopup(this, {
+      levelToUnlock: nextLvl,
+      onWatchAdForLife: async () => {
+        const r = await Ads.showRewarded();
+        if (r === 'reward') {
+          Save.addLife(1);
+          EventBus.emit(EVT.LIFE_CHANGED);
+          this.restart();
+        } else {
+          // Ad failed / was skipped — re-show the same popup so the
+          // player picks Menu or retries. Never drop them into a
+          // levelActive=false Game scene with no visible UI.
+          this.showOutOfLivesPopup();
+        }
+      },
+      onWatchAdToUnlock: nextLvl ? async () => {
+        const r = await Ads.showRewarded();
+        if (r === 'reward') {
+          Save.unlockUpTo(this.category, nextLvl);
+          Save.addLife(1);
+          EventBus.emit(EVT.LIFE_CHANGED);
+          this.scene.stop('HUD');
+          this.scene.start('Game', { level: nextLvl, category: this.category });
+        } else {
+          this.showOutOfLivesPopup();
+        }
+      } : undefined,
+      onChallenges: () => { this.scene.stop('HUD'); this.scene.start('Challenges'); },
+      onMenu: () => this.goMenu(),
+      onLivesRefilled: () => this.restart(),
+    });
   }
 
   private openPause(): void {

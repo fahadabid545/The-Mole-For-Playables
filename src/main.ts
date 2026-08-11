@@ -17,6 +17,9 @@ import { HowToPlayScene } from './scenes/HowToPlayScene';
 import { JungleBoardScene } from './scenes/JungleBoardScene';
 import { MedalsScene } from './scenes/MedalsScene';
 import { EventBus, EVT } from './utils/EventBus';
+import { initAdWaitOverlay } from './ui/AdWaitOverlay';
+
+initAdWaitOverlay();
 
 // iOS Safari WebGL context creation hangs inside some portal iframes.
 // Fall back to Canvas — slower but boots reliably.

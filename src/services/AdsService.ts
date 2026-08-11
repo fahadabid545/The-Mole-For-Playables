@@ -55,7 +55,9 @@ class CrazyGamesAdsService implements AdsService {
           adError:    finish,
         });
       } catch { finish(); }
-      setTimeout(finish, 45000);
+      // Safety cap: if the SDK never fires adFinished/adError, resolve
+      // anyway so the game can continue.
+      setTimeout(finish, 15000);
     }));
   }
 
@@ -73,7 +75,10 @@ class CrazyGamesAdsService implements AdsService {
           adError:    () => finish('error'),
         });
       } catch { finish('error'); }
-      setTimeout(() => finish(outcome), 60000);
+      // Safety cap: 18s is longer than a real rewarded video's load +
+      // playback, but short enough that a broken SDK doesn't strand
+      // the player.
+      setTimeout(() => finish(outcome), 18000);
     }));
   }
 
