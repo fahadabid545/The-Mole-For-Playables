@@ -7,43 +7,42 @@ import { AdBanner } from '../ui/AdBanner';
 import { I18n } from '../services/I18nService';
 import { TS } from '../config/TextStyles';
 
-// Single scrollable wooden board covering how to play, scoring, and
-// every enemy type in one structured pane — no floating text, no
-// spread-out row planks.
+// Compact, scan-friendly game guide. Three sections stacked on one
+// clean rounded panel (no bolt-y wooden plank so text never fights
+// with decorative rivets):
+//   1. SCORING     — icon | name | points for the good enemies
+//   2. WATCH OUT   — icon | name | penalty for the danger enemies
+//   3. QUICK TIPS  — three high-signal lines the player actually needs
+// Everything fits on screen without scrolling on a 720x1280 viewport.
 
-interface EnemyRow {
+interface Row {
   tex: string;
   label: string;
   effect: string;
-  color: string;
-  detail: string;
+  effectColor: string;
 }
 
-const ENEMIES: EnemyRow[] = [
-  { tex: 'tx-raccoon',        label: 'Raccoon', effect: '+10',           color: '#a5d6a7',
-    detail: 'The main target. Fast to whack.' },
-  { tex: 'tx-raccoon-golden', label: 'Golden',  effect: '+30',           color: '#ffd54f',
-    detail: 'Rare + high score. Do NOT miss it.' },
-  { tex: 'tx-raccoon-frozen', label: 'Frozen',  effect: '+20 · 2 hits',  color: '#81d4fa',
-    detail: 'Icy — takes two taps to break.' },
-  { tex: 'tx-raccoon-boss',   label: 'Boss',    effect: '+100 · 3 hits', color: '#f8bbd0',
-    detail: 'Boss levels only. Three solid hits.' },
-  { tex: 'tx-bomb',           label: 'Bomb',    effect: '-1 LIFE',       color: '#ef5350',
-    detail: 'AVOID. Costs a whole life if tapped.' },
-  { tex: 'tx-cat',            label: 'Cat',     effect: '-2s / -10',     color: '#ffab91',
-    detail: 'Super Hard only. Time + score penalty.' },
-  { tex: 'tx-goat',           label: 'Goat',    effect: '-2s / -10',     color: '#ffab91',
-    detail: 'Super Hard only. Time + score penalty.' },
+const SCORE_ROWS: Row[] = [
+  { tex: 'tx-raccoon',        label: 'Raccoon', effect: '+10',           effectColor: '#a5d6a7' },
+  { tex: 'tx-raccoon-golden', label: 'Golden',  effect: '+30',           effectColor: '#ffd54f' },
+  { tex: 'tx-raccoon-frozen', label: 'Frozen',  effect: '+20  ·  2 hits', effectColor: '#81d4fa' },
+  { tex: 'tx-raccoon-boss',   label: 'Boss',    effect: '+100 · 3 hits',  effectColor: '#f8bbd0' },
 ];
 
-const RULES: string[] = [
-  'Tap raccoons the moment they pop out.',
-  'Combo hits MULTIPLY your score — chain 4 for ×2, 8+ for ×3.',
-  'Miss a raccoon and it escapes — combo resets.',
-  'Every 5 escaped raccoons cost you a life.',
-  'Clear the hit quota before the timer runs out to win.',
-  '3 stars if you finish with 50%+ time left, 2 stars for 20%+, 1 star otherwise.',
+const DANGER_ROWS: Row[] = [
+  { tex: 'tx-bomb', label: 'Bomb', effect: '-1 LIFE',  effectColor: '#ef5350' },
+  { tex: 'tx-cat',  label: 'Cat',  effect: '-2s / -10', effectColor: '#ffab91' },
+  { tex: 'tx-goat', label: 'Goat', effect: '-2s / -10', effectColor: '#ffab91' },
 ];
+
+const TIPS: { icon: string; text: string; color: string }[] = [
+  { icon: '★',  text: 'Chain hits for combos — x2 at 4, x3 at 8',  color: '#ffd54f' },
+  { icon: '♥',  text: 'Every 5 escapes costs a life',              color: '#ef5350' },
+  { icon: '⏱', text: 'Finish fast — more time left = more stars', color: '#81d4fa' },
+];
+
+const PANEL_FILL   = 0x3a2410;
+const PANEL_STROKE = 0x1c0e05;
 
 export class HowToPlayScene extends Phaser.Scene {
   constructor() { super('HowToPlay'); }
@@ -55,114 +54,87 @@ export class HowToPlayScene extends Phaser.Scene {
     this.add.text(GAME_WIDTH / 2, 175, 'HOW TO PLAY',
       { ...TS.title(), fontSize: '40px', strokeThickness: 6 }).setOrigin(0.5).setDepth(100);
 
-    const topClip = 300;
-    const bottomClip = 300;
-    const clipH = GAME_HEIGHT - topClip - bottomClip;
-    const container = this.add.container(0, topClip);
+    // Panel spans just below the title down to just above the BACK
+    // button, so all three sections (scoring, watch-out, tips) fit
+    // without scrolling.
+    const panelX = 40;
+    const panelY = 240;
+    const panelW = GAME_WIDTH - 80;
+    const panelH = GAME_HEIGHT - panelY - 300;
+    this.add.rectangle(panelX, panelY, panelW, panelH, PANEL_FILL, 0.92)
+      .setOrigin(0, 0).setStrokeStyle(6, PANEL_STROKE);
 
-    // One tall wooden board that holds everything in structured order.
-    const boardW = GAME_WIDTH - 60;
-    const rules_start = 20;
-    const rules_lh = 44;
-    const heading_h = 60;
-    const enemy_h = 90;
-    const contentH =
-      heading_h + rules_start + RULES.length * rules_lh + 40 +
-      heading_h + ENEMIES.length * enemy_h + 40;
+    const centerX = GAME_WIDTH / 2;
+    const iconX   = panelX + 60;
+    const nameX   = panelX + 130;
+    const effectX = panelX + panelW - 30;
 
-    const board = this.add.image(GAME_WIDTH / 2, contentH / 2, TX.tileWood).setOrigin(0.5)
-      .setDisplaySize(boardW, contentH);
-    container.add(board);
+    let y = panelY + 24;
 
-    // ---- HOW TO PLAY heading + rule list ----
-    let y = 30;
-    const h1 = this.add.text(GAME_WIDTH / 2, y, 'RULES',
-      { ...TS.h2('#ffd54f'), fontSize: '32px', stroke: '#3e2723', strokeThickness: 4 })
-      .setOrigin(0.5);
-    container.add(h1);
-    y += 50;
-    // Keep rules text away from the plank's corner bolts (~60 px inset
-    // each side) — otherwise the bolts render right through the text.
-    const rulePad = 90;
-    for (const rule of RULES) {
-      const dot = this.add.text(rulePad, y, '•',
-        { fontFamily: '"Arial Black", Impact, sans-serif', fontSize: '26px',
-          color: '#ffd54f', stroke: '#3e2723', strokeThickness: 3 }).setOrigin(0, 0.5);
-      const t = this.add.text(rulePad + 30, y, rule,
-        { fontFamily: '"Arial Black", Impact, sans-serif', fontSize: '22px',
-          color: '#fff8e1', stroke: '#3e2723', strokeThickness: 3,
-          wordWrap: { width: boardW - rulePad * 2 - 40 } }).setOrigin(0, 0.5);
-      container.add([dot, t]);
-      y += Math.max(rules_lh, t.height + 12);
+    // ---- SCORING ----
+    this.section(centerX, y, 'SCORING', '#ffd54f');
+    y += 46;
+    for (const row of SCORE_ROWS) {
+      this.enemyRow(iconX, nameX, effectX, y, row);
+      y += 56;
     }
 
     // Divider
-    y += 20;
-    const div = this.add.rectangle(GAME_WIDTH / 2, y, boardW - 80, 3, 0x3e2723, 0.6);
-    container.add(div);
-    y += 30;
+    y += 4;
+    this.add.rectangle(centerX, y, panelW - 80, 3, 0x8d6e63, 0.7);
+    y += 14;
 
-    // ---- Enemy legend ----
-    const h2 = this.add.text(GAME_WIDTH / 2, y, 'ENEMIES',
-      { ...TS.h2('#ffd54f'), fontSize: '32px', stroke: '#3e2723', strokeThickness: 4 })
-      .setOrigin(0.5);
-    container.add(h2);
-    y += 50;
-
-    const iconX = 90;
-    const labelX = 160;
-    const effectX = GAME_WIDTH - 40;
-    for (const row of ENEMIES) {
-      const icon = this.add.image(iconX, y + 10, row.tex).setOrigin(0.5)
-        .setDisplaySize(60, 60);
-      const name = this.add.text(labelX, y, row.label,
-        { fontFamily: '"Arial Black", Impact, sans-serif', fontSize: '22px',
-          color: '#fff8e1', stroke: '#3e2723', strokeThickness: 3 }).setOrigin(0, 0);
-      const detail = this.add.text(labelX, y + 30, row.detail,
-        { fontFamily: '"Arial Black", Impact, sans-serif', fontSize: '15px',
-          color: '#fff5c9', stroke: '#3e2723', strokeThickness: 2,
-          wordWrap: { width: GAME_WIDTH - labelX - 130 } }).setOrigin(0, 0);
-      const effect = this.add.text(effectX, y + 12, row.effect,
-        { fontFamily: '"Arial Black", Impact, sans-serif', fontSize: '18px',
-          color: row.color, stroke: '#3e2723', strokeThickness: 3 }).setOrigin(1, 0);
-      container.add([icon, name, detail, effect]);
-      y += enemy_h;
+    // ---- WATCH OUT ----
+    this.section(centerX, y, 'WATCH OUT', '#ef5350');
+    y += 46;
+    for (const row of DANGER_ROWS) {
+      this.enemyRow(iconX, nameX, effectX, y, row);
+      y += 56;
     }
 
-    // Scroll setup
-    const totalH = y + 40;
-    const minY = Math.min(topClip, GAME_HEIGHT - bottomClip - totalH);
-    const maxY = topClip;
-    const mask = this.make.graphics({ x: 0, y: 0 }).fillStyle(0xffffff)
-      .fillRect(0, topClip, GAME_WIDTH, clipH);
-    container.setMask(mask.createGeometryMask());
+    // Divider
+    y += 4;
+    this.add.rectangle(centerX, y, panelW - 80, 3, 0x8d6e63, 0.7);
+    y += 14;
 
-    let scrollY = 0, dragging = false, lastY = 0;
-    const scrollBy = (dy: number) => {
-      scrollY += dy;
-      const t = Math.min(maxY, Math.max(minY, maxY + scrollY));
-      scrollY = t - maxY;
-      container.y = t;
-    };
-    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
-      if (p.y >= topClip && p.y <= topClip + clipH) { dragging = true; lastY = p.y; }
-    });
-    this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
-      if (!dragging || !p.isDown) return;
-      const dy = p.y - lastY; lastY = p.y; scrollBy(dy);
-    });
-    this.input.on('pointerup', () => { dragging = false; });
-    this.input.on('wheel', (_: unknown, __: unknown, ___: number, dy: number) => scrollBy(-dy));
+    // ---- QUICK TIPS ----
+    this.section(centerX, y, 'QUICK TIPS', '#a5d6a7');
+    y += 44;
+    for (const tip of TIPS) {
+      this.tipRow(panelX + 40, panelX + panelW - 30, y, tip);
+      y += 44;
+    }
 
-    // Scroll hint arrow
-    const arrow = this.add.text(GAME_WIDTH - 30, topClip + clipH - 40, '▼',
-      { fontFamily: '"Arial Black", Impact, sans-serif', fontSize: '32px',
-        color: '#ffd54f', stroke: '#3e2723', strokeThickness: 4 }).setOrigin(0.5).setDepth(200);
-    this.tweens.add({ targets: arrow, y: '+=6', yoyo: true, repeat: -1, duration: 700, ease: 'Sine.InOut' });
-
-    new Button(this, GAME_WIDTH / 2, GAME_HEIGHT - 240, {
+    new Button(this, centerX, GAME_HEIGHT - 240, {
       label: I18n.t('back'), onClick: () => this.scene.start('Menu'), scale: 0.8,
     });
     new AdBanner(this).show();
+  }
+
+  private section(cx: number, y: number, label: string, color: string): void {
+    this.add.text(cx, y, label,
+      { fontFamily: '"Luckiest Guy", Impact, sans-serif', fontSize: '30px',
+        color, stroke: '#3e2723', strokeThickness: 5 }).setOrigin(0.5, 0);
+  }
+
+  private enemyRow(iconX: number, nameX: number, effectX: number, y: number, row: Row): void {
+    this.add.image(iconX, y + 22, row.tex).setOrigin(0.5).setDisplaySize(52, 52);
+    this.add.text(nameX, y + 22, row.label,
+      { fontFamily: '"Luckiest Guy", Impact, sans-serif', fontSize: '26px',
+        color: '#fff8e1', stroke: '#3e2723', strokeThickness: 4 }).setOrigin(0, 0.5);
+    this.add.text(effectX, y + 22, row.effect,
+      { fontFamily: '"Luckiest Guy", Impact, sans-serif', fontSize: '24px',
+        color: row.effectColor, stroke: '#3e2723', strokeThickness: 4 }).setOrigin(1, 0.5);
+  }
+
+  private tipRow(x: number, endX: number, y: number,
+                 tip: { icon: string; text: string; color: string }): void {
+    this.add.text(x, y, tip.icon,
+      { fontFamily: '"Luckiest Guy", Impact, sans-serif', fontSize: '32px',
+        color: tip.color, stroke: '#3e2723', strokeThickness: 4 }).setOrigin(0, 0);
+    this.add.text(x + 44, y + 4, tip.text,
+      { fontFamily: '"Arial Black", Impact, sans-serif', fontSize: '20px',
+        color: '#fff8e1', stroke: '#3e2723', strokeThickness: 3,
+        wordWrap: { width: endX - (x + 44) } }).setOrigin(0, 0);
   }
 }
