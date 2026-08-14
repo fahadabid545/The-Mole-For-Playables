@@ -31,8 +31,9 @@ export class MenuScene extends Phaser.Scene {
     this.tweens.add({ targets: title, angle: { from: -3, to: 3 }, yoyo: true, repeat: -1, duration: 2400, ease: 'Sine.InOut', delay: 800 });
 
     // Fit mascot to a fixed display width regardless of source PNG size,
-    // and drop it below the title so JUNGLE / MOLE stays fully visible.
-    const mascot = this.add.image(GAME_WIDTH / 2, 500, TX.raccoon).setOrigin(0.5);
+    // and sit it right on top of the PLAY button (secY=750, button ~120
+    // tall) so there is no dead space between the mascot and the CTA.
+    const mascot = this.add.image(GAME_WIDTH / 2, 610, TX.raccoon).setOrigin(0.5);
     const mSrc = mascot.texture.getSourceImage() as HTMLImageElement | HTMLCanvasElement;
     const mSw = (mSrc as any).naturalWidth || (mSrc as any).width || 200;
     const mSh = (mSrc as any).naturalHeight || (mSrc as any).height || 200;
