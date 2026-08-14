@@ -79,9 +79,10 @@ export class ChallengesScene extends Phaser.Scene {
     // so it stays readable on the wooden plank. Placed above the reward
     // row so nothing overlaps at h=380.
     const resets = kind === 'daily' ? this.timeToDailyReset() : this.timeToWeeklyReset();
-    this.add.text(cx, cy - 70, 'Resets in',
-      { fontFamily: '"Arial Black", Impact, sans-serif', fontSize: '22px',
-        color: '#3e2723' }).setOrigin(0.5);
+    this.add.text(cx, cy - 70, 'RESETS IN',
+      { fontFamily: '"Luckiest Guy", Impact, sans-serif', fontSize: '28px',
+        color: '#fff8e1', stroke: '#3e2723', strokeThickness: 4,
+        letterSpacing: 2 } as Phaser.Types.GameObjects.Text.TextStyle).setOrigin(0.5);
     this.add.text(cx, cy - 30, resets,
       { fontFamily: '"Luckiest Guy", Impact, sans-serif', fontSize: '40px',
         color: '#ffd54f', stroke: '#3e2723', strokeThickness: 5 }).setOrigin(0.5);
