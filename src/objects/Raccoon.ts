@@ -36,10 +36,15 @@ export class Raccoon extends Phaser.GameObjects.Container {
   private timers: Phaser.Time.TimerEvent[] = [];
 
   private displayW: number;
+  private riseY: number;
+  private hideY: number;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, displayW: number = 150) {
+  constructor(scene: Phaser.Scene, x: number, y: number, displayW: number = 150,
+              riseY: number = -20, hideY: number = 120) {
     super(scene, x, y);
     this.displayW = displayW;
+    this.riseY = riseY;
+    this.hideY = hideY;
 
     this.sprite = scene.add.image(0, 0, TX.raccoon).setOrigin(0.5, 1);
     // Cap the sprite to `displayW` while preserving aspect ratio, so
@@ -85,16 +90,19 @@ export class Raccoon extends Phaser.GameObjects.Container {
     // Boss and cat/goat get a slight size bump so they read distinct.
     const bump = kind === 'boss' ? 1.2 : (kind === 'cat' || kind === 'goat') ? 1.05 : 1;
     this.fitSpriteWidth(this.displayW * bump);
-    this.sprite.setY(120);
+    this.sprite.setY(this.hideY);
     this.sprite.setAngle(0);
     this.sprite.clearTint();
     this.updateHpBadge();
     this.setVisible(true);
     Audio.play(kind === 'golden' ? 'golden' : 'squeak');
 
+    // Rise so the raccoon head clears the hole rim. Boss rises a touch
+    // higher so its extra bulk is fully visible above the stump.
+    const bossExtra = kind === 'boss' ? -20 : 0;
     this.scene.tweens.add({
       targets: this.sprite,
-      y: kind === 'boss' ? -40 : -20,
+      y: this.riseY + bossExtra,
       duration: 200,
       ease: 'Back.Out',
       onComplete: () => {
@@ -153,7 +161,7 @@ export class Raccoon extends Phaser.GameObjects.Container {
     if (!isPenalty) Audio.play('laugh');
     this.scene.tweens.add({
       targets: this.sprite,
-      y: 120,
+      y: this.hideY,
       duration: 160,
       ease: 'Sine.In',
       onComplete: () => {
@@ -168,7 +176,7 @@ export class Raccoon extends Phaser.GameObjects.Container {
     this.hpText.setVisible(false);
     this.scene.tweens.add({
       targets: this.sprite,
-      y: 120,
+      y: this.hideY,
       duration: 120,
       ease: 'Sine.In',
       onComplete: () => {

@@ -165,18 +165,21 @@ export class GameScene extends Phaser.Scene {
     const cellW = (GAME_WIDTH - g.paddingX * 2) / g.cols;
     const usableH = GAME_HEIGHT - g.paddingTop - g.paddingBottom;
     const cellH = usableH / g.rows;
-    // Keep holes clearly separated: 82% of cell width so adjacent logs
-    // never touch each other. Raccoon head sized to fit the log opening
-    // (about 62% of the hole graphic).
-    const holeW = Math.min(cellW * 0.82, cellH * 1.55);
+    // The stump art is roughly square, so cap by both cell dims.
+    const holeW = Math.min(cellW * 0.90, cellH * 0.85);
     const racW  = holeW * 0.62;
+    // Where the visible dark hole opening sits inside the stump
+    // (~33% down from sprite top). Raccoon rises so its BOTTOM anchor
+    // lands at that height, so its head+shoulders emerge from the hole.
+    const riseY = -holeW * 0.17;
+    const hideY =  holeW * 0.35;   // tucked below the rim, invisible
     let idx = 0;
     for (let r = 0; r < g.rows; r++) {
       for (let c = 0; c < g.cols; c++) {
         const x = g.paddingX + cellW / 2 + c * cellW;
         const y = g.paddingTop + cellH / 2 + r * cellH;
         const hole = new Hole(this, x, y, idx, holeW);
-        const rac = new Raccoon(this, x, y, racW);
+        const rac = new Raccoon(this, x, y, racW, riseY, hideY);
         this.holes.push(hole);
         this.raccoons.push(rac);
         idx++;
