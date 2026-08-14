@@ -21,6 +21,7 @@ const map: Record<string, string> = {
   'cat':            TX.cat,
   'goat':           TX.goat,
   'log-hole':       TX.logHole,
+  'bg-jungle':      TX.bgJungle,
 };
 
 interface OverrideRequest { key: string; url: string; }

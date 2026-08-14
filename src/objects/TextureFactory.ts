@@ -14,6 +14,7 @@ export const TX = {
   bgLeavesFg: 'tx-bg-leaves-fg',
   bgGround: 'tx-bg-ground',
   bgRiver: 'tx-bg-river',
+  bgJungle: 'tx-bg-jungle',
   tileWood: 'tx-tile-wood',
   tileWoodLocked: 'tx-tile-wood-locked',
   hudBar: 'tx-hud-bar',
