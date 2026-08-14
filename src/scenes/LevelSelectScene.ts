@@ -84,6 +84,10 @@ export class LevelSelectScene extends Phaser.Scene {
           Audio.play('miss');
           this.tweens.add({ targets: tile, angle: { from: -6, to: 6 }, yoyo: true, repeat: 1, duration: 60,
             onComplete: () => tile.setAngle(0) });
+          // Explicit toast so the player understands *why* the tap
+          // did nothing.
+          const highest = Save.get().categories[this.category].highestUnlockedLevel;
+          this.showLockedToast(`Clear level ${highest} to unlock`);
         });
       }
     }
@@ -173,5 +177,23 @@ export class LevelSelectScene extends Phaser.Scene {
       this.lastTickY = targetY;
       Audio.play('tick');
     }
+  }
+
+  private lockedToast: Phaser.GameObjects.Text | null = null;
+  private showLockedToast(msg: string): void {
+    // Kill any previous toast so rapid taps don't stack overlapping
+    // text on top of each other.
+    if (this.lockedToast) { this.lockedToast.destroy(); this.lockedToast = null; }
+    const t = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 320, msg,
+      { fontFamily: '"Luckiest Guy", Impact, sans-serif', fontSize: '28px',
+        color: '#fff8e1', stroke: '#3e2723', strokeThickness: 5,
+        backgroundColor: '#3e2723', padding: { x: 18, y: 10 } })
+      .setOrigin(0.5).setDepth(300).setAlpha(0);
+    this.lockedToast = t;
+    this.tweens.add({ targets: t, alpha: 1, duration: 120,
+      onComplete: () => {
+        this.tweens.add({ targets: t, alpha: 0, delay: 1300, duration: 220,
+          onComplete: () => { t.destroy(); if (this.lockedToast === t) this.lockedToast = null; } });
+      } });
   }
 }

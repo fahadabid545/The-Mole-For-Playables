@@ -36,9 +36,9 @@ const DANGER_ROWS: Row[] = [
 ];
 
 const TIPS: { icon: string; text: string; color: string }[] = [
-  { icon: '★',  text: 'Chain hits for combos — x2 at 4, x3 at 8',  color: '#ffd54f' },
-  { icon: '♥',  text: 'Every 5 escapes costs a life',              color: '#ef5350' },
-  { icon: '⏱', text: 'Finish fast — more time left = more stars', color: '#81d4fa' },
+  { icon: 'tx-icon-bolt',  text: 'Chain hits for combos — x2 at 4, x3 at 8',  color: '#ffd54f' },
+  { icon: 'tx-icon-heart', text: 'Every 5 escapes costs a life',              color: '#ef5350' },
+  { icon: 'tx-icon-target',text: 'Finish fast — more time left = more stars', color: '#81d4fa' },
 ];
 
 const PANEL_FILL   = 0x3a2410;
@@ -129,9 +129,10 @@ export class HowToPlayScene extends Phaser.Scene {
 
   private tipRow(x: number, endX: number, y: number,
                  tip: { icon: string; text: string; color: string }): void {
-    this.add.text(x, y, tip.icon,
-      { fontFamily: '"Luckiest Guy", Impact, sans-serif', fontSize: '32px',
-        color: tip.color, stroke: '#3e2723', strokeThickness: 4 }).setOrigin(0, 0);
+    // Emoji-free: use a themed icon PNG tinted with the tip colour
+    // so we stay strictly no-emoji per project rules.
+    this.add.image(x + 18, y + 16, tip.icon).setOrigin(0.5)
+      .setDisplaySize(36, 36).setTint(Phaser.Display.Color.HexStringToColor(tip.color).color);
     this.add.text(x + 44, y + 4, tip.text,
       { fontFamily: '"Arial Black", Impact, sans-serif', fontSize: '20px',
         color: '#fff8e1', stroke: '#3e2723', strokeThickness: 3,

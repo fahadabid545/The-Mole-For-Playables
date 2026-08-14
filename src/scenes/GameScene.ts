@@ -459,7 +459,11 @@ export class GameScene extends Phaser.Scene {
   private postCompleteInterstitial(): void {
     const next = this.level + 1;
     if (next > FLAGS.totalLevels) { this.goMenu(); return; }
-    if (Ads.shouldShowInterstitialForLevel(this.level)) {
+    // First-play interstitial guard: don't hit the player with an ad
+    // until they've cleared at least 5 levels — matches CrazyGames
+    // guidance that ads shouldn't disrupt the first session.
+    const totalCleared = Save.get().stats.levelsCleared;
+    if (totalCleared >= 5 && Ads.shouldShowInterstitialForLevel(this.level)) {
       Ads.showInterstitial().finally(() => this.goNext(next));
     } else {
       this.goNext(next);
