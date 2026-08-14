@@ -27,8 +27,9 @@ export class PreloadScene extends Phaser.Scene {
 
     Portal.ready();
 
+    // Jump straight to Menu after a short fade — no artificial delay.
     this.tweens.add({
-      targets: label, alpha: 0, duration: 300, delay: 200,
+      targets: label, alpha: 0, duration: 180,
       onComplete: () => this.scene.start('Menu'),
     });
 

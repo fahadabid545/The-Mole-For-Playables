@@ -13,6 +13,32 @@ import { TX } from '../objects/TextureFactory';
 export class ChallengesScene extends Phaser.Scene {
   constructor() { super('Challenges'); }
 
+  private timeToDailyReset(): string {
+    // Next UTC midnight — matches todayKey() in ChallengeService.
+    const now = new Date();
+    const next = new Date(Date.UTC(
+      now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0));
+    return this.fmtDuration(next.getTime() - now.getTime());
+  }
+  private timeToWeeklyReset(): string {
+    // Next Monday UTC 00:00 — approximate weekly reset.
+    const now = new Date();
+    const day = now.getUTCDay() || 7; // 1..7 (Mon..Sun)
+    const daysUntilMon = ((8 - day) % 7) || 7;
+    const next = new Date(Date.UTC(
+      now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + daysUntilMon, 0, 0, 0));
+    return this.fmtDuration(next.getTime() - now.getTime());
+  }
+  private fmtDuration(ms: number): string {
+    const s = Math.max(0, Math.floor(ms / 1000));
+    const d = Math.floor(s / 86400);
+    const h = Math.floor((s % 86400) / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    if (d > 0) return `${d}d ${h}h`;
+    if (h > 0) return `${h}h ${m}m`;
+    return `${m}m`;
+  }
+
   create(): void {
     new ParallaxJungle(this);
 
@@ -23,8 +49,9 @@ export class ChallengesScene extends Phaser.Scene {
     const daily = getChallenge('daily');
     const weekly = getChallenge('weekly');
 
-    this.buildCard(GAME_WIDTH / 2, 420, daily, 'daily');
-    this.buildCard(GAME_WIDTH / 2, 830, weekly, 'weekly');
+    // More air between the two boards so they read as separate quests.
+    this.buildCard(GAME_WIDTH / 2, 400, daily, 'daily');
+    this.buildCard(GAME_WIDTH / 2, 900, weekly, 'weekly');
 
     new Button(this, GAME_WIDTH / 2, GAME_HEIGHT - 220, {
       label: I18n.t('back'), onClick: () => this.scene.start('Menu'), scale: 0.8,
@@ -46,11 +73,15 @@ export class ChallengesScene extends Phaser.Scene {
       kind === 'daily' ? I18n.t('todaysChallenge') : I18n.t('thisWeeksChallenge'),
       { ...TS.h2('#3e2723'), fontSize: '30px' }).setOrigin(0.5);
 
-    this.add.text(cx, cy - 60, I18n.t('level', { n: ch.params.level }),
-      { ...TS.title('#1b5e20'), fontSize: '44px', strokeThickness: 5 }).setOrigin(0.5);
-    this.add.text(cx, cy - 10,
-      `Hit ${ch.params.quota}  •  ${Math.round(ch.params.timeLimitMs / 1000)}s`,
-      { ...TS.body('#5d4037'), fontSize: '24px' }).setOrigin(0.5);
+    // Show ONLY the type + a countdown to reset. Level number and
+    // hits-in-Ns line removed per user request — the type + reward is
+    // enough for the player to decide whether to play.
+    this.add.text(cx, cy - 30,
+      kind === 'daily' ? 'DAILY CHALLENGE' : 'WEEKLY CHALLENGE',
+      { ...TS.title('#1b5e20'), fontSize: '38px', strokeThickness: 5 }).setOrigin(0.5);
+    const resets = kind === 'daily' ? this.timeToDailyReset() : this.timeToWeeklyReset();
+    this.add.text(cx, cy + 10, `Resets in ${resets}`,
+      { ...TS.body('#5d4037'), fontSize: '22px' }).setOrigin(0.5);
 
     // Reward row — center-aligned as a whole group.
     if (ch.rewardLives > 0) {

@@ -30,7 +30,14 @@ export class MenuScene extends Phaser.Scene {
     this.tweens.add({ targets: title, y: '+=14', yoyo: true, repeat: -1, duration: 1600, ease: 'Sine.InOut', delay: 800 });
     this.tweens.add({ targets: title, angle: { from: -3, to: 3 }, yoyo: true, repeat: -1, duration: 2400, ease: 'Sine.InOut', delay: 800 });
 
-    const mascot = this.add.image(GAME_WIDTH / 2, 560, TX.raccoon).setOrigin(0.5).setScale(1.4);
+    // Fit mascot to a fixed display width regardless of source PNG size,
+    // and drop it below the title so JUNGLE / MOLE stays fully visible.
+    const mascot = this.add.image(GAME_WIDTH / 2, 500, TX.raccoon).setOrigin(0.5);
+    const mSrc = mascot.texture.getSourceImage() as HTMLImageElement | HTMLCanvasElement;
+    const mSw = (mSrc as any).naturalWidth || (mSrc as any).width || 200;
+    const mSh = (mSrc as any).naturalHeight || (mSrc as any).height || 200;
+    const mW = 200;
+    mascot.setDisplaySize(mW, (mSh * mW) / mSw);
     this.tweens.add({ targets: mascot, angle: -6, yoyo: true, repeat: -1, duration: 900, ease: 'Sine.InOut' });
 
     Save.tickDailyPlayStreak();

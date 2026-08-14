@@ -11,13 +11,15 @@ export class BootScene extends Phaser.Scene {
     Portal.onPortalPauseChange((paused) => {
       EventBus.emit(paused ? EVT.PLATFORM_PAUSE : EVT.PLATFORM_RESUME);
     });
+    // Cap portal init + cloud hydrate more tightly so a slow SDK never
+    // blocks first-frame beyond a couple of seconds.
     await Promise.race([
       Portal.init(),
-      new Promise(r => setTimeout(r, 10000)),
+      new Promise(r => setTimeout(r, 3000)),
     ]);
     await Promise.race([
       hydrateFromBridge(),
-      new Promise(r => setTimeout(r, 3000)),
+      new Promise(r => setTimeout(r, 1500)),
     ]);
     Audio.init();
     this.scene.start('Preload');

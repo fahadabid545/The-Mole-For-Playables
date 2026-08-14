@@ -50,8 +50,11 @@ export class CategorySelectScene extends Phaser.Scene {
   private buildCard(y: number, card: CategoryCard, unlocked: boolean, totalStars: number): void {
     const x = GAME_WIDTH / 2;
 
-    // Wooden plank tile for every category — same shape, jungle theme.
-    const tile = this.add.image(x, y, TX.tileWood).setOrigin(0.5).setScale(2.1, 1.4);
+    // Wooden plank tile for every category — fixed display size so the
+    // 3 cards line up cleanly and don't look distorted from a
+    // non-uniform scale factor.
+    const tile = this.add.image(x, y, TX.tileWood).setOrigin(0.5)
+      .setDisplaySize(560, 170);
     if (!unlocked) tile.setTint(0x8d6e63);
 
     const palette = Theme.palette(card.id);

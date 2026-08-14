@@ -165,13 +165,18 @@ export class GameScene extends Phaser.Scene {
     const cellW = (GAME_WIDTH - g.paddingX * 2) / g.cols;
     const usableH = GAME_HEIGHT - g.paddingTop - g.paddingBottom;
     const cellH = usableH / g.rows;
+    // Keep holes clearly separated: 82% of cell width so adjacent logs
+    // never touch each other. Raccoon head sized to fit the log opening
+    // (about 62% of the hole graphic).
+    const holeW = Math.min(cellW * 0.82, cellH * 1.55);
+    const racW  = holeW * 0.62;
     let idx = 0;
     for (let r = 0; r < g.rows; r++) {
       for (let c = 0; c < g.cols; c++) {
         const x = g.paddingX + cellW / 2 + c * cellW;
         const y = g.paddingTop + cellH / 2 + r * cellH;
-        const hole = new Hole(this, x, y, idx);
-        const rac = new Raccoon(this, x, y);
+        const hole = new Hole(this, x, y, idx, holeW);
+        const rac = new Raccoon(this, x, y, racW);
         this.holes.push(hole);
         this.raccoons.push(rac);
         idx++;
@@ -486,14 +491,9 @@ export class GameScene extends Phaser.Scene {
   // the player is never trapped in a stalled-ad-frozen scene: they can
   // retry the ad, hit Menu, or wait for lives to regen.
   private showOutOfLivesPopup(): void {
-    const nextLvl = this.level + 1 <= FLAGS.totalLevels ? this.level + 1 : undefined;
     new OutOfLivesPopup(this, {
-      levelToUnlock: nextLvl,
-      // Ad buttons in the popup are fire-and-forget: the popup does
-      // NOT close itself. Reward path restarts the scene (destroying
-      // the popup with it). Skip/error path leaves the popup visible
-      // so the player can pick Menu, X, or hit the ad button again —
-      // no stalled-close hang possible.
+      // Two options only: watch ad for +1 life, or jump to Challenges
+      // for a free life via a daily/weekly quest.
       onWatchAdForLife: async () => {
         const r = await Ads.showRewarded();
         if (r === 'reward') {
@@ -502,16 +502,6 @@ export class GameScene extends Phaser.Scene {
           this.restart();
         }
       },
-      onWatchAdToUnlock: nextLvl ? async () => {
-        const r = await Ads.showRewarded();
-        if (r === 'reward') {
-          Save.unlockUpTo(this.category, nextLvl);
-          Save.addLife(1);
-          EventBus.emit(EVT.LIFE_CHANGED);
-          this.scene.stop('HUD');
-          this.scene.start('Game', { level: nextLvl, category: this.category });
-        }
-      } : undefined,
       onChallenges: () => { this.scene.stop('HUD'); this.scene.start('Challenges'); },
       onMenu: () => this.goMenu(),
       onLivesRefilled: () => this.restart(),

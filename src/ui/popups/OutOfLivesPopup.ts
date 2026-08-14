@@ -78,18 +78,19 @@ export class OutOfLivesPopup extends Popup {
       //   destroys the popup for us.
       // - On skip/error, the popup stays visible so the player can
       //   click Menu, X, or try the ad again — no stalled-close race.
+      // Two clear options: watch-ad for +1 life, or go to Challenges
+      // for a free life. Skip-level-via-ad path removed per user request.
       const adLife = new Button(scene, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 60, {
         label: I18n.t('plusOneLifeAd'), variant: 'ad',
         onClick: () => o.onWatchAdForLife(),
       });
       this.addContent(adLife);
-      if (o.levelToUnlock && o.onWatchAdToUnlock) {
-        const unlock = new Button(scene, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 170, {
-          label: I18n.t('unlockNextAd', { n: o.levelToUnlock }),
-          onClick: () => o.onWatchAdToUnlock!(),
-          variant: 'ad',
+      if (o.onChallenges) {
+        const chalBtn = new Button(scene, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 170, {
+          label: I18n.t('challenges'), variant: 'ad',
+          onClick: () => this.close(o.onChallenges!),
         });
-        this.addContent(unlock);
+        this.addContent(chalBtn);
       }
     }
 

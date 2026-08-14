@@ -67,14 +67,15 @@ function boot() {
   new Phaser.Game(config);
 }
 
-// document.fonts.load() never resolves on some mobile browsers — race
-// against a 1.5s timeout, then a 2.5s hard safety net.
+// Boot ASAP. Font loads in background — Phaser text falls back to the
+// declared stack until the web font resolves. Old 1.5s+2.5s watchdog
+// added ~2s of visible blank canvas for no gameplay benefit.
 if ('fonts' in document) {
   Promise.race([
     (document as any).fonts.load('16px "Luckiest Guy"'),
-    new Promise((res) => setTimeout(res, 1500)),
+    new Promise((res) => setTimeout(res, 400)),
   ]).then(boot, boot);
-  setTimeout(boot, 2500);
+  setTimeout(boot, 800);
 } else {
   boot();
 }

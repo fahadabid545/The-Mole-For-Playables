@@ -35,26 +35,41 @@ export class Raccoon extends Phaser.GameObjects.Container {
   private onHitCb: ((r: RaccoonHitResult) => void) | null = null;
   private timers: Phaser.Time.TimerEvent[] = [];
 
-  constructor(scene: Phaser.Scene, x: number, y: number) {
+  private displayW: number;
+
+  constructor(scene: Phaser.Scene, x: number, y: number, displayW: number = 150) {
     super(scene, x, y);
+    this.displayW = displayW;
 
     this.sprite = scene.add.image(0, 0, TX.raccoon).setOrigin(0.5, 1);
+    // Cap the sprite to `displayW` while preserving aspect ratio, so
+    // the user's high-res PNGs don't blow past the grid cell.
+    this.fitSpriteWidth(displayW);
     this.sprite.setY(30);
     this.add(this.sprite);
 
-    this.hpText = scene.add.text(0, -140, '', {
+    this.hpText = scene.add.text(0, -displayW * 0.9, '', {
       fontFamily: '"Luckiest Guy", Impact, sans-serif', fontSize: '28px',
       color: '#fffde7', stroke: '#3e2723', strokeThickness: 5,
     }).setOrigin(0.5).setVisible(false);
     this.add(this.hpText);
 
-    this.hitZone = scene.add.zone(0, -40, 180, 180).setInteractive({ useHandCursor: true });
+    const zoneSize = displayW * 1.1;
+    this.hitZone = scene.add.zone(0, -displayW * 0.3, zoneSize, zoneSize)
+      .setInteractive({ useHandCursor: true });
     this.hitZone.on('pointerdown', () => this.hit());
     this.add(this.hitZone);
 
     scene.add.existing(this);
     this.setDepth(y + 100);
     this.setVisible(false);
+  }
+
+  private fitSpriteWidth(w: number): void {
+    const src = this.sprite.texture.getSourceImage() as HTMLImageElement | HTMLCanvasElement;
+    const sw = (src as any).naturalWidth || (src as any).width || this.sprite.width;
+    const sh = (src as any).naturalHeight || (src as any).height || this.sprite.height;
+    this.sprite.setDisplaySize(w, (sh * w) / sw);
   }
 
   spawn(kind: RaccoonKind, visibleMs: number, onHit: (r: RaccoonHitResult) => void, onEscape: () => void): void {
@@ -66,8 +81,11 @@ export class Raccoon extends Phaser.GameObjects.Container {
     this.onHitCb = onHit;
     this.onEscapeCb = onEscape;
     this.sprite.setTexture(TEXTURE_FOR[kind]);
+    // Re-fit width after texture swap (setTexture resets display size).
+    // Boss and cat/goat get a slight size bump so they read distinct.
+    const bump = kind === 'boss' ? 1.2 : (kind === 'cat' || kind === 'goat') ? 1.05 : 1;
+    this.fitSpriteWidth(this.displayW * bump);
     this.sprite.setY(120);
-    this.sprite.setScale(kind === 'boss' ? 1.2 : 1);
     this.sprite.setAngle(0);
     this.sprite.clearTint();
     this.updateHpBadge();
