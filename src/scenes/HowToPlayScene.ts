@@ -81,16 +81,18 @@ export class HowToPlayScene extends Phaser.Scene {
       .setOrigin(0.5);
     container.add(h1);
     y += 50;
+    // Keep rules text away from the plank's corner bolts (~60 px inset
+    // each side) — otherwise the bolts render right through the text.
+    const rulePad = 90;
     for (const rule of RULES) {
-      const dot = this.add.text(60, y, '•',
+      const dot = this.add.text(rulePad, y, '•',
         { fontFamily: '"Arial Black", Impact, sans-serif', fontSize: '26px',
           color: '#ffd54f', stroke: '#3e2723', strokeThickness: 3 }).setOrigin(0, 0.5);
-      const t = this.add.text(90, y, rule,
+      const t = this.add.text(rulePad + 30, y, rule,
         { fontFamily: '"Arial Black", Impact, sans-serif', fontSize: '22px',
           color: '#fff8e1', stroke: '#3e2723', strokeThickness: 3,
-          wordWrap: { width: boardW - 130 } }).setOrigin(0, 0.5);
+          wordWrap: { width: boardW - rulePad * 2 - 40 } }).setOrigin(0, 0.5);
       container.add([dot, t]);
-      // Advance by the actual height the wrapped text used.
       y += Math.max(rules_lh, t.height + 12);
     }
 

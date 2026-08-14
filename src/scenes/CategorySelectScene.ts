@@ -62,8 +62,10 @@ export class CategorySelectScene extends Phaser.Scene {
       { ...TS.title(Theme.hex(palette.accent)), fontSize: '46px', strokeThickness: 6 }).setOrigin(0.5);
 
     if (unlocked) {
-      new Button(this, x, y + 46, {
-        label: 'PLAY', scale: 0.65,
+      // Bigger PLAY button so it reads as a proper call-to-action
+      // inside the wide 560x170 card.
+      new Button(this, x, y + 42, {
+        label: 'PLAY', scale: 0.85,
         onClick: () => {
           Audio.play('click');
           this.scene.start('LevelSelect', { category: card.id });

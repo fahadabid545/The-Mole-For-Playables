@@ -23,7 +23,9 @@ export class SettingsScene extends Phaser.Scene {
     this.add.text(GAME_WIDTH / 2, 175, 'SETTINGS', TS.title()).setOrigin(0.5).setDepth(100);
 
     let y = 340;
-    this.add.text(80, y, 'Sound', TS.h2('#ffd54f')).setOrigin(0, 0.5);
+    this.add.text(80, y, 'SOUND',
+      { fontFamily: '"Luckiest Guy", Impact, sans-serif', fontSize: '40px',
+        color: '#ffd54f', stroke: '#3e2723', strokeThickness: 6 }).setOrigin(0, 0.5);
     const soundBg = this.add.circle(GAME_WIDTH - 100, y, 42, 0x2b1810, 0.55)
       .setStrokeStyle(3, 0xffb300).setInteractive({ useHandCursor: true });
     const soundIcon = this.add.image(GAME_WIDTH - 100, y, Audio.isMuted() ? TX.soundOff : TX.soundOn)

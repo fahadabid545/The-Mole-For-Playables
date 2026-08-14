@@ -49,9 +49,10 @@ export class ChallengesScene extends Phaser.Scene {
     const daily = getChallenge('daily');
     const weekly = getChallenge('weekly');
 
-    // More air between the two boards so they read as separate quests.
-    this.buildCard(GAME_WIDTH / 2, 400, daily, 'daily');
-    this.buildCard(GAME_WIDTH / 2, 900, weekly, 'weekly');
+    // Push both cards below the CHALLENGES title (~y=220), leaving room
+    // for the BACK button + ad banner beneath the second card.
+    this.buildCard(GAME_WIDTH / 2, 440, daily, 'daily');
+    this.buildCard(GAME_WIDTH / 2, 830, weekly, 'weekly');
 
     new Button(this, GAME_WIDTH / 2, GAME_HEIGHT - 220, {
       label: I18n.t('back'), onClick: () => this.scene.start('Menu'), scale: 0.8,
@@ -62,26 +63,28 @@ export class ChallengesScene extends Phaser.Scene {
 
   private buildCard(cx: number, cy: number, ch: Challenge, kind: ChallengeKind): void {
     const w = 540, h = 380;
-    // Wooden plank card — replaces the flat rectangle.
+    // Wooden plank card
     const tile = this.add.image(cx, cy, TX.tileWood).setOrigin(0.5)
       .setDisplaySize(w, h).setTint(0xfff8e1);
     void tile;
-    // Header ribbon
-    this.add.rectangle(cx, cy - h / 2 + 42, w - 40, 56, kind === 'daily' ? 0xffb300 : 0xef5350, 1)
-      .setOrigin(0.5).setStrokeStyle(4, COLORS.woodDark);
-    this.add.text(cx, cy - h / 2 + 42,
-      kind === 'daily' ? I18n.t('todaysChallenge') : I18n.t('thisWeeksChallenge'),
-      { ...TS.h2('#3e2723'), fontSize: '30px' }).setOrigin(0.5);
 
-    // Show ONLY the type + a countdown to reset. Level number and
-    // hits-in-Ns line removed per user request — the type + reward is
-    // enough for the player to decide whether to play.
-    this.add.text(cx, cy - 30,
+    // Single title on a colored ribbon — no duplicate label underneath.
+    this.add.rectangle(cx, cy - h / 2 + 46, w - 40, 68, kind === 'daily' ? 0xffb300 : 0xef5350, 1)
+      .setOrigin(0.5).setStrokeStyle(4, COLORS.woodDark);
+    this.add.text(cx, cy - h / 2 + 46,
       kind === 'daily' ? 'DAILY CHALLENGE' : 'WEEKLY CHALLENGE',
-      { ...TS.title('#1b5e20'), fontSize: '38px', strokeThickness: 5 }).setOrigin(0.5);
+      { ...TS.title('#3e2723'), fontSize: '34px', strokeThickness: 4 }).setOrigin(0.5);
+
+    // Countdown to next UTC reset — high-contrast gold with a dark stroke
+    // so it stays readable on the wooden plank. Placed above the reward
+    // row so nothing overlaps at h=380.
     const resets = kind === 'daily' ? this.timeToDailyReset() : this.timeToWeeklyReset();
-    this.add.text(cx, cy + 10, `Resets in ${resets}`,
-      { ...TS.body('#5d4037'), fontSize: '22px' }).setOrigin(0.5);
+    this.add.text(cx, cy - 70, 'Resets in',
+      { fontFamily: '"Arial Black", Impact, sans-serif', fontSize: '22px',
+        color: '#3e2723' }).setOrigin(0.5);
+    this.add.text(cx, cy - 30, resets,
+      { fontFamily: '"Luckiest Guy", Impact, sans-serif', fontSize: '40px',
+        color: '#ffd54f', stroke: '#3e2723', strokeThickness: 5 }).setOrigin(0.5);
 
     // Reward row — center-aligned as a whole group.
     if (ch.rewardLives > 0) {
