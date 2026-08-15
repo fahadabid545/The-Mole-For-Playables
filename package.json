@@ -10,6 +10,7 @@
     "build:crazygames": "cross-env VITE_BUILD_TARGET=crazygames vite build",
     "build:poki": "cross-env VITE_BUILD_TARGET=poki       vite build",
     "build:playgama": "cross-env VITE_BUILD_TARGET=playgama   vite build",
+    "build:playgama:qa": "cross-env VITE_BUILD_TARGET=playgama VITE_PLAYGAMA_MODE=qa vite build",
     "build:all": "npm run build:playables && npm run build:crazygames && npm run build:poki && npm run build:playgama",
     "zip:playgama": "cd dist-playgama && zip -r -X ../jungle-mole-playgama.zip . && cd ..",
     "preview": "vite preview --port 5000",

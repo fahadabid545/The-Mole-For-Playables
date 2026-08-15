@@ -41,14 +41,15 @@ const copyPlaygamaSdk: Plugin = {
   },
 };
 
-// Playgama Bridge fetches ./playgama-bridge-config.json on init. The
-// QA tool watchdog listens for the postMessage handshake that ONLY the
-// QaToolPlatformBridge sends — PlaygamaPlatformBridge fetches Playgama's
-// own SDK from CDN and does not do that handshake, so a 'playgama' value
-// makes the QA tool time out. Force 'qa_tool' so the correct bridge is
-// loaded on the QA testing environment. Playgama replaces this file
-// server-side at final publish time when the game is promoted to
-// production distribution.
+// Playgama Bridge fetches ./playgama-bridge-config.json on init.
+//
+// - QA tool testing: set VITE_PLAYGAMA_MODE=qa (forces PlatformId to
+//   'qa_tool' so the QA tool's postMessage handshake succeeds).
+// - Production upload: default (empty config). Playgama's own
+//   PlaygamaPlatformBridge auto-detects the host and no override
+//   is needed. Playgama also replaces this file server-side when a
+//   game is promoted to production distribution, so shipping an empty
+//   config is the safest default.
 const writePlaygamaConfig: Plugin = {
   name: 'write-playgama-config',
   apply: 'build',
@@ -56,7 +57,8 @@ const writePlaygamaConfig: Plugin = {
     if (target !== 'playgama') return;
     const dir = resolve('dist-playgama');
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-    const cfg = { forciblySetPlatformId: 'qa_tool' };
+    const qa = process.env.VITE_PLAYGAMA_MODE === 'qa';
+    const cfg = qa ? { forciblySetPlatformId: 'qa_tool' } : {};
     writeFileSync(resolve(dir, 'playgama-bridge-config.json'), JSON.stringify(cfg, null, 2) + '\n');
   },
 };
