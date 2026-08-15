@@ -249,6 +249,7 @@ export class GameScene extends Phaser.Scene {
     this.nextSpawnAt = this.time.now + 300;
     this.showTutorialHint();
     Portal.gameplayStart();
+    Portal.levelStarted(this.level);
   }
 
   update(time: number): void {
@@ -380,6 +381,8 @@ export class GameScene extends Phaser.Scene {
     this.levelActive = false;
     this.raccoons.forEach(r => r.forceHide());
     Portal.gameplayStop();
+    if (won) Portal.levelCompleted(this.level);
+    else     Portal.levelFailed(this.level);
 
     if (!won) {
       Save.loseLife();
@@ -518,8 +521,12 @@ export class GameScene extends Phaser.Scene {
   private openPause(): void {
     if (!this.levelActive || this.paused) return;
     (this as any)._addPauseReason?.('manual');
+    Portal.levelPaused();
     new PausePopup(this, {
-      onResume: () => (this as any)._dropPauseReason?.('manual'),
+      onResume: () => {
+        (this as any)._dropPauseReason?.('manual');
+        Portal.levelResumed();
+      },
       onRestart: () => { (this as any)._dropPauseReason?.('manual'); this.restart(); },
       onQuit: () => { (this as any)._dropPauseReason?.('manual'); this.goMenu(); },
     });

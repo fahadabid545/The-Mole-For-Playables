@@ -1,6 +1,7 @@
 import { Save } from './SaveService';
 import { EventBus } from '../utils/EventBus';
 import { TX } from '../objects/TextureFactory';
+import { Portal } from './Portal';
 
 export interface Achievement {
   id: string;
@@ -30,6 +31,9 @@ export function unlock(id: string): boolean {
   if (!a) return false;
   if (Save.unlockAchievement(id)) {
     EventBus.emit(EVT_ACHIEVEMENT, a);
+    // Portal announcement — Playgama surfaces this to the host so
+    // some platforms (Yandex, VK) can display a native toast.
+    Portal.playerGotAchievement(id);
     return true;
   }
   return false;

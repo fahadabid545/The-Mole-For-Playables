@@ -21,9 +21,14 @@ export class PreloadScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     // Load any real sprite PNGs first, then let TextureFactory fill in
-    // primitives for anything that wasn't overridden.
+    // primitives for anything that wasn't overridden. Report progress
+    // to the portal so Playgama can render an accurate host loading
+    // bar (other portals ignore this call).
+    Portal.setLoadingProgress(0.15);
     await loadSpriteOverrides(this);
+    Portal.setLoadingProgress(0.55);
     buildAllTextures(this);
+    Portal.setLoadingProgress(0.95);
 
     Portal.ready();
 

@@ -1,4 +1,5 @@
 import { Save } from './SaveService';
+import { Portal } from './Portal';
 
 export interface Medal {
   id: string;
@@ -45,7 +46,10 @@ export function checkMedals(): string[] {
   const newly: string[] = [];
   for (const m of ALL_MEDALS) {
     if (!s.medals.includes(m.id) && m.earned(s)) {
-      if (Save.awardMedal(m.id)) newly.push(m.id);
+      if (Save.awardMedal(m.id)) {
+        newly.push(m.id);
+        Portal.playerGotAchievement(m.id);
+      }
     }
   }
   return newly;

@@ -122,7 +122,11 @@ class PlaygamaAdsService implements AdsService {
   private get bridge(): any { return (window as any)?.bridge; }
 
   showBanner(): void {
-    try { this.bridge?.advertisement?.showBanner?.(); } catch { /* ignore */ }
+    try {
+      if (this.bridge?.advertisement?.isBannerSupported) {
+        this.bridge.advertisement.showBanner?.();
+      }
+    } catch { /* ignore */ }
   }
   hideBanner(): void {
     try { this.bridge?.advertisement?.hideBanner?.(); } catch { /* ignore */ }
@@ -130,7 +134,7 @@ class PlaygamaAdsService implements AdsService {
   async showInterstitial(): Promise<void> {
     const b = this.bridge;
     const ad = b?.advertisement;
-    if (!ad?.showInterstitial) return;
+    if (!ad?.showInterstitial || ad?.isInterstitialSupported === false) return;
     const EVT_STATE = b.EVENT_NAME?.INTERSTITIAL_STATE_CHANGED ?? 'interstitial_state_changed';
     const CLOSED = b.INTERSTITIAL_STATE?.CLOSED ?? 'closed';
     const FAILED = b.INTERSTITIAL_STATE?.FAILED ?? 'failed';
@@ -140,6 +144,8 @@ class PlaygamaAdsService implements AdsService {
         if (done) return;
         done = true;
         try { ad.off?.(EVT_STATE, onState); } catch { /* ignore */ }
+        // Warm the next slot so the following interstitial is instant.
+        try { ad.preloadInterstitial?.(); } catch { /* ignore */ }
         resolve();
       };
       const onState = (state: string) => {
@@ -153,7 +159,7 @@ class PlaygamaAdsService implements AdsService {
   async showRewarded(): Promise<AdOutcome> {
     const b = this.bridge;
     const ad = b?.advertisement;
-    if (!ad?.showRewarded) return 'skipped';
+    if (!ad?.showRewarded || ad?.isRewardedSupported === false) return 'skipped';
     const EVT_STATE = b.EVENT_NAME?.REWARDED_STATE_CHANGED ?? 'rewarded_state_changed';
     const REWARDED = b.REWARDED_STATE?.REWARDED ?? 'rewarded';
     const CLOSED = b.REWARDED_STATE?.CLOSED ?? 'closed';
@@ -165,6 +171,8 @@ class PlaygamaAdsService implements AdsService {
         if (done) return;
         done = true;
         try { ad.off?.(EVT_STATE, onState); } catch { /* ignore */ }
+        // Warm the next rewarded slot.
+        try { ad.preloadRewarded?.(); } catch { /* ignore */ }
         resolve(outcome);
       };
       const onState = (state: string) => {
