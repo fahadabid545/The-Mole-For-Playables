@@ -47,14 +47,16 @@ export class SettingsScene extends Phaser.Scene {
       },
       scale: 0.9, variant: 'ad',
     });
-    if (!IS_PORTAL) {
-      y = 600;
-      new Button(this, GAME_WIDTH / 2, y, {
-        label: 'Show Ad (test)',
-        onClick: () => { void Ads.showInterstitial(); },
-        scale: 0.85, variant: 'ad',
-      });
-    }
+    // "Show Ad (test)" is available on portal builds too so moderators
+    // can verify the interstitial trigger in one tap without having to
+    // clear 8 levels first.
+    y = 600;
+    new Button(this, GAME_WIDTH / 2, y, {
+      label: 'Show Ad (test)',
+      onClick: () => { void Ads.showInterstitial(); },
+      scale: 0.85, variant: 'ad',
+    });
+    void IS_PORTAL;
 
     y = GAME_HEIGHT - 600;
     new Button(this, GAME_WIDTH / 2, y, {
