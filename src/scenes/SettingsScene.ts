@@ -12,6 +12,7 @@ import { Popup } from '../ui/popups/Popup';
 import { Ads } from '../services/AdsService';
 import { EventBus, EVT } from '../utils/EventBus';
 import { IS_PORTAL } from '../config/BuildFlags';
+import { Portal } from '../services/Portal';
 
 export class SettingsScene extends Phaser.Scene {
   constructor() { super('Settings'); }
@@ -73,6 +74,25 @@ export class SettingsScene extends Phaser.Scene {
       onClick: () => this.confirmReset(),
       scale: 0.9, variant: 'ad',
     });
+
+    if (Portal.isSignInSupported() && !Portal.isSignedIn()) {
+      y = GAME_HEIGHT - 370;
+      new Button(this, GAME_WIDTH / 2, y, {
+        label: 'SIGN IN',
+        onClick: async () => {
+          const ok = await Portal.signIn();
+          if (ok) this.scene.restart();
+        },
+        scale: 0.85,
+      });
+    } else if (Portal.isSignedIn()) {
+      const pName = Portal.playerName();
+      if (pName) {
+        this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 360, pName, {
+          ...TS.body('#c8e6c9'), fontSize: '26px', align: 'center',
+        }).setOrigin(0.5);
+      }
+    }
 
     new Button(this, GAME_WIDTH / 2, GAME_HEIGHT - 240, {
       label: I18n.t('back'), onClick: () => this.scene.start('Menu'), scale: 0.8,

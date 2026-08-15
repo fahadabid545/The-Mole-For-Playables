@@ -70,6 +70,14 @@ interface PGBridge {
     unlock?: (key: string) => Promise<unknown>;
     isSupported?: boolean;
   };
+  player?: {
+    isAuthorizationSupported?: boolean;
+    isAuthorized?: boolean;
+    id?: string | null;
+    name?: string | null;
+    photos?: string[];
+    authorize?: (options?: Record<string, unknown>) => Promise<unknown>;
+  };
 }
 
 const w = typeof window !== 'undefined' ? (window as unknown as {
@@ -208,6 +216,33 @@ export const Portal = {
       const a = pg()?.achievements;
       if (a?.isSupported && a.unlock) void a.unlock(key);
     } catch { /* ignore */ }
+  },
+
+  // --- Player sign-in (Playgama) ------------------------------------
+
+  isSignInSupported(): boolean {
+    if (!IS_PLAYGAMA) return false;
+    try { return pg()?.player?.isAuthorizationSupported === true; } catch { return false; }
+  },
+
+  isSignedIn(): boolean {
+    if (!IS_PLAYGAMA) return false;
+    try { return pg()?.player?.isAuthorized === true; } catch { return false; }
+  },
+
+  playerName(): string | null {
+    if (!IS_PLAYGAMA) return null;
+    try { return pg()?.player?.name ?? null; } catch { return null; }
+  },
+
+  async signIn(): Promise<boolean> {
+    if (!IS_PLAYGAMA) return false;
+    try {
+      const p = pg()?.player;
+      if (!p?.authorize) return false;
+      await p.authorize();
+      return p.isAuthorized === true;
+    } catch { return false; }
   },
 
   // Fire handler(muted) whenever the host portal toggles the mute chrome

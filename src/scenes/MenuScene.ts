@@ -15,6 +15,7 @@ import { OutOfLivesPopup } from '../ui/popups/OutOfLivesPopup';
 import { allChallengesDone } from '../services/ChallengeService';
 import { TS } from '../config/TextStyles';
 import { checkMedals } from '../services/MedalService';
+import { Portal } from '../services/Portal';
 
 export class MenuScene extends Phaser.Scene {
   constructor() { super('Menu'); }
@@ -91,6 +92,26 @@ export class MenuScene extends Phaser.Scene {
       .setOrigin(0.5).setInteractive({ useHandCursor: true }).setScale(0.9);
     gear.on('pointerdown', () => this.scene.start('Settings'));
     this.tweens.add({ targets: gear, angle: 360, duration: 12000, repeat: -1 });
+
+    // Playgama sign-in button — only shown when the platform supports
+    // authorization and the player hasn't signed in yet.
+    if (Portal.isSignInSupported() && !Portal.isSignedIn()) {
+      new Button(this, GAME_WIDTH / 2, secY + gap * 4, {
+        label: 'SIGN IN',
+        onClick: async () => {
+          const ok = await Portal.signIn();
+          if (ok) this.scene.restart();
+        },
+        scale: 0.75,
+      });
+    } else if (Portal.isSignedIn()) {
+      const pName = Portal.playerName();
+      if (pName) {
+        this.add.text(GAME_WIDTH / 2, secY + gap * 4 + 10, pName, {
+          ...TS.body('#c8e6c9'), fontSize: '24px', align: 'center',
+        }).setOrigin(0.5);
+      }
+    }
 
     new AdBanner(this).show();
     void save;
