@@ -25,6 +25,9 @@ const TEXTURE_FOR: Record<RaccoonKind, string> = {
 export class Raccoon extends Phaser.GameObjects.Container {
   private sprite: Phaser.GameObjects.Image;
   private hpText: Phaser.GameObjects.Text;
+  private hpBarBg: Phaser.GameObjects.Rectangle;
+  private hpBarFill: Phaser.GameObjects.Rectangle;
+  private maxHp = 1;
   private kind: RaccoonKind = 'normal';
   private popState: 'hidden' | 'rising' | 'up' | 'hit' | 'escaping' = 'hidden';
   private hitZone: Phaser.GameObjects.Zone;
@@ -46,6 +49,16 @@ export class Raccoon extends Phaser.GameObjects.Container {
     }).setOrigin(0.5).setVisible(false);
     this.add(this.hpText);
 
+    const barW = 80;
+    const barH = 10;
+    const barY = -155;
+    this.hpBarBg = scene.add.rectangle(0, barY, barW + 4, barH + 4, 0x263238, 0.9)
+      .setOrigin(0.5).setVisible(false);
+    this.hpBarFill = scene.add.rectangle(-barW / 2, barY, barW, barH, 0x66bb6a)
+      .setOrigin(0, 0.5).setVisible(false);
+    this.add(this.hpBarBg);
+    this.add(this.hpBarFill);
+
     this.hitZone = scene.add.zone(0, -40, 180, 180).setInteractive({ useHandCursor: true });
     this.hitZone.on('pointerdown', () => this.hit());
     this.add(this.hitZone);
@@ -60,6 +73,7 @@ export class Raccoon extends Phaser.GameObjects.Container {
     this.scene.tweens.killTweensOf(this.sprite);
     this.kind = kind;
     this.hp = HP_FOR[kind];
+    this.maxHp = this.hp;
     this.popState = 'rising';
     this.onHitCb = onHit;
     this.onEscapeCb = onEscape;
@@ -86,11 +100,19 @@ export class Raccoon extends Phaser.GameObjects.Container {
   }
 
   private updateHpBadge(): void {
-    if (this.hp > 1) {
+    if (this.maxHp > 1) {
       this.hpText.setText(`${this.hp}`);
       this.hpText.setVisible(true);
+      this.hpBarBg.setVisible(true);
+      this.hpBarFill.setVisible(true);
+      const barW = 80;
+      const frac = Math.max(0, this.hp / this.maxHp);
+      this.hpBarFill.width = barW * frac;
+      this.hpBarFill.fillColor = frac > 0.5 ? 0x66bb6a : frac > 0.25 ? 0xffb300 : 0xef5350;
     } else {
       this.hpText.setVisible(false);
+      this.hpBarBg.setVisible(false);
+      this.hpBarFill.setVisible(false);
     }
   }
 
@@ -117,6 +139,7 @@ export class Raccoon extends Phaser.GameObjects.Container {
       this.scene.tweens.add({ targets: this.sprite, scaleX: 1.15, scaleY: 0.9, duration: 60, yoyo: true,
         onComplete: () => this.sprite.clearTint() });
       this.updateHpBadge();
+      this.scene.tweens.add({ targets: this.hpBarFill, scaleY: 1.8, duration: 80, yoyo: true });
       this.onHitCb?.({ kind: this.kind, points: 0, finished: false });
       return;
     }
@@ -149,6 +172,8 @@ export class Raccoon extends Phaser.GameObjects.Container {
 
   private hide(): void {
     this.hpText.setVisible(false);
+    this.hpBarBg.setVisible(false);
+    this.hpBarFill.setVisible(false);
     this.scene.tweens.add({
       targets: this.sprite,
       y: 120,
