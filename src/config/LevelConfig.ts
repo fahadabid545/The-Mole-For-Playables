@@ -3,6 +3,7 @@ import { FLAGS } from './BuildFlags';
 export interface LevelParams {
   level: number;
   quota: number;
+  scoreTarget: number;
   timeLimitMs: number;
   popupVisibleMs: number;
   popupIntervalMs: number;
@@ -20,10 +21,10 @@ export function getLevelParams(level: number): LevelParams {
   const t = (l - 1) / (FLAGS.totalLevels - 1);
   const isBoss = l % FLAGS.bossEveryNLevels === 0;
 
-  // Boss levels: fewer raccoons required (the boss is the point) + slightly
-  // more time so the player can chip through boss HP.
   const quota = isBoss ? Math.max(3, Math.round(4 + l / 12))
                        : Math.round(lerp(5, 55, t));
+  const scoreTarget = isBoss ? Math.round(lerp(150, 800, t))
+                             : Math.round(lerp(50, 600, t));
   const timeLimitMs = isBoss ? Math.round(lerp(45000, 38000, t))
                              : Math.round(lerp(45000, 28000, t));
   const popupVisibleMs = Math.round(lerp(1600, 500, t));
@@ -39,6 +40,6 @@ export function getLevelParams(level: number): LevelParams {
   const frozenChance = l < FLAGS.frozenFromLevel ? 0
     : lerp(0.08, 0.22, (l - FLAGS.frozenFromLevel) / (FLAGS.totalLevels - FLAGS.frozenFromLevel));
 
-  return { level: l, quota, timeLimitMs, popupVisibleMs, popupIntervalMs,
+  return { level: l, quota, scoreTarget, timeLimitMs, popupVisibleMs, popupIntervalMs,
            simultaneousMax, bombChance, goldenChance, frozenChance, isBoss };
 }

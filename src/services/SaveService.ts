@@ -1,8 +1,11 @@
 import { FLAGS } from '../config/BuildFlags';
 import type { Lang } from './I18nService';
+import type { ConsumableKind } from '../config/ConsumableConfig';
 
 const KEY = 'mole.v1';
 const LIVES_REGEN_MS = 10 * 60 * 1000;
+
+export type ConsumableInventory = Partial<Record<ConsumableKind, number>>;
 
 export interface SaveData {
   highestUnlockedLevel: number;
@@ -19,6 +22,9 @@ export interface SaveData {
   lastWeeklyKey?: string;
   dailyStreak: number;
   bonusScore: number;
+  coins: number;
+  consumables: ConsumableInventory;
+  lastMagicBoxOpen?: number;
   powerups: { freeze: number; double: number; auto: number };
   achievements: string[];
 }
@@ -33,6 +39,8 @@ const defaults = (): SaveData => ({
   welcomed: false,
   dailyStreak: 0,
   bonusScore: 0,
+  coins: 0,
+  consumables: {},
   powerups: { freeze: 1, double: 1, auto: 0 },
   achievements: [],
 });
@@ -58,17 +66,9 @@ function read(): SaveData {
 function write(): void {
   if (!cache) return;
   try { localStorage.setItem(KEY, JSON.stringify(cache)); } catch { /* ignore */ }
-  // Mirror to Playgama Bridge cloud storage (also intercepted by QA
-  // tool). Fire-and-forget; localStorage remains the sync source of
-  // truth so game code stays synchronous.
   try { bridgeStorage()?.set?.(KEY, cache); } catch { /* ignore */ }
 }
 
-// Called once from BootScene after bridge.initialize() resolves. Cloud
-// is the source of truth when it has data, so on a fresh reload the
-// player's progress is restored even if localStorage is empty. Writes
-// are always mirrored to the cloud, so it stays up-to-date. Runs before
-// any Save.get() so overwriting the cache here is safe.
 export async function hydrateFromBridge(): Promise<void> {
   const storage = bridgeStorage();
   if (!storage?.get) return;
@@ -97,8 +97,6 @@ export const Save = {
   addLife(delta = 1): void { this.setLives(read().lives + delta); },
   loseLife(): void { this.setLives(read().lives - 1); },
 
-  // Auto-refills lives to the starting amount once the regen timer has
-  // elapsed, but only when `canRegen` is true (all challenges done).
   tryRegenLives(canRegen: boolean): boolean {
     const d = read();
     if (d.lives > 0 || !d.livesRegenAt || !canRegen) return false;
@@ -159,6 +157,48 @@ export const Save = {
     d.achievements = d.achievements || [];
     if (d.achievements.includes(id)) return false;
     d.achievements.push(id); write(); return true;
+  },
+
+  addCoins(n: number): void {
+    const d = read();
+    d.coins = Math.max(0, (d.coins || 0) + n);
+    write();
+  },
+  spendCoins(n: number): boolean {
+    const d = read();
+    if ((d.coins || 0) < n) return false;
+    d.coins -= n;
+    write();
+    return true;
+  },
+
+  addConsumable(kind: ConsumableKind, n = 1): void {
+    const d = read();
+    d.consumables = d.consumables || {};
+    d.consumables[kind] = (d.consumables[kind] || 0) + n;
+    write();
+  },
+  useConsumable(kind: ConsumableKind): boolean {
+    const d = read();
+    d.consumables = d.consumables || {};
+    if ((d.consumables[kind] || 0) <= 0) return false;
+    d.consumables[kind] = (d.consumables[kind]!) - 1;
+    write();
+    return true;
+  },
+  getConsumableCount(kind: ConsumableKind): number {
+    return read().consumables?.[kind] || 0;
+  },
+
+  canOpenMagicBox(): boolean {
+    const d = read();
+    if (!d.lastMagicBoxOpen) return true;
+    return Date.now() - d.lastMagicBoxOpen >= 24 * 60 * 60 * 1000;
+  },
+  markMagicBoxOpened(): void {
+    const d = read();
+    d.lastMagicBoxOpen = Date.now();
+    write();
   },
 
   reset(): void { cache = defaults(); write(); },

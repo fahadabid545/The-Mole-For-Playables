@@ -12,6 +12,7 @@ import { EventBus, EVT } from '../utils/EventBus';
 import { I18n } from '../services/I18nService';
 import { NamePromptPopup } from '../ui/popups/NamePromptPopup';
 import { OutOfLivesPopup } from '../ui/popups/OutOfLivesPopup';
+import { MagicBoxPopup } from '../ui/popups/MagicBoxPopup';
 import { allChallengesDone } from '../services/ChallengeService';
 import { TS } from '../config/TextStyles';
 
@@ -52,9 +53,40 @@ export class MenuScene extends Phaser.Scene {
     new Button(this, GAME_WIDTH / 2, secY,           { label: I18n.t('levels'),     onClick: () => this.scene.start('LevelSelect') });
     new Button(this, GAME_WIDTH / 2, secY + gap,     { label: I18n.t('challenges'), onClick: () => this.scene.start('Challenges'), variant: 'ad' });
     new Button(this, GAME_WIDTH / 2, secY + gap * 2, { label: 'Achievements',       onClick: () => this.scene.start('Achievements') });
+    new Button(this, GAME_WIDTH / 2, secY + gap * 3, { label: I18n.t('shop'),      onClick: () => this.scene.start('Shop') });
 
-    // Top-right sound toggle + gear icon — offset below browser chrome
     const topPad = 110;
+
+    const coinIcon = this.add.image(30, topPad, TX.coin).setOrigin(0, 0.5).setScale(0.9);
+    this.add.text(coinIcon.x + 36, topPad, `${Save.get().coins}`, TS.hudSmall()).setOrigin(0, 0.5);
+
+    const chest = this.add.image(coinIcon.x + 140, topPad, TX.iconChest)
+      .setOrigin(0.5).setScale(1.1).setInteractive({ useHandCursor: true });
+    if (Save.canOpenMagicBox()) {
+      this.tweens.add({ targets: chest, angle: { from: -10, to: 10 }, yoyo: true, repeat: -1, duration: 500, ease: 'Sine.InOut' });
+      this.tweens.add({ targets: chest, scale: { from: 1.1, to: 1.25 }, yoyo: true, repeat: -1, duration: 600, ease: 'Sine.InOut' });
+    } else {
+      chest.setTint(0x888888);
+    }
+    chest.on('pointerdown', () => {
+      if (Save.canOpenMagicBox()) {
+        Audio.play('click');
+        new MagicBoxPopup(this, () => {
+          chest.clearTint();
+          chest.setTint(0x888888);
+          this.tweens.killTweensOf(chest);
+          chest.setAngle(0).setScale(1.1);
+        });
+      } else {
+        Audio.play('miss');
+        const hoursLeft = Math.ceil((((Save.get().lastMagicBoxOpen ?? 0) + 24 * 60 * 60 * 1000) - Date.now()) / (60 * 60 * 1000));
+        const waitText = this.add.text(chest.x, chest.y + 40, I18n.t('magicBoxWait', { n: Math.max(1, hoursLeft) }),
+          { fontFamily: 'Luckiest Guy, Impact, sans-serif', fontSize: '16px', color: '#ffcc80' }).setOrigin(0.5).setAlpha(0);
+        this.tweens.add({ targets: waitText, alpha: 1, y: waitText.y - 10, duration: 300, ease: 'Sine.Out' });
+        this.tweens.add({ targets: waitText, alpha: 0, delay: 1500, duration: 400, onComplete: () => waitText.destroy() });
+      }
+    });
+
     const sound = this.add.image(GAME_WIDTH - 70, topPad, Audio.isMuted() ? TX.soundOff : TX.soundOn)
       .setOrigin(0.5).setInteractive({ useHandCursor: true });
     sound.on('pointerdown', () => {
@@ -65,10 +97,6 @@ export class MenuScene extends Phaser.Scene {
       .setOrigin(0.5).setInteractive({ useHandCursor: true }).setScale(0.9);
     gear.on('pointerdown', () => this.scene.start('Settings'));
     this.tweens.add({ targets: gear, angle: 360, duration: 12000, repeat: -1 });
-
-    // Language chip removed — the game ships single-language for every
-    // portal build now. (Was previously gated on !IS_PLAYABLES which
-    // accidentally exposed it on CrazyGames/Poki/Playgama too.)
 
     new AdBanner(this).show();
 

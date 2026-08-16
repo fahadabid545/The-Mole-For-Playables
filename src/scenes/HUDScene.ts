@@ -4,12 +4,16 @@ import { LivesBar } from '../ui/LivesBar';
 import { EventBus, EVT } from '../utils/EventBus';
 import { TX } from '../objects/TextureFactory';
 import { Audio } from '../services/AudioService';
+import { Save } from '../services/SaveService';
 import { I18n } from '../services/I18nService';
 import { TS } from '../config/TextStyles';
+import { ConsumableBar } from '../ui/ConsumableBar';
+import { GAME_HEIGHT } from '../config/GameConfig';
 
 export interface HUDData {
   level: number;
   quota: number;
+  scoreTarget: number;
   timeLimitMs: number;
 }
 
@@ -22,27 +26,36 @@ export class HUDScene extends Phaser.Scene {
   private levelText!: Phaser.GameObjects.Text;
   private scoreText!: Phaser.GameObjects.Text;
   private timeText!: Phaser.GameObjects.Text;
-  private quotaText!: Phaser.GameObjects.Text;
+  private targetText!: Phaser.GameObjects.Text;
+  private scoreBarFill!: Phaser.GameObjects.Rectangle;
   private timeBarFill!: Phaser.GameObjects.Rectangle;
   private timeLimitMs = 1;
+  private scoreTarget = 1;
+  private coinText!: Phaser.GameObjects.Text;
 
   constructor() { super('HUD'); }
 
   create(data: HUDData): void {
     this.timeLimitMs = data.timeLimitMs;
-    // Wooden HUD bar background — taller & pushed down so it clears
-    // the browser's top chrome and gives the score/timer room.
+    this.scoreTarget = data.scoreTarget;
+
     this.add.image(GAME_WIDTH / 2, TOP_SAFE + 90, TX.hudBar).setOrigin(0.5).setDepth(-1);
 
     this.levelText = this.add.text(24, TOP_SAFE + 20, I18n.t('level', { n: data.level }), TS.hudBig());
-    this.quotaText = this.add.text(24, TOP_SAFE + 76, I18n.t('hits', { a: 0, b: data.quota }), TS.hudSmall());
+
+    const targetBarW = 200, targetBarH = 14;
+    this.targetText = this.add.text(24, TOP_SAFE + 72, `0 / ${data.scoreTarget}`, TS.hudSmall());
+    this.add.rectangle(24, TOP_SAFE + 100, targetBarW, targetBarH, 0x000000, 0.4).setOrigin(0, 0.5);
+    this.scoreBarFill = this.add.rectangle(24, TOP_SAFE + 100, 0, targetBarH, 0xffd54f, 1).setOrigin(0, 0.5);
 
     this.scoreText = this.add.text(GAME_WIDTH / 2, TOP_SAFE + 30, '0', TS.score()).setOrigin(0.5, 0);
+
+    const coinIcon = this.add.image(GAME_WIDTH / 2 - 40, TOP_SAFE + 80, TX.coin).setOrigin(0.5).setScale(0.7);
+    this.coinText = this.add.text(coinIcon.x + 22, TOP_SAFE + 72, `${Save.get().coins}`, TS.hudSmall());
 
     this.timeText = this.add.text(GAME_WIDTH - 24, TOP_SAFE + 30, this.fmt(data.timeLimitMs),
       { ...TS.hudBig('#fffde7'), stroke: '#b71c1c' }).setOrigin(1, 0);
 
-    // Timer bar under the numeric time
     const barW = 240, barH = 14;
     this.add.rectangle(GAME_WIDTH - 24 - barW, TOP_SAFE + 96, barW, barH, 0x000000, 0.4).setOrigin(0, 0.5);
     this.timeBarFill = this.add.rectangle(GAME_WIDTH - 24 - barW, TOP_SAFE + 96, barW, barH, 0x66bb6a, 1).setOrigin(0, 0.5);
@@ -80,9 +93,16 @@ export class HUDScene extends Phaser.Scene {
       gameScene.events.off('hud-icons-show');
     });
 
-    EventBus.on(EVT.SCORE_CHANGED, (score: number, hits: number, quota: number) => {
+    new ConsumableBar(this, GAME_HEIGHT - 60);
+
+    EventBus.on(EVT.SCORE_CHANGED, (score: number, _hits: number, target: number) => {
       this.scoreText.setText(`${score}`);
-      this.quotaText.setText(I18n.t('hits', { a: hits, b: quota }));
+      this.targetText.setText(`${Math.min(score, target)} / ${target}`);
+      const frac = Math.min(1, score / target);
+      this.scoreBarFill.width = 200 * frac;
+    });
+    EventBus.on(EVT.COINS_CHANGED, (coins: number) => {
+      this.coinText.setText(`${coins}`);
     });
     EventBus.on(EVT.TIMER_TICK, (msLeft: number) => {
       this.timeText.setText(this.fmt(msLeft));
@@ -95,6 +115,7 @@ export class HUDScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       EventBus.off(EVT.SCORE_CHANGED);
       EventBus.off(EVT.TIMER_TICK);
+      EventBus.off(EVT.COINS_CHANGED);
     });
   }
 

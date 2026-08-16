@@ -16,4 +16,7 @@ export const EVT = {
   AD_END:   'ad-end',
   PLATFORM_PAUSE:  'platform-pause',
   PLATFORM_RESUME: 'platform-resume',
+  COINS_CHANGED: 'coins-changed',
+  CONSUMABLE_USED: 'consumable-used',
+  CONSUMABLE_EXPIRED: 'consumable-expired',
 } as const;

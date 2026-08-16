@@ -19,9 +19,7 @@ import { Portal } from '../services/Portal';
 import { NamePromptPopup } from '../ui/popups/NamePromptPopup';
 import { Challenge } from '../services/ChallengeService';
 import type { PowerupKind } from '../ui/PowerupBar';
-// PowerupKind is only referenced by grantRandomPowerup, which stashes
-// awarded power-ups into the save file for a future settings/store UI.
-// The in-scene apply-powerup handler was removed with the PowerupBar.
+import type { ConsumableKind } from '../config/ConsumableConfig';
 import { attachAchievementToast } from '../ui/AchievementToast';
 import { checkProgress } from '../services/AchievementService';
 import { LevelFailedPopup } from '../ui/popups/LevelFailedPopup';
@@ -50,6 +48,14 @@ export class GameScene extends Phaser.Scene {
   private level = 1;
   private challenge: Challenge | null = null;
   private doublePointsActive = false;
+  private freezeActive = false;
+  private shieldActive = false;
+  private slowmoActive = false;
+  private goldenTouchActive = false;
+  private bombDefuseActive = false;
+  private frenzyActive = false;
+  private luckyActive = false;
+  private magnetHitsLeft = 0;
   private grantRandomPowerup: (() => void) | null = null;
 
   constructor() { super('Game'); }
@@ -74,6 +80,15 @@ export class GameScene extends Phaser.Scene {
     this.paused = false;
     this.endedFlag = false;
     this.levelActive = false;
+    this.doublePointsActive = false;
+    this.freezeActive = false;
+    this.shieldActive = false;
+    this.slowmoActive = false;
+    this.goldenTouchActive = false;
+    this.bombDefuseActive = false;
+    this.frenzyActive = false;
+    this.luckyActive = false;
+    this.magnetHitsLeft = 0;
     this.timeLeft = this.params.timeLimitMs;
     this.input.enabled = true;
 
@@ -95,9 +110,9 @@ export class GameScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => document.body.classList.remove('playing'));
 
     this.scene.launch('HUD', {
-      level: this.level, quota: this.params.quota, timeLimitMs: this.params.timeLimitMs,
+      level: this.level, quota: this.params.quota, scoreTarget: this.params.scoreTarget, timeLimitMs: this.params.timeLimitMs,
     });
-    EventBus.emit(EVT.SCORE_CHANGED, 0, 0, this.params.quota);
+    EventBus.emit(EVT.SCORE_CHANGED, 0, 0, this.params.scoreTarget);
     EventBus.emit(EVT.TIMER_TICK, this.timeLeft);
 
     // Ground-tap (miss) feedback: taps that don't hit a raccoon.
@@ -138,6 +153,40 @@ export class GameScene extends Phaser.Scene {
       EventBus.off(EVT.AD_END, onAdEnd);
       EventBus.off(EVT.PLATFORM_PAUSE, onAdStart);
       EventBus.off(EVT.PLATFORM_RESUME, onAdEnd);
+    });
+
+    const onConsumableUsed = (kind: ConsumableKind) => {
+      switch (kind) {
+        case 'freeze': this.freezeActive = true; break;
+        case 'double': this.doublePointsActive = true; break;
+        case 'magnet': this.magnetHitsLeft = 3; break;
+        case 'shield': this.shieldActive = true; break;
+        case 'slowmo': this.slowmoActive = true; break;
+        case 'goldenTouch': this.goldenTouchActive = true; break;
+        case 'bombDefuse': this.bombDefuseActive = true; break;
+        case 'frenzy': this.frenzyActive = true; break;
+        case 'lucky': this.luckyActive = true; break;
+        case 'timeWarp': this.timeLeft += 10000; EventBus.emit(EVT.TIMER_TICK, this.timeLeft); break;
+        case 'multiTap': break;
+      }
+    };
+    const onConsumableExpired = (kind: ConsumableKind) => {
+      switch (kind) {
+        case 'freeze': this.freezeActive = false; break;
+        case 'double': this.doublePointsActive = false; break;
+        case 'shield': this.shieldActive = false; break;
+        case 'slowmo': this.slowmoActive = false; break;
+        case 'goldenTouch': this.goldenTouchActive = false; break;
+        case 'bombDefuse': this.bombDefuseActive = false; break;
+        case 'frenzy': this.frenzyActive = false; break;
+        case 'lucky': this.luckyActive = false; break;
+      }
+    };
+    EventBus.on(EVT.CONSUMABLE_USED, onConsumableUsed);
+    EventBus.on(EVT.CONSUMABLE_EXPIRED, onConsumableExpired);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      EventBus.off(EVT.CONSUMABLE_USED, onConsumableUsed);
+      EventBus.off(EVT.CONSUMABLE_EXPIRED, onConsumableExpired);
     });
 
     // Small "3-2-1-Go!" countdown, then start
@@ -224,14 +273,15 @@ export class GameScene extends Phaser.Scene {
     if (!this.levelActive || this.paused) { this.timerLast = time; return; }
     const dt = time - this.timerLast;
     this.timerLast = time;
-    this.timeLeft -= dt;
+    if (!this.freezeActive) this.timeLeft -= dt;
     EventBus.emit(EVT.TIMER_TICK, this.timeLeft);
     if (this.timeLeft <= 0) { this.timeLeft = 0; this.endLevel(false); return; }
 
     if (time >= this.nextSpawnAt) {
       const activeCount = this.raccoons.filter(r => !r.isAvailable()).length;
       if (activeCount < this.params.simultaneousMax) this.spawnOne();
-      this.nextSpawnAt = time + this.params.popupIntervalMs + Phaser.Math.Between(-120, 220);
+      const intervalMul = this.frenzyActive ? 0.5 : 1;
+      this.nextSpawnAt = time + this.params.popupIntervalMs * intervalMul + Phaser.Math.Between(-120, 220);
     }
   }
 
@@ -255,9 +305,19 @@ export class GameScene extends Phaser.Scene {
       else if (roll < frozenEnd) kind = 'frozen';
     }
 
-    rac.spawn(kind, this.params.popupVisibleMs,
+    if (this.bombDefuseActive && kind === 'bomb') kind = 'normal';
+    if (this.luckyActive && kind === 'normal' && Math.random() < this.params.goldenChance * 2) kind = 'golden';
+    const visMs = this.slowmoActive ? this.params.popupVisibleMs * 1.5 : this.params.popupVisibleMs;
+    rac.spawn(kind, visMs,
       (res) => { if (res.finished) this.onRaccoonHit(rac, res.kind, res.points); else this.onPartialHit(rac); },
       () => this.onRaccoonEscape(rac));
+
+    if (this.magnetHitsLeft > 0 && kind !== 'bomb') {
+      this.magnetHitsLeft--;
+      this.time.delayedCall(200, () => {
+        if (!rac.isAvailable()) rac.autoHit();
+      });
+    }
   }
 
   private onPartialHit(rac: Raccoon): void {
@@ -268,6 +328,12 @@ export class GameScene extends Phaser.Scene {
   private onRaccoonHit(rac: Raccoon, kind: RaccoonKind, points: number): void {
     if (!this.levelActive) return;
     if (kind === 'bomb') {
+      if (this.shieldActive) {
+        this.shieldActive = false;
+        spawnScorePopup(this, rac.x, rac.y - 60, 'BLOCKED!', '#66bb6a');
+        Audio.play('combo');
+        return;
+      }
       spawnScorePopup(this, rac.x, rac.y - 60, '-3s', '#ff5252');
       Audio.play('lifeLost');
       this.cameras.main.shake(180, 0.012);
@@ -281,7 +347,8 @@ export class GameScene extends Phaser.Scene {
     const shakeIntensity = kind === 'boss' ? 0.010 : kind === 'golden' ? 0.006 : 0.004;
     this.cameras.main.shake(90, shakeIntensity);
     const comboMul = this.combo >= 8 ? 3 : this.combo >= 4 ? 2 : 1;
-    const base = kind === 'boss' ? 100 : kind === 'golden' ? 30 : kind === 'frozen' ? 20 : 10;
+    const goldenValue = this.goldenTouchActive && kind === 'normal';
+    const base = kind === 'boss' ? 100 : (kind === 'golden' || goldenValue) ? 30 : kind === 'frozen' ? 20 : 10;
     const doubleMul = this.doublePointsActive ? 2 : 1;
     const pts = base * comboMul * doubleMul;
     this.hits += points;
@@ -292,13 +359,14 @@ export class GameScene extends Phaser.Scene {
     if (comboMul > 1) { spawnScorePopup(this, rac.x + 40, rac.y - 110, 'COMBO!', '#ff9800'); Audio.play('combo'); }
     if (kind === 'boss') {
       spawnScorePopup(this, rac.x, rac.y - 150, 'BOSS DOWN!', '#f8bbd0');
-      // Boss down grants a random power-up
       if (this.grantRandomPowerup) this.grantRandomPowerup();
     }
-    // Combo-10 award: grant power-up
     if (this.combo === 10 && this.grantRandomPowerup) this.grantRandomPowerup();
-    EventBus.emit(EVT.SCORE_CHANGED, this.score, this.hits, this.params.quota);
-    if (this.hits >= this.params.quota) this.endLevel(true);
+    const coinReward = kind === 'boss' ? 5 : kind === 'golden' ? 3 : 1;
+    Save.addCoins(coinReward);
+    EventBus.emit(EVT.COINS_CHANGED, Save.get().coins);
+    EventBus.emit(EVT.SCORE_CHANGED, this.score, this.hits, this.params.scoreTarget);
+    if (this.score >= this.params.scoreTarget) this.endLevel(true);
   }
 
   private onRaccoonEscape(rac: Raccoon): void {
@@ -307,15 +375,7 @@ export class GameScene extends Phaser.Scene {
     this.misses++;
     this.score = Math.max(0, this.score - 5);
     spawnScorePopup(this, rac.x, rac.y - 20, '-5', '#ffab91');
-    EventBus.emit(EVT.SCORE_CHANGED, this.score, this.hits, this.params.quota);
-    // Every 5 escapes costs a life (in addition to the level-fail rule).
-    if (this.misses > 0 && this.misses % 5 === 0) {
-      Audio.play('lifeLost');
-      Save.loseLife();
-      EventBus.emit(EVT.LIFE_CHANGED);
-      spawnScorePopup(this, GAME_WIDTH / 2, GAME_HEIGHT / 2 - 100, '-1 LIFE!', '#ef5350');
-      if (Save.get().lives <= 0) this.endLevel(false, true);
-    }
+    EventBus.emit(EVT.SCORE_CHANGED, this.score, this.hits, this.params.scoreTarget);
   }
 
   private applyBombPenalty(): void {

@@ -58,6 +58,18 @@ export const TX = {
   iconSwords: 'tx-icon-swords',
   iconCalendar: 'tx-icon-calendar',
   iconMedal: 'tx-icon-medal',
+  coin: 'tx-coin',
+  iconMagnet: 'tx-icon-magnet',
+  iconSlowmo: 'tx-icon-slowmo',
+  iconXray: 'tx-icon-xray',
+  iconMultiTap: 'tx-icon-multitap',
+  iconTimeWarp: 'tx-icon-timewarp',
+  iconGoldenTouch: 'tx-icon-goldentouch',
+  iconBombDefuse: 'tx-icon-bombdefuse',
+  iconFrenzy: 'tx-icon-frenzy',
+  iconLucky: 'tx-icon-lucky',
+  iconChest: 'tx-icon-chest',
+  iconShop: 'tx-icon-shop',
 } as const;
 
 function makeTexture(scene: Phaser.Scene, key: string, w: number, h: number, draw: (g: Phaser.GameObjects.Graphics) => void): void {
@@ -122,6 +134,8 @@ export function buildAllTextures(scene: Phaser.Scene): void {
   buildIconSwords(scene);
   buildIconCalendar(scene);
   buildIconMedal(scene);
+  buildCoin(scene);
+  buildConsumableIcons(scene);
 }
 
 // ----- individual builders -----
@@ -1294,5 +1308,93 @@ function buildIconMedal(scene: Phaser.Scene) {
     // Highlight glint on top-left
     g.fillStyle(0xffffff, 0.55);
     g.fillEllipse(24, 22, 10, 4);
+  });
+}
+
+function buildCoin(scene: Phaser.Scene): void {
+  makeTexture(scene, TX.coin, 48, 48, g => {
+    g.fillStyle(0xc68400, 1); g.fillCircle(24, 24, 22);
+    g.fillStyle(COLORS.gold, 1); g.fillCircle(24, 24, 20);
+    g.fillStyle(0xffb300, 1); g.fillCircle(24, 24, 16);
+    g.fillStyle(0xffe082, 1); g.fillCircle(24, 24, 12);
+    g.fillStyle(0xc68400, 1);
+    g.fillRect(21, 14, 6, 20);
+    g.fillRect(17, 14, 14, 4);
+    g.fillRect(17, 22, 14, 4);
+    g.fillRect(17, 30, 14, 4);
+    g.fillStyle(0xffffff, 0.4);
+    g.fillEllipse(18, 16, 8, 4);
+  });
+}
+
+function buildConsumableIcons(scene: Phaser.Scene): void {
+  const simple = (key: string, color: number, symbol: (g: Phaser.GameObjects.Graphics) => void) => {
+    makeTexture(scene, key, 64, 64, g => {
+      g.fillStyle(0x1a1a1a, 0.6); g.fillCircle(32, 32, 30);
+      g.fillStyle(color, 1); g.fillCircle(32, 32, 28);
+      symbol(g);
+    });
+  };
+  simple(TX.iconMagnet, 0xb71c1c, g => {
+    g.fillStyle(0xffffff, 0.9);
+    g.fillRoundedRect(18, 16, 28, 8, 4);
+    g.fillRect(18, 16, 8, 32);
+    g.fillRect(38, 16, 8, 32);
+  });
+  simple(TX.iconSlowmo, 0x1565c0, g => {
+    g.fillStyle(0xffffff, 0.9);
+    g.fillCircle(32, 32, 16);
+    g.fillStyle(0x1565c0, 1); g.fillCircle(32, 32, 12);
+    g.fillStyle(0xffffff, 0.9);
+    g.fillRect(30, 20, 4, 14);
+    g.fillRect(30, 30, 12, 4);
+  });
+  simple(TX.iconXray, 0x00695c, g => {
+    g.fillStyle(0xffffff, 0.9);
+    g.fillCircle(28, 28, 12);
+    g.fillStyle(0x00695c, 1); g.fillCircle(28, 28, 8);
+    g.fillStyle(0xffffff, 0.9);
+    g.fillRect(38, 38, 14, 4);
+  });
+  simple(TX.iconMultiTap, 0x6a1b9a, g => {
+    g.fillStyle(0xffffff, 0.9);
+    g.fillCircle(24, 28, 8); g.fillCircle(40, 28, 8); g.fillCircle(32, 40, 8);
+  });
+  simple(TX.iconTimeWarp, 0x0d47a1, g => {
+    g.fillStyle(0xffffff, 0.9);
+    g.fillRect(22, 22, 4, 22); g.fillRect(22, 22, 22, 4);
+    g.fillStyle(0x4fc3f7, 0.9); g.fillRect(28, 28, 12, 4);
+  });
+  simple(TX.iconGoldenTouch, 0xf9a825, g => {
+    g.fillStyle(0xffffff, 0.9);
+    g.fillCircle(32, 32, 14);
+    g.fillStyle(0xf9a825, 1); g.fillCircle(32, 32, 10);
+    g.fillStyle(0xffe082, 1); g.fillCircle(32, 32, 6);
+  });
+  simple(TX.iconBombDefuse, 0x37474f, g => {
+    g.fillStyle(0xffffff, 0.9); g.fillCircle(32, 34, 14);
+    g.fillStyle(0xef5350, 0.9);
+    g.fillRect(18, 30, 28, 4);
+    g.fillRect(30, 18, 4, 28);
+  });
+  simple(TX.iconFrenzy, 0xd84315, g => {
+    g.fillStyle(0xffffff, 0.9);
+    g.fillTriangle(22, 44, 32, 14, 42, 44);
+    g.fillTriangle(26, 44, 32, 22, 38, 44);
+  });
+  simple(TX.iconLucky, 0x2e7d32, g => {
+    g.fillStyle(0xffffff, 0.9);
+    g.fillCircle(26, 26, 8); g.fillCircle(38, 26, 8);
+    g.fillCircle(26, 38, 8); g.fillCircle(38, 38, 8);
+    g.fillStyle(0x2e7d32, 1); g.fillCircle(32, 32, 4);
+  });
+  simple(TX.iconChest, 0x795548, g => {
+    g.fillStyle(0xd7ccc8, 0.9); g.fillRoundedRect(16, 24, 32, 22, 4);
+    g.fillStyle(COLORS.gold, 1); g.fillRect(28, 28, 8, 8);
+    g.fillStyle(0x5d4037, 1); g.fillRoundedRect(16, 20, 32, 8, 3);
+  });
+  simple(TX.iconShop, 0x4527a0, g => {
+    g.fillStyle(0xffffff, 0.9); g.fillRoundedRect(18, 28, 28, 20, 3);
+    g.fillStyle(0xce93d8, 0.9); g.fillRoundedRect(20, 16, 24, 16, 8);
   });
 }
