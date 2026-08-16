@@ -53,6 +53,7 @@ const DICT: Record<Lang, Dict> = {
     magicBox: 'Magic Box',
     magicBoxReady: 'Open your daily Magic Box!',
     magicBoxWait: 'Come back in {n}h',
+    howToPlay: 'How to Play',
   },
 };
 

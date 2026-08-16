@@ -95,8 +95,16 @@ export class MenuScene extends Phaser.Scene {
     });
     const gear = this.add.image(GAME_WIDTH - 160, topPad, TX.iconGear)
       .setOrigin(0.5).setInteractive({ useHandCursor: true }).setScale(0.9);
-    gear.on('pointerdown', () => this.scene.start('Settings'));
+    gear.on('pointerdown', () => { Audio.play('click'); this.scene.start('Settings'); });
     this.tweens.add({ targets: gear, angle: 360, duration: 12000, repeat: -1 });
+
+    const helpBg = this.add.circle(GAME_WIDTH - 250, topPad, 26, 0x263238, 0.85)
+      .setStrokeStyle(3, 0xffb300).setInteractive({ useHandCursor: true });
+    const helpText = this.add.text(GAME_WIDTH - 250, topPad, '?',
+      { fontFamily: '"Luckiest Guy", Impact, sans-serif', fontSize: '32px', color: '#ffb300' }).setOrigin(0.5);
+    helpBg.on('pointerdown', () => { Audio.play('click'); this.scene.start('HowToPlay'); });
+    helpBg.on('pointerover', () => this.tweens.add({ targets: helpText, scale: 1.2, duration: 100 }));
+    helpBg.on('pointerout', () => this.tweens.add({ targets: helpText, scale: 1, duration: 100 }));
 
     new AdBanner(this).show();
 

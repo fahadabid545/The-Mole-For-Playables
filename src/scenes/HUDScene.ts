@@ -32,6 +32,8 @@ export class HUDScene extends Phaser.Scene {
   private timeLimitMs = 1;
   private scoreTarget = 1;
   private coinText!: Phaser.GameObjects.Text;
+  private comboBar!: Phaser.GameObjects.Rectangle;
+  private comboText!: Phaser.GameObjects.Text;
 
   constructor() { super('HUD'); }
 
@@ -61,6 +63,12 @@ export class HUDScene extends Phaser.Scene {
     this.timeBarFill = this.add.rectangle(GAME_WIDTH - 24 - barW, TOP_SAFE + 96, barW, barH, 0x66bb6a, 1).setOrigin(0, 0.5);
 
     new LivesBar(this, 40, TOP_SAFE + 140);
+
+    const comboY = TOP_SAFE + 170;
+    const comboBarW = 140;
+    this.add.rectangle(24, comboY, comboBarW, 10, 0x000000, 0.4).setOrigin(0, 0.5);
+    this.comboBar = this.add.rectangle(24, comboY, 0, 10, 0xff9800, 1).setOrigin(0, 0.5);
+    this.comboText = this.add.text(24 + comboBarW + 8, comboY, '', TS.hudSmall()).setOrigin(0, 0.5);
 
     const iconX = GAME_WIDTH - 90;
     const iconY = TOP_SAFE + 190;
@@ -111,14 +119,26 @@ export class HUDScene extends Phaser.Scene {
       this.timeBarFill.width = 240 * frac;
       this.timeBarFill.fillColor = msLeft < 5000 ? 0xef5350 : msLeft < 10000 ? 0xffb300 : 0x66bb6a;
     };
+    const onCombo = (combo: number) => {
+      const maxCombo = 10;
+      const frac = Math.min(1, combo / maxCombo);
+      this.comboBar.width = 140 * frac;
+      this.comboBar.fillColor = combo >= 8 ? 0xf44336 : combo >= 4 ? 0xff9800 : 0xffd54f;
+      this.comboText.setText(combo > 0 ? `x${combo}` : '');
+      if (combo > 0) {
+        this.tweens.add({ targets: this.comboBar, scaleY: 1.6, duration: 60, yoyo: true });
+      }
+    };
     EventBus.on(EVT.SCORE_CHANGED, onScore);
     EventBus.on(EVT.COINS_CHANGED, onCoins);
     EventBus.on(EVT.TIMER_TICK, onTimer);
+    EventBus.on(EVT.COMBO_CHANGED, onCombo);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       EventBus.off(EVT.SCORE_CHANGED, onScore);
       EventBus.off(EVT.TIMER_TICK, onTimer);
       EventBus.off(EVT.COINS_CHANGED, onCoins);
+      EventBus.off(EVT.COMBO_CHANGED, onCombo);
     });
   }
 

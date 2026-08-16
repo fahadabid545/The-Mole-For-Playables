@@ -19,4 +19,5 @@ export const EVT = {
   COINS_CHANGED: 'coins-changed',
   CONSUMABLE_USED: 'consumable-used',
   CONSUMABLE_EXPIRED: 'consumable-expired',
+  COMBO_CHANGED: 'combo-changed',
 } as const;

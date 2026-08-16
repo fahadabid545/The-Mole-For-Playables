@@ -297,6 +297,7 @@ export class GameScene extends Phaser.Scene {
 
     if (this.combo > 0 && time - this.lastHitTime > 3000) {
       this.combo = 0;
+      EventBus.emit(EVT.COMBO_CHANGED, 0);
     }
 
     if (time >= this.nextSpawnAt) {
@@ -362,10 +363,12 @@ export class GameScene extends Phaser.Scene {
       this.cameras.main.shake(180, 0.012);
       this.cameras.main.flash(120, 255, 80, 80);
       this.combo = 0;
+      EventBus.emit(EVT.COMBO_CHANGED, 0);
       this.applyBombPenalty();
       return;
     }
     this.combo++;
+    EventBus.emit(EVT.COMBO_CHANGED, this.combo);
     this.lastHitTime = this.time.now;
     const shakeIntensity = kind === 'boss' ? 0.010 : kind === 'golden' ? 0.006 : 0.004;
     this.cameras.main.shake(90, shakeIntensity);
@@ -403,6 +406,7 @@ export class GameScene extends Phaser.Scene {
   private onRaccoonEscape(rac: Raccoon): void {
     if (!this.levelActive) return;
     this.combo = 0;
+    EventBus.emit(EVT.COMBO_CHANGED, 0);
     this.misses++;
     this.score = Math.max(0, this.score - 5);
     spawnScorePopup(this, rac.x, rac.y - 20, '-5', '#ffab91');
