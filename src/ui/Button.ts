@@ -27,8 +27,8 @@ export class Button extends Phaser.GameObjects.Container {
     bg.setInteractive({ useHandCursor: true });
 
     bg.on('pointerover', () => {
+      Audio.play('tick');
       scene.tweens.add({ targets: this, scale: this.baseScale * 1.06, duration: 120, ease: 'Sine.Out' });
-      // Rope-sway feel: tiny back-and-forth wobble
       scene.tweens.add({ targets: this, angle: { from: -2, to: 2 }, yoyo: true, repeat: 0, duration: 180, ease: 'Sine.InOut' });
       bg.setTint(0xfff2d0);
     });

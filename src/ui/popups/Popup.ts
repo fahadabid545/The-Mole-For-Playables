@@ -39,6 +39,7 @@ export class Popup extends Phaser.GameObjects.Container {
 
     this.overlay.setAlpha(0);
     scene.tweens.add({ targets: this.overlay, alpha: 0.65, duration: 200 });
+    Audio.play('click');
     this.playEntrance(scene, opts.entrance ?? 'swing');
 
     if (opts.closeable) {
