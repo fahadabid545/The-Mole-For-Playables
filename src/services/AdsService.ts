@@ -10,11 +10,11 @@ export type AdOutcome = 'reward' | 'skipped' | 'error';
 async function withAdLifecycle<T>(run: () => Promise<T>): Promise<T> {
   const prevMuted = Audio.isMuted();
   try {
-    if (!prevMuted) Audio.setMuted(true);
+    if (!prevMuted) Audio.setMutedByPortal(true);
     EventBus.emit(EVT.AD_START);
     return await run();
   } finally {
-    if (!prevMuted) Audio.setMuted(false);
+    if (!prevMuted) Audio.setMutedByPortal(false);
     EventBus.emit(EVT.AD_END);
   }
 }
