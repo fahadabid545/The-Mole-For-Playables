@@ -3,9 +3,12 @@ import { TX } from '../../objects/TextureFactory';
 import { GAME_WIDTH, GAME_HEIGHT } from '../../config/GameConfig';
 import { Audio } from '../../services/AudioService';
 
+export type PopupEntrance = 'swing' | 'bounce' | 'slide-up' | 'zoom';
+
 export interface PopupOpts {
   closeable?: boolean;
   onCloseX?: () => void;
+  entrance?: PopupEntrance;
 }
 
 // Panel + close-X live inside `panelGroup` so they scale together as
@@ -34,17 +37,9 @@ export class Popup extends Phaser.GameObjects.Container {
     this.setDepth(20000);
     scene.add.existing(this);
 
-    // Entrance: swing down from above like a hanging sign, then settle
-    const restY = this.panelGroup.y;
-    this.panelGroup.setY(restY - 260);
-    this.panelGroup.setScale(0.85);
-    this.panelGroup.setAngle(-6);
-    scene.tweens.add({ targets: this.panelGroup, y: restY, scale: 1, duration: 320, ease: 'Back.Out' });
-    scene.tweens.add({ targets: this.panelGroup, angle: { from: -6, to: 4 },
-      yoyo: true, repeat: 1, duration: 220, ease: 'Sine.InOut',
-      onComplete: () => this.panelGroup.setAngle(0) });
     this.overlay.setAlpha(0);
     scene.tweens.add({ targets: this.overlay, alpha: 0.65, duration: 200 });
+    this.playEntrance(scene, opts.entrance ?? 'swing');
 
     if (opts.closeable) {
       const halfW = this.panel.width / 2;
@@ -57,6 +52,36 @@ export class Popup extends Phaser.GameObjects.Container {
         else this.close();
       });
       this.panelGroup.add(this.closeIcon);
+    }
+  }
+
+  private playEntrance(scene: Phaser.Scene, style: PopupEntrance): void {
+    const restY = this.panelGroup.y;
+    switch (style) {
+      case 'bounce':
+        this.panelGroup.setScale(0);
+        scene.tweens.add({ targets: this.panelGroup, scale: 1, duration: 380, ease: 'Back.Out' });
+        break;
+      case 'slide-up':
+        this.panelGroup.setY(restY + 400);
+        this.panelGroup.setAlpha(0);
+        scene.tweens.add({ targets: this.panelGroup, y: restY, alpha: 1, duration: 320, ease: 'Cubic.Out' });
+        break;
+      case 'zoom':
+        this.panelGroup.setScale(2);
+        this.panelGroup.setAlpha(0);
+        scene.tweens.add({ targets: this.panelGroup, scale: 1, alpha: 1, duration: 280, ease: 'Cubic.Out' });
+        break;
+      case 'swing':
+      default:
+        this.panelGroup.setY(restY - 260);
+        this.panelGroup.setScale(0.85);
+        this.panelGroup.setAngle(-6);
+        scene.tweens.add({ targets: this.panelGroup, y: restY, scale: 1, duration: 320, ease: 'Back.Out' });
+        scene.tweens.add({ targets: this.panelGroup, angle: { from: -6, to: 4 },
+          yoyo: true, repeat: 1, duration: 220, ease: 'Sine.InOut',
+          onComplete: () => this.panelGroup.setAngle(0) });
+        break;
     }
   }
 

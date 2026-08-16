@@ -9,7 +9,7 @@ import { TS } from '../../config/TextStyles';
 
 export class ExtraLifePopup extends Popup {
   constructor(scene: Phaser.Scene, onOk: () => void) {
-    super(scene, { closeable: true, onCloseX: onOk });
+    super(scene, { closeable: true, onCloseX: onOk, entrance: 'bounce' });
     Audio.play('extraLife');
 
     const title = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 160, I18n.t('extraLife'),

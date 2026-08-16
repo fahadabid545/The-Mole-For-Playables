@@ -29,7 +29,7 @@ function rollReward(): Reward {
 
 export class MagicBoxPopup extends Popup {
   constructor(scene: Phaser.Scene, onDone: () => void) {
-    super(scene, { closeable: false });
+    super(scene, { closeable: false, entrance: 'bounce' });
 
     const title = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 160, 'Magic Box', TS.title()).setOrigin(0.5);
     this.addContent(title);

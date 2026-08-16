@@ -19,7 +19,7 @@ interface Opts {
 
 export class LevelFailedPopup extends Popup {
   constructor(scene: Phaser.Scene, o: Opts) {
-    super(scene);
+    super(scene, { entrance: 'slide-up' });
     Audio.play('fail');
 
     const title = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 200, I18n.t('levelFailed', { n: o.level }),
