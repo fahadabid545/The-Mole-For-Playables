@@ -28,23 +28,29 @@ export class SettingsScene extends Phaser.Scene {
     let y = 260;
 
     // --- Sound section ---
-    const sectionSound = this.add.text(80, y, 'Sound', TS.h2('#fff8e1')).setOrigin(0, 0.5);
+    this.add.text(80, y, 'Sound', TS.h2('#fff8e1')).setOrigin(0, 0.5);
     y += 60;
 
-    const soundLabel = this.add.text(80, y, Audio.isMuted() ? 'Muted' : 'On',
-      TS.body('#ffe082')).setOrigin(0, 0.5);
-    const soundBg = this.add.circle(GAME_WIDTH - 100, y, 32, 0x263238, 0.85)
-      .setStrokeStyle(3, 0xffb300).setInteractive({ useHandCursor: true });
-    const soundIcon = this.add.image(GAME_WIDTH - 100, y, Audio.isMuted() ? TX.soundOff : TX.soundOn)
-      .setOrigin(0.5).setScale(0.9);
-    soundBg.on('pointerdown', () => {
-      const m = Audio.toggleMute();
-      soundIcon.setTexture(m ? TX.soundOff : TX.soundOn);
-      soundLabel.setText(m ? 'Muted' : 'On');
-      Audio.play('click');
-    });
-    soundBg.on('pointerover', () => this.tweens.add({ targets: soundIcon, scale: 1.05, duration: 100 }));
-    soundBg.on('pointerout', () => this.tweens.add({ targets: soundIcon, scale: 0.9, duration: 100 }));
+    const makeToggle = (label: string, isMuted: () => boolean, toggle: () => boolean, yPos: number) => {
+      const txt = this.add.text(80, yPos, `${label}: ${isMuted() ? 'Off' : 'On'}`,
+        TS.body('#ffe082')).setOrigin(0, 0.5);
+      const bg = this.add.circle(GAME_WIDTH - 100, yPos, 32, 0x263238, 0.85)
+        .setStrokeStyle(3, 0xffb300).setInteractive({ useHandCursor: true });
+      const icon = this.add.image(GAME_WIDTH - 100, yPos, isMuted() ? TX.soundOff : TX.soundOn)
+        .setOrigin(0.5).setScale(0.9);
+      bg.on('pointerdown', () => {
+        const m = toggle();
+        icon.setTexture(m ? TX.soundOff : TX.soundOn);
+        txt.setText(`${label}: ${m ? 'Off' : 'On'}`);
+        Audio.play('click');
+      });
+      bg.on('pointerover', () => this.tweens.add({ targets: icon, scale: 1.05, duration: 100 }));
+      bg.on('pointerout', () => this.tweens.add({ targets: icon, scale: 0.9, duration: 100 }));
+    };
+
+    makeToggle('SFX', () => Audio.isSfxMuted(), () => Audio.toggleSfxMute(), y);
+    y += 70;
+    makeToggle('Music', () => Audio.isMusicMuted(), () => Audio.toggleMusicMute(), y);
 
     // --- Player info section ---
     y += 100;

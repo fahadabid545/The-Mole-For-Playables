@@ -11,11 +11,18 @@ type SfxKind =
 class AudioServiceImpl {
   private ctx: AudioContext | null = null;
   private muted = false;
+  private sfxMuted = false;
+  private musicMuted = false;
   private masterGain: GainNode | null = null;
+  private sfxGain: GainNode | null = null;
+  private musicGain: GainNode | null = null;
   private ambientStarted = false;
 
   init(): void {
-    this.muted = Save.get().muted;
+    const d = Save.get();
+    this.muted = d.muted;
+    this.sfxMuted = d.sfxMuted ?? false;
+    this.musicMuted = d.musicMuted ?? false;
     const unlock = () => {
       if (!this.ctx) {
         try {
@@ -24,6 +31,12 @@ class AudioServiceImpl {
           this.masterGain = this.ctx.createGain();
           this.masterGain.gain.value = this.muted ? 0 : 0.55;
           this.masterGain.connect(this.ctx.destination);
+          this.sfxGain = this.ctx.createGain();
+          this.sfxGain.gain.value = this.sfxMuted ? 0 : 1;
+          this.sfxGain.connect(this.masterGain);
+          this.musicGain = this.ctx.createGain();
+          this.musicGain.gain.value = this.musicMuted ? 0 : 1;
+          this.musicGain.connect(this.masterGain);
           this.startAmbient();
         } catch { /* ignore */ }
       } else if (this.ctx.state === 'suspended') {
@@ -49,6 +62,22 @@ class AudioServiceImpl {
   toggleMute(): boolean { this.setMuted(!this.muted); return this.muted; }
   isMuted(): boolean { return this.muted; }
 
+  setSfxMuted(m: boolean): void {
+    this.sfxMuted = m;
+    Save.setSfxMuted(m);
+    if (this.sfxGain) this.sfxGain.gain.value = m ? 0 : 1;
+  }
+  toggleSfxMute(): boolean { this.setSfxMuted(!this.sfxMuted); return this.sfxMuted; }
+  isSfxMuted(): boolean { return this.sfxMuted; }
+
+  setMusicMuted(m: boolean): void {
+    this.musicMuted = m;
+    Save.setMusicMuted(m);
+    if (this.musicGain) this.musicGain.gain.value = m ? 0 : 1;
+  }
+  toggleMusicMute(): boolean { this.setMusicMuted(!this.musicMuted); return this.musicMuted; }
+  isMusicMuted(): boolean { return this.musicMuted; }
+
   private startAmbient(): void {
     if (this.ambientStarted || !this.ctx || !this.masterGain) return;
     this.ambientStarted = true;
@@ -66,7 +95,7 @@ class AudioServiceImpl {
     const wind = ctx.createBufferSource(); wind.buffer = windBuf; wind.loop = true;
     const wFilt = ctx.createBiquadFilter(); wFilt.type = 'lowpass'; wFilt.frequency.value = 380;
     const wGain = ctx.createGain(); wGain.gain.value = 0.06;
-    wind.connect(wFilt).connect(wGain).connect(this.masterGain);
+    wind.connect(wFilt).connect(wGain).connect(this.musicGain!);
     wind.start();
 
     // Layer 2 — river burble (band-passed brighter noise)
@@ -76,7 +105,7 @@ class AudioServiceImpl {
     const riv = ctx.createBufferSource(); riv.buffer = rivBuf; riv.loop = true;
     const rFilt = ctx.createBiquadFilter(); rFilt.type = 'bandpass'; rFilt.frequency.value = 1400; rFilt.Q.value = 1.2;
     const rGain = ctx.createGain(); rGain.gain.value = 0.035;
-    riv.connect(rFilt).connect(rGain).connect(this.masterGain);
+    riv.connect(rFilt).connect(rGain).connect(this.musicGain!);
     riv.start();
     // Slowly modulate river frequency for gentle burbles
     const lfo = ctx.createOscillator(); lfo.frequency.value = 0.15;
@@ -103,16 +132,15 @@ class AudioServiceImpl {
         g.gain.setValueAtTime(0.0001, t);
         g.gain.exponentialRampToValueAtTime(0.045, t + 0.15);
         g.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
-        osc.connect(filt).connect(g).connect(this.masterGain);
+        osc.connect(filt).connect(g).connect(this.musicGain!);
         osc.start(t); osc.stop(t + 1.3);
-        // Soft harmonic overtone for warmth
         const oh = this.ctx.createOscillator();
         const gh = this.ctx.createGain();
         oh.type = 'sine'; oh.frequency.setValueAtTime(freq * 2, t);
         gh.gain.setValueAtTime(0.0001, t);
         gh.gain.exponentialRampToValueAtTime(0.012, t + 0.15);
         gh.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
-        oh.connect(gh).connect(this.masterGain);
+        oh.connect(gh).connect(this.musicGain!);
         oh.start(t); oh.stop(t + 1.0);
       }
       setTimeout(scheduleFlute, 2200 + Math.random() * 1600);
@@ -132,7 +160,7 @@ class AudioServiceImpl {
         g.gain.setValueAtTime(0.0001, t);
         g.gain.exponentialRampToValueAtTime(0.09, t + 0.02);
         g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
-        osc.connect(g).connect(this.masterGain);
+        osc.connect(g).connect(this.musicGain!);
         osc.start(t); osc.stop(t + 0.24);
       }
       setTimeout(scheduleDrum, 3600 + Math.random() * 900);
@@ -156,9 +184,8 @@ class AudioServiceImpl {
       g.gain.setValueAtTime(0.0001, t);
       g.gain.exponentialRampToValueAtTime(0.09, t + 0.02);
       g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
-      osc.connect(g).connect(this.masterGain!);
+      osc.connect(g).connect(this.musicGain!);
       osc.start(t); osc.stop(t + 0.14);
-      // Optional second chirp for "chirp-chirp"
       if (Math.random() < 0.6) {
         const t2 = t + 0.16;
         const o2 = this.ctx.createOscillator();
@@ -169,7 +196,7 @@ class AudioServiceImpl {
         g2.gain.setValueAtTime(0.0001, t2);
         g2.gain.exponentialRampToValueAtTime(0.08, t2 + 0.02);
         g2.gain.exponentialRampToValueAtTime(0.0001, t2 + 0.11);
-        o2.connect(g2).connect(this.masterGain!);
+        o2.connect(g2).connect(this.musicGain!);
         o2.start(t2); o2.stop(t2 + 0.13);
       }
       setTimeout(scheduleBird, 2000 + Math.random() * 4000);
@@ -178,7 +205,7 @@ class AudioServiceImpl {
   }
 
   play(kind: SfxKind): void {
-    if (!this.ctx || !this.masterGain || this.muted) return;
+    if (!this.ctx || !this.sfxGain || this.muted || this.sfxMuted) return;
     const ctx = this.ctx;
     const now = ctx.currentTime;
 
@@ -191,7 +218,7 @@ class AudioServiceImpl {
       if (sweep !== undefined) osc.frequency.exponentialRampToValueAtTime(Math.max(20, sweep), t + dur);
       g.gain.setValueAtTime(gain, t);
       g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-      osc.connect(g).connect(this.masterGain!);
+      osc.connect(g).connect(this.sfxGain!);
       osc.start(t); osc.stop(t + dur + 0.02);
     };
 
@@ -205,7 +232,7 @@ class AudioServiceImpl {
       const hpF = ctx.createBiquadFilter(); hpF.type = 'highpass'; hpF.frequency.value = hp;
       const lpF = ctx.createBiquadFilter(); lpF.type = 'lowpass';  lpF.frequency.value = lp;
       const g = ctx.createGain(); g.gain.value = gain;
-      src.connect(hpF).connect(lpF).connect(g).connect(this.masterGain!);
+      src.connect(hpF).connect(lpF).connect(g).connect(this.sfxGain!);
       src.start(t);
     };
 

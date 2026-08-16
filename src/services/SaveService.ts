@@ -23,6 +23,8 @@ export interface SaveData {
   lives: number;
   livesRegenAt?: number;
   muted: boolean;
+  sfxMuted?: boolean;
+  musicMuted?: boolean;
   perLevelStars: Record<number, number>;
   totalStars: number;
   lang?: Lang;
@@ -151,6 +153,8 @@ export const Save = {
   },
 
   setMuted(m: boolean): void { const d = read(); d.muted = m; write(); },
+  setSfxMuted(m: boolean): void { const d = read(); d.sfxMuted = m; write(); },
+  setMusicMuted(m: boolean): void { const d = read(); d.musicMuted = m; write(); },
 
   setLang(l: Lang): void { const d = read(); d.lang = l; write(); },
   setPlayerName(n: string): void { const d = read(); d.playerName = n.slice(0, 16); write(); },
