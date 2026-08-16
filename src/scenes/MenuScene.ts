@@ -64,7 +64,8 @@ export class MenuScene extends Phaser.Scene {
     new Button(this, GAME_WIDTH / 2, secY,           { label: I18n.t('levels'),     onClick: () => fadeTo(this, 'LevelSelect') });
     new Button(this, GAME_WIDTH / 2, secY + gap,     { label: I18n.t('challenges'), onClick: () => fadeTo(this, 'Challenges'), variant: 'ad' });
     new Button(this, GAME_WIDTH / 2, secY + gap * 2, { label: 'Achievements',       onClick: () => fadeTo(this, 'Achievements') });
-    new Button(this, GAME_WIDTH / 2, secY + gap * 3, { label: I18n.t('shop'),      onClick: () => fadeTo(this, 'Shop') });
+    new Button(this, GAME_WIDTH / 2, secY + gap * 3, { label: 'Stats',             onClick: () => fadeTo(this, 'Stats') });
+    new Button(this, GAME_WIDTH / 2, secY + gap * 4, { label: I18n.t('shop'),      onClick: () => fadeTo(this, 'Shop') });
 
     const topPad = 110;
 

@@ -7,6 +7,17 @@ const LIVES_REGEN_MS = 10 * 60 * 1000;
 
 export type ConsumableInventory = Partial<Record<ConsumableKind, number>>;
 
+export interface GameStats {
+  raccoonsHit: number;
+  goldensHit: number;
+  bossesHit: number;
+  bombsHit: number;
+  frozenHit: number;
+  escapes: number;
+  bestCombo: number;
+  totalGamesPlayed: number;
+}
+
 export interface SaveData {
   highestUnlockedLevel: number;
   lives: number;
@@ -27,7 +38,21 @@ export interface SaveData {
   lastMagicBoxOpen?: number;
   powerups: { freeze: number; double: number; auto: number };
   achievements: string[];
+  stats: GameStats;
+  lastPlayDate?: string;
+  playStreak: number;
 }
+
+const defaultStats = (): GameStats => ({
+  raccoonsHit: 0,
+  goldensHit: 0,
+  bossesHit: 0,
+  bombsHit: 0,
+  frozenHit: 0,
+  escapes: 0,
+  bestCombo: 0,
+  totalGamesPlayed: 0,
+});
 
 const defaults = (): SaveData => ({
   highestUnlockedLevel: 1,
@@ -43,6 +68,8 @@ const defaults = (): SaveData => ({
   consumables: {},
   powerups: { freeze: 1, double: 1, auto: 0 },
   achievements: [],
+  stats: defaultStats(),
+  playStreak: 0,
 });
 
 let cache: SaveData | null = null;
@@ -200,6 +227,46 @@ export const Save = {
     d.lastMagicBoxOpen = Date.now();
     write();
   },
+
+  recordHit(kind: 'normal' | 'golden' | 'boss' | 'bomb' | 'frozen'): void {
+    const d = read();
+    d.stats = d.stats || defaultStats();
+    if (kind === 'normal') d.stats.raccoonsHit++;
+    else if (kind === 'golden') d.stats.goldensHit++;
+    else if (kind === 'boss') d.stats.bossesHit++;
+    else if (kind === 'bomb') d.stats.bombsHit++;
+    else if (kind === 'frozen') d.stats.frozenHit++;
+    write();
+  },
+  recordEscape(): void {
+    const d = read();
+    d.stats = d.stats || defaultStats();
+    d.stats.escapes++;
+    write();
+  },
+  recordCombo(combo: number): void {
+    const d = read();
+    d.stats = d.stats || defaultStats();
+    if (combo > d.stats.bestCombo) { d.stats.bestCombo = combo; write(); }
+  },
+  recordGamePlayed(): void {
+    const d = read();
+    d.stats = d.stats || defaultStats();
+    d.stats.totalGamesPlayed++;
+    const today = new Date().toISOString().slice(0, 10);
+    if (d.lastPlayDate !== today) {
+      if (d.lastPlayDate) {
+        const prev = new Date(d.lastPlayDate);
+        const diff = Math.round((Date.now() - prev.getTime()) / (24 * 60 * 60 * 1000));
+        d.playStreak = diff === 1 ? (d.playStreak || 0) + 1 : 1;
+      } else {
+        d.playStreak = 1;
+      }
+      d.lastPlayDate = today;
+    }
+    write();
+  },
+  getStats(): GameStats { const d = read(); return d.stats || defaultStats(); },
 
   reset(): void { cache = defaults(); write(); },
 };

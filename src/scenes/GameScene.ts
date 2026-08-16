@@ -341,6 +341,7 @@ export class GameScene extends Phaser.Scene {
     this.nextSpawnAt = this.time.now + 300;
     this.showTutorialHint();
     Portal.gameplayStart();
+    Save.recordGamePlayed();
   }
 
   update(time: number): void {
@@ -407,6 +408,7 @@ export class GameScene extends Phaser.Scene {
 
   private onRaccoonHit(rac: Raccoon, kind: RaccoonKind, points: number): void {
     if (!this.levelActive) return;
+    Save.recordHit(kind);
     if (kind === 'bomb') {
       if (this.shieldActive) {
         this.shieldActive = false;
@@ -425,6 +427,7 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     this.combo++;
+    Save.recordCombo(this.combo);
     EventBus.emit(EVT.COMBO_CHANGED, this.combo);
     this.lastHitTime = this.time.now;
     const shakeIntensity = kind === 'boss' ? 0.010 : kind === 'golden' ? 0.006 : 0.004;
@@ -466,6 +469,7 @@ export class GameScene extends Phaser.Scene {
     this.combo = 0;
     EventBus.emit(EVT.COMBO_CHANGED, 0);
     this.misses++;
+    Save.recordEscape();
     this.score = Math.max(0, this.score - 5);
     spawnScorePopup(this, rac.x, rac.y - 20, '-5', '#ffab91');
     EventBus.emit(EVT.SCORE_CHANGED, this.score, this.hits, this.params.scoreTarget);
