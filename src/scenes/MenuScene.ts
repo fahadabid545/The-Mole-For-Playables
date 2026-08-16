@@ -15,6 +15,7 @@ import { OutOfLivesPopup } from '../ui/popups/OutOfLivesPopup';
 import { MagicBoxPopup } from '../ui/popups/MagicBoxPopup';
 import { allChallengesDone } from '../services/ChallengeService';
 import { TS } from '../config/TextStyles';
+import { IS_PORTAL } from '../config/BuildFlags';
 
 export class MenuScene extends Phaser.Scene {
   constructor() { super('Menu'); }
@@ -116,9 +117,12 @@ export class MenuScene extends Phaser.Scene {
 
     new AdBanner(this).show();
 
-    // First-run onboarding — no language picker, jump straight to name.
     if (!Save.get().welcomed) {
-      new NamePromptPopup(this, '', (n) => { Save.setPlayerName(n); Save.setWelcomed(); });
+      if (IS_PORTAL) {
+        Save.setWelcomed();
+      } else {
+        new NamePromptPopup(this, '', (n) => { Save.setPlayerName(n); Save.setWelcomed(); });
+      }
     }
   }
 
