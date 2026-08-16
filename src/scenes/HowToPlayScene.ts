@@ -20,7 +20,7 @@ const ENEMIES: EnemyEntry[] = [
   { icon: TX.raccoonGolden, name: 'Golden', desc: 'Rare and fast. Worth triple.', points: '+3' },
   { icon: TX.raccoonFrozen, name: 'Frozen', desc: 'Takes 2 hits to defeat.', points: '+2' },
   { icon: TX.raccoonBoss, name: 'Boss', desc: 'Tough (3 HP), big reward!', points: '+100' },
-  { icon: TX.bomb, name: 'Bomb', desc: 'Do NOT tap! Costs a life.', points: '-1 Life' },
+  { icon: TX.bomb, name: 'Bomb', desc: 'Do NOT tap! You lose a life.', points: '-1 Life' },
 ];
 
 export class HowToPlayScene extends Phaser.Scene {

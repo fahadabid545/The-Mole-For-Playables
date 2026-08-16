@@ -34,6 +34,14 @@ export class MenuScene extends Phaser.Scene {
     const mascot = this.add.image(GAME_WIDTH / 2, 560, TX.raccoon).setOrigin(0.5).setScale(1.4);
     this.tweens.add({ targets: mascot, angle: -6, yoyo: true, repeat: -1, duration: 900, ease: 'Sine.InOut' });
 
+    const stats = Save.get();
+    const statsY = 420;
+    const starIcon = this.add.image(GAME_WIDTH / 2 - 120, statsY, TX.star).setOrigin(0.5).setScale(0.45);
+    this.add.text(starIcon.x + 22, statsY, `${stats.totalStars}`,
+      { fontFamily: '"Luckiest Guy", Impact, sans-serif', fontSize: '22px', color: '#ffd54f' }).setOrigin(0, 0.5);
+    this.add.text(GAME_WIDTH / 2 + 30, statsY, `Best: ${stats.bestScore}`,
+      { fontFamily: '"Luckiest Guy", Impact, sans-serif', fontSize: '22px', color: '#bcaaa4' }).setOrigin(0, 0.5);
+
     const highest = Save.get().highestUnlockedLevel;
     const playLabel = highest > 1 ? I18n.t('continue') : I18n.t('play');
 

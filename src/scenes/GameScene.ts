@@ -358,10 +358,11 @@ export class GameScene extends Phaser.Scene {
         Audio.play('combo');
         return;
       }
-      spawnScorePopup(this, rac.x, rac.y - 60, '-3s', '#ff5252');
+      spawnScorePopup(this, rac.x, rac.y - 60, '-1 Life', '#ff5252');
       Audio.play('lifeLost');
       this.cameras.main.shake(180, 0.012);
       this.cameras.main.flash(120, 255, 80, 80);
+      if (navigator.vibrate) navigator.vibrate([30, 50, 60]);
       this.combo = 0;
       EventBus.emit(EVT.COMBO_CHANGED, 0);
       this.applyBombPenalty();
@@ -372,6 +373,7 @@ export class GameScene extends Phaser.Scene {
     this.lastHitTime = this.time.now;
     const shakeIntensity = kind === 'boss' ? 0.010 : kind === 'golden' ? 0.006 : 0.004;
     this.cameras.main.shake(90, shakeIntensity);
+    if (navigator.vibrate) navigator.vibrate(kind === 'boss' ? 40 : 15);
     const comboMul = this.combo >= 8 ? 3 : this.combo >= 4 ? 2 : 1;
     const goldenValue = this.goldenTouchActive && kind === 'normal';
     const base = kind === 'boss' ? 100 : (kind === 'golden' || goldenValue) ? 30 : kind === 'frozen' ? 20 : 10;
@@ -414,10 +416,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   private applyBombPenalty(): void {
-    // Bombs give a small time penalty instead of a life, so lives stay
-    // strictly tied to level-fail as the player requested.
-    this.timeLeft = Math.max(0, this.timeLeft - 3000);
-    EventBus.emit(EVT.TIMER_TICK, this.timeLeft);
+    Save.loseLife();
+    EventBus.emit(EVT.LIFE_CHANGED);
+    if (Save.get().lives <= 0) {
+      this.endLevel(false, true);
+    }
   }
 
   private endLevel(won: boolean, outOfLives = false): void {
@@ -427,8 +430,7 @@ export class GameScene extends Phaser.Scene {
     this.raccoons.forEach(r => r.forceHide());
     Portal.gameplayStop();
 
-    if (!won) {
-      // Level failed — deduct a life once, then decide fail vs out-of-lives.
+    if (!won && !outOfLives) {
       Save.loseLife();
       EventBus.emit(EVT.LIFE_CHANGED);
       Audio.play('lifeLost');
