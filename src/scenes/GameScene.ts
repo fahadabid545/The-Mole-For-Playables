@@ -316,24 +316,45 @@ export class GameScene extends Phaser.Scene {
   }
 
   private showTutorialHint(): void {
-    // Level-1 only, on first spawn: pulsing "TAP!" over the active raccoon.
-    if (this.level !== 1) return;
-    const findActive = () => this.raccoons.find(r => !r.isAvailable());
-    const timer = this.time.addEvent({
-      delay: 100, loop: true,
-      callback: () => {
-        const rac = findActive();
-        if (!rac) return;
-        timer.remove();
-        const hint = this.add.text(rac.x, rac.y - 160, 'TAP!', {
-          fontFamily: 'Impact, sans-serif', fontSize: '48px', color: '#fff176',
-          stroke: '#3e2723', strokeThickness: 6,
-        }).setOrigin(0.5).setDepth(9500);
-        this.tweens.add({ targets: hint, scale: 1.25, yoyo: true, repeat: 4, duration: 260, ease: 'Sine.InOut',
+    if (this.level > FLAGS.frozenFromLevel) return;
+
+    const showFloating = (text: string, color: string, delay = 0) => {
+      this.time.delayedCall(delay, () => {
+        const hint = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 200, text, {
+          fontFamily: 'Impact, sans-serif', fontSize: '36px', color,
+          stroke: '#3e2723', strokeThickness: 5, align: 'center',
+        }).setOrigin(0.5).setDepth(9500).setAlpha(0);
+        this.tweens.add({ targets: hint, alpha: 1, y: hint.y - 30, duration: 400, ease: 'Back.Out' });
+        this.tweens.add({ targets: hint, alpha: 0, y: hint.y - 60, delay: 2800, duration: 400,
           onComplete: () => hint.destroy() });
-        this.time.delayedCall(3000, () => hint.destroy());
-      },
-    });
+      });
+    };
+
+    if (this.level === 1) {
+      const findActive = () => this.raccoons.find(r => !r.isAvailable());
+      const timer = this.time.addEvent({
+        delay: 100, loop: true,
+        callback: () => {
+          const rac = findActive();
+          if (!rac) return;
+          timer.remove();
+          const hint = this.add.text(rac.x, rac.y - 160, 'TAP!', {
+            fontFamily: 'Impact, sans-serif', fontSize: '48px', color: '#fff176',
+            stroke: '#3e2723', strokeThickness: 6,
+          }).setOrigin(0.5).setDepth(9500);
+          this.tweens.add({ targets: hint, scale: 1.25, yoyo: true, repeat: 4, duration: 260, ease: 'Sine.InOut',
+            onComplete: () => hint.destroy() });
+          this.time.delayedCall(3000, () => hint.destroy());
+        },
+      });
+      showFloating('Hit raccoons before\nthey escape!', '#fff176', 4000);
+    } else if (this.level === FLAGS.goldenRaccoonFromLevel) {
+      showFloating('Golden raccoons\nare worth triple!', '#ffd54f', 2000);
+    } else if (this.level === FLAGS.bombsFromLevel) {
+      showFloating('Avoid the bombs!\nYou lose a life.', '#ff5252', 2000);
+    } else if (this.level === FLAGS.frozenFromLevel) {
+      showFloating('Frozen raccoons\nneed 2 hits!', '#81d4fa', 2000);
+    }
   }
 
   private startLevel(): void {
