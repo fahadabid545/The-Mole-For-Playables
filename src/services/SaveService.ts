@@ -25,6 +25,7 @@ export interface SaveData {
   muted: boolean;
   sfxMuted?: boolean;
   musicMuted?: boolean;
+  hapticDisabled?: boolean;
   perLevelStars: Record<number, number>;
   totalStars: number;
   lang?: Lang;
@@ -43,6 +44,7 @@ export interface SaveData {
   stats: GameStats;
   lastPlayDate?: string;
   playStreak: number;
+  lastStreakRewardDate?: string;
 }
 
 const defaultStats = (): GameStats => ({
@@ -155,6 +157,8 @@ export const Save = {
   setMuted(m: boolean): void { const d = read(); d.muted = m; write(); },
   setSfxMuted(m: boolean): void { const d = read(); d.sfxMuted = m; write(); },
   setMusicMuted(m: boolean): void { const d = read(); d.musicMuted = m; write(); },
+  setHapticDisabled(v: boolean): void { const d = read(); d.hapticDisabled = v; write(); },
+  isHapticDisabled(): boolean { return read().hapticDisabled ?? false; },
 
   setLang(l: Lang): void { const d = read(); d.lang = l; write(); },
   setPlayerName(n: string): void { const d = read(); d.playerName = n.slice(0, 16); write(); },
@@ -269,6 +273,17 @@ export const Save = {
       d.lastPlayDate = today;
     }
     write();
+  },
+
+  claimStreakReward(): number {
+    const d = read();
+    const today = new Date().toISOString().slice(0, 10);
+    if (d.lastStreakRewardDate === today || d.playStreak < 2) return 0;
+    const reward = Math.min(d.playStreak * 5, 50);
+    d.coins = (d.coins || 0) + reward;
+    d.lastStreakRewardDate = today;
+    write();
+    return reward;
   },
   getStats(): GameStats { const d = read(); return d.stats || defaultStats(); },
 

@@ -132,6 +132,17 @@ export class MenuScene extends Phaser.Scene {
         new NamePromptPopup(this, '', (n) => { Save.setPlayerName(n); Save.setWelcomed(); });
       }
     }
+
+    const streakCoins = Save.claimStreakReward();
+    if (streakCoins > 0) {
+      Audio.play('extraLife');
+      const streakBanner = this.add.text(GAME_WIDTH / 2, 480,
+        `Streak Bonus: +${streakCoins} coins!`,
+        { ...TS.title('#ff8f00'), fontSize: '30px' }).setOrigin(0.5).setAlpha(0).setDepth(5000);
+      this.tweens.add({ targets: streakBanner, alpha: 1, y: 460, duration: 400, ease: 'Back.Out' });
+      this.tweens.add({ targets: streakBanner, alpha: 0, y: 440, delay: 2500, duration: 500,
+        onComplete: () => streakBanner.destroy() });
+    }
   }
 
   private tryStartLevel(level: number): void {

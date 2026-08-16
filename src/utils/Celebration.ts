@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT } from '../config/GameConfig';
 import { TX } from '../objects/TextureFactory';
 import { Audio } from '../services/AudioService';
+import { Save } from '../services/SaveService';
 
 export function spawnConfetti(scene: Phaser.Scene, x = GAME_WIDTH / 2, y = GAME_HEIGHT / 2 - 200): void {
   const em = scene.add.particles(x, y, TX.confetti, {
@@ -25,7 +26,7 @@ export function celebrateBossDown(scene: Phaser.Scene, x: number, y: number): vo
   spawnConfetti(scene, x, y - 100);
   Audio.play('win');
   scene.cameras.main.shake(200, 0.015);
-  if (navigator.vibrate) navigator.vibrate([40, 30, 60]);
+  if (navigator.vibrate && !Save.isHapticDisabled()) navigator.vibrate([40, 30, 60]);
 }
 
 export function celebrateComboMilestone(scene: Phaser.Scene, combo: number): void {

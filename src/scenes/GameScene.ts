@@ -101,7 +101,7 @@ export class GameScene extends Phaser.Scene {
     this.timeLeft = this.params.timeLimitMs;
     this.input.enabled = true;
 
-    new ParallaxJungle(this);
+    new ParallaxJungle(this, this.level);
     spawnLeafParticles(this);
 
     this.buildGrid();
@@ -421,7 +421,7 @@ export class GameScene extends Phaser.Scene {
       Audio.play('lifeLost');
       this.cameras.main.shake(180, 0.012);
       this.cameras.main.flash(120, 255, 80, 80);
-      if (navigator.vibrate) navigator.vibrate([30, 50, 60]);
+      if (navigator.vibrate && !Save.isHapticDisabled()) navigator.vibrate([30, 50, 60]);
       this.combo = 0;
       EventBus.emit(EVT.COMBO_CHANGED, 0);
       this.applyBombPenalty();
@@ -433,7 +433,7 @@ export class GameScene extends Phaser.Scene {
     this.lastHitTime = this.time.now;
     const shakeIntensity = kind === 'boss' ? 0.010 : kind === 'golden' ? 0.006 : 0.004;
     this.cameras.main.shake(90, shakeIntensity);
-    if (navigator.vibrate) navigator.vibrate(kind === 'boss' ? 40 : 15);
+    if (navigator.vibrate && !Save.isHapticDisabled()) navigator.vibrate(kind === 'boss' ? 40 : 15);
     const comboMul = this.combo >= 8 ? 3 : this.combo >= 4 ? 2 : 1;
     const goldenValue = this.goldenTouchActive && kind === 'normal';
     const base = kind === 'boss' ? 100 : (kind === 'golden' || goldenValue) ? 30 : kind === 'frozen' ? 20 : 10;

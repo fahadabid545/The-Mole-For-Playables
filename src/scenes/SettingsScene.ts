@@ -52,6 +52,23 @@ export class SettingsScene extends Phaser.Scene {
     y += 70;
     makeToggle('Music', () => Audio.isMusicMuted(), () => Audio.toggleMusicMute(), y);
 
+    // --- Haptic section ---
+    if (navigator.vibrate) {
+      y += 70;
+      const hapticLabel = () => Save.isHapticDisabled() ? 'Off' : 'On';
+      const hapTxt = this.add.text(80, y, `Vibration: ${hapticLabel()}`,
+        TS.body('#ffe082')).setOrigin(0, 0.5);
+      const hapBg = this.add.circle(GAME_WIDTH - 100, y, 32, 0x263238, 0.85)
+        .setStrokeStyle(3, 0xffb300).setInteractive({ useHandCursor: true });
+      hapBg.on('pointerdown', () => {
+        const now = !Save.isHapticDisabled();
+        Save.setHapticDisabled(now);
+        hapTxt.setText(`Vibration: ${now ? 'Off' : 'On'}`);
+        if (!now) navigator.vibrate(20);
+        Audio.play('click');
+      });
+    }
+
     // --- Player info section ---
     y += 100;
     this.add.text(80, y, 'Player', TS.h2('#fff8e1')).setOrigin(0, 0.5);
