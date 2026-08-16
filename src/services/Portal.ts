@@ -169,11 +169,12 @@ export const Portal = {
   onPortalMuteChange(handler: (muted: boolean) => void): void {
     if (IS_CRAZYGAMES) {
       try {
-        // CrazyGames SDK v3 dispatches a "portalMuteChange" custom event on window.
         window.addEventListener('portalMuteChanged', (e: Event) => {
           const detail = (e as CustomEvent<{ isMuted?: boolean }>).detail;
           if (detail && typeof detail.isMuted === 'boolean') handler(detail.isMuted);
         });
+        const sdk: any = cg();
+        if (sdk && typeof sdk.isPortalMuted === 'boolean') handler(sdk.isPortalMuted);
       } catch { /* ignore */ }
     } else if (IS_PLAYGAMA) {
       // Playgama Bridge forwards the host's audio state via
@@ -188,6 +189,7 @@ export const Portal = {
           b.platform.on(evt, (isEnabled: unknown) => {
             if (typeof isEnabled === 'boolean') handler(!isEnabled);
           });
+          if (typeof b.platform.isAudioEnabled === 'boolean') handler(!b.platform.isAudioEnabled);
         } catch { /* ignore */ }
       });
     }

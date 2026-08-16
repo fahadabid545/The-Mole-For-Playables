@@ -41,6 +41,11 @@ class AudioServiceImpl {
     if (this.masterGain) this.masterGain.gain.value = m ? 0 : 0.55;
   }
 
+  setMutedByPortal(m: boolean): void {
+    this.muted = m;
+    if (this.masterGain) this.masterGain.gain.value = m ? 0 : 0.55;
+  }
+
   toggleMute(): boolean { this.setMuted(!this.muted); return this.muted; }
   isMuted(): boolean { return this.muted; }
 

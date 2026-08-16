@@ -11,7 +11,7 @@ export class BootScene extends Phaser.Scene {
     // can never stall boot). This is also where we register the portal
     // mute-listener so CrazyGames' player-level mute stays in sync with
     // the game's own audio state.
-    Portal.onPortalMuteChange((muted) => Audio.setMuted(muted));
+    Portal.onPortalMuteChange((muted) => Audio.setMutedByPortal(muted));
     // System-overlay pause from the host (Playgama). GameScene listens
     // for these events and freezes the level timer / input.
     Portal.onPortalPauseChange((paused) => {
