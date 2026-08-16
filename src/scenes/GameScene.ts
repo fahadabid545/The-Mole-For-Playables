@@ -8,6 +8,7 @@ import { Hole } from '../objects/Hole';
 import { Raccoon, RaccoonKind } from '../objects/Raccoon';
 import { Hammer } from '../objects/Hammer';
 import { spawnScorePopup } from '../objects/ScorePopup';
+import { TX } from '../objects/TextureFactory';
 import { EventBus, EVT } from '../utils/EventBus';
 import { Save } from '../services/SaveService';
 import { Audio } from '../services/AudioService';
@@ -230,32 +231,87 @@ export class GameScene extends Phaser.Scene {
   }
 
   private runCountdown(onDone: () => void): void {
-    // Level intro banner slides in and out first
-    const bannerText = this.params.isBoss ? `BOSS LEVEL ${this.level}` : I18n.t('level', { n: this.level });
-    const bannerStyle = this.params.isBoss ? { ...TS.banner(), color: '#f8bbd0', stroke: '#4a148c' } : TS.banner();
-    const banner = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 200, bannerText, bannerStyle)
-      .setOrigin(0.5).setDepth(15000).setAlpha(0);
-    this.tweens.add({ targets: banner, alpha: 1, y: '+=40', duration: 350, ease: 'Back.Out' });
-    this.time.delayedCall(900, () => {
-      this.tweens.add({ targets: banner, alpha: 0, y: '-=40', duration: 250,
-        onComplete: () => banner.destroy() });
+    const introDelay = this.showNewEnemyIntro();
+
+    this.time.delayedCall(introDelay, () => {
+      const bannerText = this.params.isBoss ? `BOSS LEVEL ${this.level}` : I18n.t('level', { n: this.level });
+      const bannerStyle = this.params.isBoss ? { ...TS.banner(), color: '#f8bbd0', stroke: '#4a148c' } : TS.banner();
+      const banner = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 200, bannerText, bannerStyle)
+        .setOrigin(0.5).setDepth(15000).setAlpha(0);
+      this.tweens.add({ targets: banner, alpha: 1, y: '+=40', duration: 350, ease: 'Back.Out' });
+      this.time.delayedCall(900, () => {
+        this.tweens.add({ targets: banner, alpha: 0, y: '-=40', duration: 250,
+          onComplete: () => banner.destroy() });
+      });
+
+      const t = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, '3', TS.countdown())
+        .setOrigin(0.5).setDepth(15000);
+      const seq = ['3', '2', '1', I18n.t('go')];
+      let i = 0;
+      const step = () => {
+        t.setText(seq[i]);
+        t.setScale(0.5);
+        this.tweens.add({ targets: t, scale: 1.4, alpha: { from: 1, to: 0.2 }, duration: 550, ease: 'Cubic.Out',
+          onComplete: () => {
+            i++;
+            if (i < seq.length) step();
+            else { t.destroy(); onDone(); }
+          } });
+      };
+      step();
+    });
+  }
+
+  private showNewEnemyIntro(): number {
+    interface EnemyIntro { icon: string; name: string; desc: string; }
+    const intros: EnemyIntro[] = [];
+    if (this.level === FLAGS.goldenRaccoonFromLevel) {
+      intros.push({ icon: TX.raccoonGolden, name: 'Golden Raccoon', desc: 'Rare and fast. Worth triple!' });
+    }
+    if (this.level === FLAGS.bombsFromLevel) {
+      intros.push({ icon: TX.bomb, name: 'Bomb', desc: 'Do NOT tap! You lose a life.' });
+    }
+    if (this.level === FLAGS.bossEveryNLevels && this.level === FLAGS.bombsFromLevel) {
+      intros.push({ icon: TX.raccoonBoss, name: 'Boss Raccoon', desc: 'Tough (3 HP), huge reward!' });
+    }
+    if (this.level === FLAGS.frozenFromLevel) {
+      intros.push({ icon: TX.raccoonFrozen, name: 'Frozen Raccoon', desc: 'Takes 2 hits to defeat.' });
+    }
+    if (intros.length === 0) return 0;
+
+    const depth = 15500;
+    const cardW = 560;
+    const cardH = 100 * intros.length + 80;
+    const cx = GAME_WIDTH / 2;
+    const cy = GAME_HEIGHT / 2;
+
+    const bg = this.add.rectangle(cx, cy, cardW, cardH, 0x1b5e20, 0.92)
+      .setStrokeStyle(4, 0xa5d6a7).setOrigin(0.5).setDepth(depth).setAlpha(0);
+    const title = this.add.text(cx, cy - cardH / 2 + 30, 'NEW ENEMY!',
+      { fontFamily: '"Luckiest Guy", Impact, sans-serif', fontSize: '34px', color: '#ffca28',
+        stroke: '#1b5e20', strokeThickness: 4 }).setOrigin(0.5).setDepth(depth).setAlpha(0);
+
+    const items: Phaser.GameObjects.GameObject[] = [bg, title];
+    intros.forEach((entry, idx) => {
+      const rowY = cy - cardH / 2 + 80 + idx * 100;
+      const icon = this.add.image(cx - 200, rowY, entry.icon).setOrigin(0.5).setScale(0.7).setDepth(depth).setAlpha(0);
+      const name = this.add.text(cx - 130, rowY - 16, entry.name,
+        { fontFamily: '"Luckiest Guy", Impact, sans-serif', fontSize: '28px', color: '#fff8e1' })
+        .setOrigin(0, 0.5).setDepth(depth).setAlpha(0);
+      const desc = this.add.text(cx - 130, rowY + 18, entry.desc,
+        { fontFamily: 'sans-serif', fontSize: '20px', color: '#a5d6a7' })
+        .setOrigin(0, 0.5).setDepth(depth).setAlpha(0);
+      items.push(icon, name, desc);
     });
 
-    const t = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, '3', TS.countdown())
-      .setOrigin(0.5).setDepth(15000);
-    const seq = ['3', '2', '1', I18n.t('go')];
-    let i = 0;
-    const step = () => {
-      t.setText(seq[i]);
-      t.setScale(0.5);
-      this.tweens.add({ targets: t, scale: 1.4, alpha: { from: 1, to: 0.2 }, duration: 550, ease: 'Cubic.Out',
-        onComplete: () => {
-          i++;
-          if (i < seq.length) step();
-          else { t.destroy(); onDone(); }
-        } });
-    };
-    step();
+    items.forEach(o => this.tweens.add({ targets: o, alpha: 1, duration: 300, ease: 'Sine.Out' }));
+    Audio.play('golden');
+    const showMs = 2200;
+    this.time.delayedCall(showMs - 300, () => {
+      items.forEach(o => this.tweens.add({ targets: o, alpha: 0, duration: 250,
+        onComplete: () => (o as unknown as { destroy: () => void }).destroy() }));
+    });
+    return showMs;
   }
 
   private showTutorialHint(): void {
