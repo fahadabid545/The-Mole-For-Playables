@@ -82,7 +82,7 @@ export class HUDScene extends Phaser.Scene {
       .setStrokeStyle(3, 0xffb300);
     const pause = this.add.image(iconX, iconY + 80, TX.pause).setOrigin(0.5).setScale(1.1);
     pauseBg.setInteractive({ useHandCursor: true });
-    pauseBg.on('pointerdown', () => this.scene.get('Game').events.emit('request-pause'));
+    pauseBg.on('pointerdown', () => { Audio.play('click'); this.scene.get('Game').events.emit('request-pause'); });
     pauseBg.on('pointerover', () => pause.setScale(1.25));
     pauseBg.on('pointerout',  () => pause.setScale(1.1));
 
