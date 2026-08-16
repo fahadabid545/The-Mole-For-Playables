@@ -1,11 +1,12 @@
 import Phaser from 'phaser';
 import { Popup } from './Popup';
 import { Button } from '../Button';
-import { TX } from '../../objects/TextureFactory';
 import { GAME_WIDTH, GAME_HEIGHT } from '../../config/GameConfig';
 import { Audio } from '../../services/AudioService';
 import { I18n } from '../../services/I18nService';
 import { TS } from '../../config/TextStyles';
+import { TX } from '../../objects/TextureFactory';
+import { spawnConfetti } from '../../utils/Celebration';
 
 interface Opts {
   level: number;
@@ -51,24 +52,6 @@ export class LevelCompletePopup extends Popup {
     });
 
     this.addContent(title, ...starObjs, scoreText, nextBtn, retryBtn, menuBtn);
-    this.spawnConfetti();
-  }
-
-  private spawnConfetti(): void {
-    const em = this.scene.add.particles(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 250, TX.confetti, {
-      x: { min: -180, max: 180 },
-      y: 0,
-      lifespan: 1800,
-      speedY: { min: 200, max: 350 },
-      speedX: { min: -120, max: 120 },
-      rotate: { start: 0, end: 720 },
-      tint: [0xff5252, 0xffca28, 0x66bb6a, 0x42a5f5, 0xab47bc],
-      scale: { start: 1, end: 0.8 },
-      alpha: { start: 1, end: 0 },
-      frequency: 40,
-      duration: 700,
-    });
-    em.setDepth(21000);
-    this.scene.time.delayedCall(2500, () => em.destroy());
+    spawnConfetti(scene);
   }
 }

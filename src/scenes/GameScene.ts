@@ -27,6 +27,7 @@ import { LevelFailedPopup } from '../ui/popups/LevelFailedPopup';
 import { OutOfLivesPopup } from '../ui/popups/OutOfLivesPopup';
 import { ExtraLifePopup } from '../ui/popups/ExtraLifePopup';
 import { PausePopup } from '../ui/popups/PausePopup';
+import { celebrateBossDown, celebrateComboMilestone } from '../utils/Celebration';
 
 export class GameScene extends Phaser.Scene {
   private params!: LevelParams;
@@ -446,8 +447,10 @@ export class GameScene extends Phaser.Scene {
     if (comboMul > 1) { spawnScorePopup(this, rac.x + 40, rac.y - 110, 'COMBO!', '#ff9800'); Audio.play('combo'); }
     if (kind === 'boss') {
       spawnScorePopup(this, rac.x, rac.y - 150, 'BOSS DOWN!', '#f8bbd0');
+      celebrateBossDown(this, rac.x, rac.y);
       if (this.grantRandomPowerup) this.grantRandomPowerup();
     }
+    celebrateComboMilestone(this, this.combo);
     if (this.combo === 10 && this.grantRandomPowerup) this.grantRandomPowerup();
     const coinReward = kind === 'boss' ? 5 : kind === 'golden' ? 3 : 1;
     Save.addCoins(coinReward);
