@@ -90,7 +90,7 @@ export class HowToPlayScene extends Phaser.Scene {
     this.listContainer.add(scoringTitle);
     y += 44;
     const scoring = [
-      'Combo x2 at 3 hits, x3 at 6, x5 at 10+',
+      'Combo x2 at 4 hits, x3 at 8 hits.',
       'Combo resets after 3s without a hit.',
       'Earn coins from every raccoon whacked.',
       'Spend coins in the Shop on power-ups.',
