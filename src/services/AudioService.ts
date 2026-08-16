@@ -177,19 +177,21 @@ class AudioServiceImpl {
     const ctx = this.ctx;
     const now = ctx.currentTime;
 
-    const beep = (freq: number, dur: number, type: OscillatorType = 'sine', gain = 0.3, sweep?: number) => {
+    const beep = (freq: number, dur: number, type: OscillatorType = 'sine', gain = 0.3, sweep?: number, delayMs = 0) => {
+      const t = now + delayMs / 1000;
       const osc = ctx.createOscillator();
       const g = ctx.createGain();
       osc.type = type;
-      osc.frequency.setValueAtTime(freq, now);
-      if (sweep !== undefined) osc.frequency.exponentialRampToValueAtTime(Math.max(20, sweep), now + dur);
-      g.gain.setValueAtTime(gain, now);
-      g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+      osc.frequency.setValueAtTime(freq, t);
+      if (sweep !== undefined) osc.frequency.exponentialRampToValueAtTime(Math.max(20, sweep), t + dur);
+      g.gain.setValueAtTime(gain, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
       osc.connect(g).connect(this.masterGain!);
-      osc.start(now); osc.stop(now + dur + 0.02);
+      osc.start(t); osc.stop(t + dur + 0.02);
     };
 
-    const noiseBurst = (dur: number, gain = 0.4, hp = 500, lp = 4000) => {
+    const noiseBurst = (dur: number, gain = 0.4, hp = 500, lp = 4000, delayMs = 0) => {
+      const t = now + delayMs / 1000;
       const bufSize = Math.floor(ctx.sampleRate * dur);
       const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
       const d = buf.getChannelData(0);
@@ -199,22 +201,16 @@ class AudioServiceImpl {
       const lpF = ctx.createBiquadFilter(); lpF.type = 'lowpass';  lpF.frequency.value = lp;
       const g = ctx.createGain(); g.gain.value = gain;
       src.connect(hpF).connect(lpF).connect(g).connect(this.masterGain!);
-      src.start(now);
+      src.start(t);
     };
 
     switch (kind) {
       case 'hit':
-        // Deeply satisfying THWACK — layered:
-        //   1) Low body sub-thump (60→30 Hz sweep) — chest hit
-        //   2) Mid wood crack (240→80)
-        //   3) High tick (2400→1200)
-        //   4) Noise slap (wet leaf/dust)
-        //   5) Tiny squeak tail for cuteness
         beep(60,   0.20, 'sine',     0.55, 28);
         beep(240,  0.10, 'triangle', 0.32, 80);
         beep(2400, 0.05, 'triangle', 0.20, 1200);
         noiseBurst(0.09, 0.38, 900, 4600);
-        setTimeout(() => beep(1400 + Math.random() * 400, 0.06, 'triangle', 0.14, 900), 60);
+        beep(1400 + Math.random() * 400, 0.06, 'triangle', 0.14, 900, 60);
         break;
       case 'miss':
         // Softer dust puff plus a low bonk
@@ -223,52 +219,51 @@ class AudioServiceImpl {
         break;
       case 'squeak':
         beep(1000, 0.09, 'triangle', 0.22, 1500);
-        setTimeout(() => beep(1500, 0.06, 'triangle', 0.18, 1800), 60);
+        beep(1500, 0.06, 'triangle', 0.18, 1800, 60);
         break;
       case 'laugh':
         beep(650, 0.06, 'triangle', 0.22, 850);
-        setTimeout(() => beep(780, 0.06, 'triangle', 0.22, 500), 80);
-        setTimeout(() => beep(560, 0.08, 'triangle', 0.22, 400), 160);
+        beep(780, 0.06, 'triangle', 0.22, 500, 80);
+        beep(560, 0.08, 'triangle', 0.22, 400, 160);
         break;
       case 'lifeLost':
         beep(500, 0.09, 'sawtooth', 0.28, 220);
-        setTimeout(() => beep(320, 0.16, 'sawtooth', 0.28, 100), 100);
+        beep(320, 0.16, 'sawtooth', 0.28, 100, 100);
         break;
       case 'extraLife':
         beep(660, 0.1, 'triangle', 0.3);
-        setTimeout(() => beep(880, 0.1, 'triangle', 0.3), 90);
-        setTimeout(() => beep(1320, 0.22, 'triangle', 0.3), 180);
-        setTimeout(() => beep(1760, 0.3, 'triangle', 0.28), 300);
+        beep(880, 0.1, 'triangle', 0.3, undefined, 90);
+        beep(1320, 0.22, 'triangle', 0.3, undefined, 180);
+        beep(1760, 0.3, 'triangle', 0.28, undefined, 300);
         break;
       case 'win': {
-        // Ascending major arpeggio + shimmer noise
         const notes = [523, 659, 784, 1046, 1319];
-        notes.forEach((f, i) => setTimeout(() => beep(f, 0.14, 'triangle', 0.32), i * 90));
-        setTimeout(() => noiseBurst(0.3, 0.15, 3000, 8000), 400);
+        notes.forEach((f, i) => beep(f, 0.14, 'triangle', 0.32, undefined, i * 90));
+        noiseBurst(0.3, 0.15, 3000, 8000, 400);
         break;
       }
       case 'fail':
         beep(340, 0.22, 'sawtooth', 0.28, 160);
-        setTimeout(() => beep(240, 0.28, 'sawtooth', 0.28, 90), 200);
+        beep(240, 0.28, 'sawtooth', 0.28, 90, 200);
         break;
       case 'click':
         beep(1400, 0.03, 'square', 0.14);
-        setTimeout(() => beep(2200, 0.02, 'square', 0.1), 30);
+        beep(2200, 0.02, 'square', 0.1, undefined, 30);
         break;
       case 'bomb':
         noiseBurst(0.4, 0.7, 40, 900);
         beep(60, 0.35, 'sawtooth', 0.5, 30);
-        setTimeout(() => noiseBurst(0.2, 0.3, 300, 3000), 40);
+        noiseBurst(0.2, 0.3, 300, 3000, 40);
         break;
       case 'golden':
         beep(880,  0.08, 'triangle', 0.3);
-        setTimeout(() => beep(1320, 0.1, 'triangle', 0.3), 70);
-        setTimeout(() => beep(1760, 0.14, 'triangle', 0.3), 150);
+        beep(1320, 0.1, 'triangle', 0.3, undefined, 70);
+        beep(1760, 0.14, 'triangle', 0.3, undefined, 150);
         break;
       case 'combo':
         beep(1046, 0.08, 'triangle', 0.28);
-        setTimeout(() => beep(1319, 0.08, 'triangle', 0.28), 60);
-        setTimeout(() => beep(1568, 0.12, 'triangle', 0.28), 120);
+        beep(1319, 0.08, 'triangle', 0.28, undefined, 60);
+        beep(1568, 0.12, 'triangle', 0.28, undefined, 120);
         break;
       case 'tick':
         beep(1000, 0.02, 'square', 0.09);

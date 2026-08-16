@@ -13,7 +13,7 @@ import { I18n } from '../services/I18nService';
 import { OutOfLivesPopup } from '../ui/popups/OutOfLivesPopup';
 import { allChallengesDone } from '../services/ChallengeService';
 import { TS } from '../config/TextStyles';
-import { fadeIn } from '../utils/SceneTransition';
+import { fadeIn, fadeTo } from '../utils/SceneTransition';
 
 export class LevelSelectScene extends Phaser.Scene {
   private gridContainer!: Phaser.GameObjects.Container;
@@ -132,7 +132,7 @@ export class LevelSelectScene extends Phaser.Scene {
     }
 
     new Button(this, GAME_WIDTH / 2, GAME_HEIGHT - 220, {
-      label: I18n.t('back'), onClick: () => this.scene.start('Menu'), scale: 0.8,
+      label: I18n.t('back'), onClick: () => fadeTo(this, 'Menu'), scale: 0.8,
     });
 
     new AdBanner(this).show();
@@ -159,11 +159,15 @@ export class LevelSelectScene extends Phaser.Scene {
     });
   }
 
+  private lastTickY = 0;
   private scrollBy(dy: number): void {
     this.scrollY += dy;
-    // Clamp so grid doesn't fly out of view
     const targetY = Math.min(this.maxY, Math.max(this.minY, this.maxY + this.scrollY));
     this.scrollY = targetY - this.maxY;
     this.gridContainer.y = targetY;
+    if (Math.abs(targetY - this.lastTickY) > 40) {
+      this.lastTickY = targetY;
+      Audio.play('tick');
+    }
   }
 }

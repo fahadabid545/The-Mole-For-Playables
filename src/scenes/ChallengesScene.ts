@@ -9,7 +9,7 @@ import { I18n } from '../services/I18nService';
 import { AdBanner } from '../ui/AdBanner';
 import { TS } from '../config/TextStyles';
 import { TX } from '../objects/TextureFactory';
-import { fadeIn } from '../utils/SceneTransition';
+import { fadeIn, fadeTo } from '../utils/SceneTransition';
 
 export class ChallengesScene extends Phaser.Scene {
   constructor() { super('Challenges'); }
@@ -28,7 +28,7 @@ export class ChallengesScene extends Phaser.Scene {
     this.buildCard(GAME_WIDTH / 2, 800, weekly, 'weekly');
 
     new Button(this, GAME_WIDTH / 2, GAME_HEIGHT - 220, {
-      label: I18n.t('back'), onClick: () => this.scene.start('Menu'), scale: 0.8,
+      label: I18n.t('back'), onClick: () => fadeTo(this, 'Menu'), scale: 0.8,
     });
 
     new AdBanner(this).show();

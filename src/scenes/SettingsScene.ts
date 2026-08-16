@@ -12,7 +12,7 @@ import { AdBanner } from '../ui/AdBanner';
 import { Popup } from '../ui/popups/Popup';
 import { Ads } from '../services/AdsService';
 import { EventBus, EVT } from '../utils/EventBus';
-import { fadeIn } from '../utils/SceneTransition';
+import { fadeIn, fadeTo } from '../utils/SceneTransition';
 
 export class SettingsScene extends Phaser.Scene {
   constructor() { super('Settings'); }
@@ -91,7 +91,7 @@ export class SettingsScene extends Phaser.Scene {
       { ...TS.body('#8d6e63'), align: 'center', fontSize: '20px' }).setOrigin(0.5);
 
     new Button(this, GAME_WIDTH / 2, GAME_HEIGHT - 180, {
-      label: I18n.t('back'), onClick: () => this.scene.start('Menu'), scale: 0.85,
+      label: I18n.t('back'), onClick: () => fadeTo(this, 'Menu'), scale: 0.85,
     });
 
     new AdBanner(this).show();

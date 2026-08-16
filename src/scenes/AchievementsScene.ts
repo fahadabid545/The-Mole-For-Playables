@@ -3,12 +3,13 @@ import { GAME_WIDTH, GAME_HEIGHT, COLORS } from '../config/GameConfig';
 import { ParallaxJungle } from '../objects/ParallaxJungle';
 import { Button } from '../ui/Button';
 import { Save } from '../services/SaveService';
+import { Audio } from '../services/AudioService';
 import { ACHIEVEMENTS } from '../services/AchievementService';
 import { I18n } from '../services/I18nService';
 import { TS } from '../config/TextStyles';
 import { TX } from '../objects/TextureFactory';
 import { AdBanner } from '../ui/AdBanner';
-import { fadeIn } from '../utils/SceneTransition';
+import { fadeIn, fadeTo } from '../utils/SceneTransition';
 
 export class AchievementsScene extends Phaser.Scene {
   private listContainer!: Phaser.GameObjects.Container;
@@ -91,15 +92,20 @@ export class AchievementsScene extends Phaser.Scene {
     }
 
     new Button(this, GAME_WIDTH / 2, GAME_HEIGHT - 220, {
-      label: I18n.t('back'), onClick: () => this.scene.start('Menu'), scale: 0.8,
+      label: I18n.t('back'), onClick: () => fadeTo(this, 'Menu'), scale: 0.8,
     });
     new AdBanner(this).show();
   }
 
+  private lastTickY = 0;
   private scrollBy(dy: number): void {
     this.scrollY += dy;
     const targetY = Math.min(this.maxY, Math.max(this.minY, this.maxY + this.scrollY));
     this.scrollY = targetY - this.maxY;
     this.listContainer.y = targetY;
+    if (Math.abs(targetY - this.lastTickY) > 40) {
+      this.lastTickY = targetY;
+      Audio.play('tick');
+    }
   }
 }

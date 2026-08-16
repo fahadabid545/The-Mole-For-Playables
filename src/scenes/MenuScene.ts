@@ -16,7 +16,7 @@ import { MagicBoxPopup } from '../ui/popups/MagicBoxPopup';
 import { allChallengesDone } from '../services/ChallengeService';
 import { TS } from '../config/TextStyles';
 import { IS_PORTAL } from '../config/BuildFlags';
-import { fadeIn } from '../utils/SceneTransition';
+import { fadeIn, fadeTo } from '../utils/SceneTransition';
 
 export class MenuScene extends Phaser.Scene {
   constructor() { super('Menu'); }
@@ -61,10 +61,10 @@ export class MenuScene extends Phaser.Scene {
     // takes its slot as the highlighted rewards path.
     const gap = 118;
     const secY = 870;
-    new Button(this, GAME_WIDTH / 2, secY,           { label: I18n.t('levels'),     onClick: () => this.scene.start('LevelSelect') });
-    new Button(this, GAME_WIDTH / 2, secY + gap,     { label: I18n.t('challenges'), onClick: () => this.scene.start('Challenges'), variant: 'ad' });
-    new Button(this, GAME_WIDTH / 2, secY + gap * 2, { label: 'Achievements',       onClick: () => this.scene.start('Achievements') });
-    new Button(this, GAME_WIDTH / 2, secY + gap * 3, { label: I18n.t('shop'),      onClick: () => this.scene.start('Shop') });
+    new Button(this, GAME_WIDTH / 2, secY,           { label: I18n.t('levels'),     onClick: () => fadeTo(this, 'LevelSelect') });
+    new Button(this, GAME_WIDTH / 2, secY + gap,     { label: I18n.t('challenges'), onClick: () => fadeTo(this, 'Challenges'), variant: 'ad' });
+    new Button(this, GAME_WIDTH / 2, secY + gap * 2, { label: 'Achievements',       onClick: () => fadeTo(this, 'Achievements') });
+    new Button(this, GAME_WIDTH / 2, secY + gap * 3, { label: I18n.t('shop'),      onClick: () => fadeTo(this, 'Shop') });
 
     const topPad = 110;
 
@@ -106,14 +106,14 @@ export class MenuScene extends Phaser.Scene {
     });
     const gear = this.add.image(GAME_WIDTH - 160, topPad, TX.iconGear)
       .setOrigin(0.5).setInteractive({ useHandCursor: true }).setScale(0.9);
-    gear.on('pointerdown', () => { Audio.play('click'); this.scene.start('Settings'); });
+    gear.on('pointerdown', () => { Audio.play('click'); fadeTo(this, 'Settings'); });
     this.tweens.add({ targets: gear, angle: 360, duration: 12000, repeat: -1 });
 
     const helpBg = this.add.circle(GAME_WIDTH - 250, topPad, 26, 0x263238, 0.85)
       .setStrokeStyle(3, 0xffb300).setInteractive({ useHandCursor: true });
     const helpText = this.add.text(GAME_WIDTH - 250, topPad, '?',
       { fontFamily: '"Luckiest Guy", Impact, sans-serif', fontSize: '32px', color: '#ffb300' }).setOrigin(0.5);
-    helpBg.on('pointerdown', () => { Audio.play('click'); this.scene.start('HowToPlay'); });
+    helpBg.on('pointerdown', () => { Audio.play('click'); fadeTo(this, 'HowToPlay'); });
     helpBg.on('pointerover', () => this.tweens.add({ targets: helpText, scale: 1.2, duration: 100 }));
     helpBg.on('pointerout', () => this.tweens.add({ targets: helpText, scale: 1, duration: 100 }));
 

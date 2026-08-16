@@ -10,7 +10,7 @@ import { I18n } from '../services/I18nService';
 import { TS } from '../config/TextStyles';
 import { CONSUMABLES, CONSUMABLE_KINDS, type ConsumableKind } from '../config/ConsumableConfig';
 import { spawnScorePopup } from '../objects/ScorePopup';
-import { fadeIn } from '../utils/SceneTransition';
+import { fadeIn, fadeTo } from '../utils/SceneTransition';
 
 export class ShopScene extends Phaser.Scene {
   constructor() { super('Shop'); }
@@ -92,7 +92,7 @@ export class ShopScene extends Phaser.Scene {
 
     new Button(this, GAME_WIDTH / 2, GAME_HEIGHT - 100, {
       label: I18n.t('back'),
-      onClick: () => this.scene.start('Menu'),
+      onClick: () => fadeTo(this, 'Menu'),
     });
   }
 }
