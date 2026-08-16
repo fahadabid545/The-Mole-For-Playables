@@ -3,6 +3,7 @@ import type { Lang } from './I18nService';
 import type { ConsumableKind } from '../config/ConsumableConfig';
 
 const KEY = 'mole.v1';
+const SCHEMA_VERSION = 2;
 const LIVES_REGEN_MS = 10 * 60 * 1000;
 
 export type ConsumableInventory = Partial<Record<ConsumableKind, number>>;

@@ -15,9 +15,10 @@ import { OutOfLivesPopup } from '../ui/popups/OutOfLivesPopup';
 import { MagicBoxPopup } from '../ui/popups/MagicBoxPopup';
 import { allChallengesDone } from '../services/ChallengeService';
 import { TS } from '../config/TextStyles';
-import { IS_PORTAL } from '../config/BuildFlags';
+import { IS_PORTAL, FLAGS } from '../config/BuildFlags';
 import { fadeIn, fadeTo } from '../utils/SceneTransition';
 import { RateUsPopup, shouldPromptRateUs } from '../ui/popups/RateUsPopup';
+import { getChallenge } from '../services/ChallengeService';
 
 export class MenuScene extends Phaser.Scene {
   constructor() { super('Menu'); }
@@ -151,6 +152,40 @@ export class MenuScene extends Phaser.Scene {
         new RateUsPopup(this, () => { /* stay on menu */ });
       });
     }
+
+    this.showReturnNudge();
+  }
+
+  private showReturnNudge(): void {
+    const nudge = this.pickNudge();
+    if (!nudge) return;
+
+    const bg = this.add.rectangle(GAME_WIDTH / 2, 660, 560, 46, 0x1b5e20, 0.85)
+      .setOrigin(0.5).setStrokeStyle(2, 0xa5d6a7).setAlpha(0).setDepth(4000);
+    const txt = this.add.text(GAME_WIDTH / 2, 660, nudge,
+      { fontFamily: 'sans-serif', fontSize: '20px', color: '#c8e6c9', align: 'center' })
+      .setOrigin(0.5).setAlpha(0).setDepth(4001);
+
+    this.tweens.add({ targets: [bg, txt], alpha: 1, y: '-=10', duration: 500, delay: 600, ease: 'Sine.Out' });
+    this.tweens.add({ targets: [bg, txt], alpha: 0, delay: 6000, duration: 600 });
+  }
+
+  private pickNudge(): string | null {
+    const d = Save.get();
+    const daily = getChallenge('daily');
+    const weekly = getChallenge('weekly');
+
+    if (!daily.alreadyDone)
+      return 'Daily Challenge available -- earn a free life!';
+    if (!weekly.alreadyDone)
+      return 'Weekly Challenge ready -- earn 3 free lives!';
+    if (Save.canOpenMagicBox())
+      return 'Your Magic Box is ready to open!';
+    if (d.playStreak >= 3)
+      return `${d.playStreak}-day streak! Keep playing to earn more coins.`;
+    if (d.highestUnlockedLevel > 1 && d.highestUnlockedLevel < FLAGS.totalLevels)
+      return `Level ${d.highestUnlockedLevel} awaits -- keep going!`;
+    return null;
   }
 
   private tryStartLevel(level: number): void {
