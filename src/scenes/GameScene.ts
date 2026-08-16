@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT, GRID } from '../config/GameConfig';
 import { getLevelParams, LevelParams } from '../config/LevelConfig';
-import { FLAGS } from '../config/BuildFlags';
+import { FLAGS, IS_PORTAL } from '../config/BuildFlags';
 import { ParallaxJungle } from '../objects/ParallaxJungle';
 import { spawnLeafParticles } from '../objects/LeafParticles';
 import { Hole } from '../objects/Hole';
@@ -523,9 +523,7 @@ export class GameScene extends Phaser.Scene {
       if (this.timeLeft / this.params.timeLimitMs > 0.5) checkProgress('speed', 1);
       if (this.params.isBoss) checkProgress('boss', 1);
       if (this.combo >= 10) checkProgress('combo', 10);
-      if (!Save.get().playerName) {
-        // First win — capture the player's name so it appears in future
-        // celebrations. No leaderboard submit anymore (removed).
+      if (!Save.get().playerName && !IS_PORTAL) {
         new NamePromptPopup(this, '', (n) => { Save.setPlayerName(n); });
       }
 
