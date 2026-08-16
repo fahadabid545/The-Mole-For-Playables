@@ -17,6 +17,7 @@ import { allChallengesDone } from '../services/ChallengeService';
 import { TS } from '../config/TextStyles';
 import { IS_PORTAL } from '../config/BuildFlags';
 import { fadeIn, fadeTo } from '../utils/SceneTransition';
+import { RateUsPopup, shouldPromptRateUs } from '../ui/popups/RateUsPopup';
 
 export class MenuScene extends Phaser.Scene {
   constructor() { super('Menu'); }
@@ -142,6 +143,13 @@ export class MenuScene extends Phaser.Scene {
       this.tweens.add({ targets: streakBanner, alpha: 1, y: 460, duration: 400, ease: 'Back.Out' });
       this.tweens.add({ targets: streakBanner, alpha: 0, y: 440, delay: 2500, duration: 500,
         onComplete: () => streakBanner.destroy() });
+    }
+
+    if (shouldPromptRateUs()) {
+      Save.incrementRatePrompt();
+      this.time.delayedCall(1200, () => {
+        new RateUsPopup(this, () => { /* stay on menu */ });
+      });
     }
   }
 

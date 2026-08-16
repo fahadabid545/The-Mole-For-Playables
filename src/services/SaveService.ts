@@ -45,6 +45,8 @@ export interface SaveData {
   lastPlayDate?: string;
   playStreak: number;
   lastStreakRewardDate?: string;
+  rated?: boolean;
+  ratePromptCount?: number;
 }
 
 const defaultStats = (): GameStats => ({
@@ -159,6 +161,15 @@ export const Save = {
   setMusicMuted(m: boolean): void { const d = read(); d.musicMuted = m; write(); },
   setHapticDisabled(v: boolean): void { const d = read(); d.hapticDisabled = v; write(); },
   isHapticDisabled(): boolean { return read().hapticDisabled ?? false; },
+  markRated(): void { const d = read(); d.rated = true; write(); },
+  hasRated(): boolean { return read().rated ?? false; },
+  incrementRatePrompt(): number {
+    const d = read();
+    d.ratePromptCount = (d.ratePromptCount ?? 0) + 1;
+    write();
+    return d.ratePromptCount;
+  },
+  getRatePromptCount(): number { return read().ratePromptCount ?? 0; },
 
   setLang(l: Lang): void { const d = read(); d.lang = l; write(); },
   setPlayerName(n: string): void { const d = read(); d.playerName = n.slice(0, 16); write(); },
