@@ -12,6 +12,7 @@ interface Opts {
   stars: number;
   score: number;
   onNext: () => void;
+  onRetry?: () => void;
   onMenu: () => void;
 }
 
@@ -42,11 +43,14 @@ export class LevelCompletePopup extends Popup {
     const nextBtn = new Button(scene, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 120, {
       label: I18n.t('next'), onClick: () => this.close(o.onNext),
     });
-    const menuBtn = new Button(scene, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 220, {
+    const retryBtn = new Button(scene, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 220, {
+      label: I18n.t('retry'), onClick: () => this.close(o.onRetry ?? o.onMenu), scale: 0.85,
+    });
+    const menuBtn = new Button(scene, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 320, {
       label: I18n.t('menu'), onClick: () => this.close(o.onMenu), scale: 0.8,
     });
 
-    this.addContent(title, ...starObjs, scoreText, nextBtn, menuBtn);
+    this.addContent(title, ...starObjs, scoreText, nextBtn, retryBtn, menuBtn);
     this.spawnConfetti();
   }
 

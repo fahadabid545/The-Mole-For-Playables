@@ -44,6 +44,7 @@ export class GameScene extends Phaser.Scene {
   private timeLeft = 0;
   private timerLast = 0;
   private nextSpawnAt = 0;
+  private lastHitTime = 0;
 
   private level = 1;
   private challenge: Challenge | null = null;
@@ -56,6 +57,9 @@ export class GameScene extends Phaser.Scene {
   private frenzyActive = false;
   private luckyActive = false;
   private magnetHitsLeft = 0;
+  private multiTapActive = false;
+  private xrayActive = false;
+  private xrayIndicators: Phaser.GameObjects.Arc[] = [];
   private grantRandomPowerup: (() => void) | null = null;
 
   constructor() { super('Game'); }
@@ -89,6 +93,9 @@ export class GameScene extends Phaser.Scene {
     this.frenzyActive = false;
     this.luckyActive = false;
     this.magnetHitsLeft = 0;
+    this.multiTapActive = false;
+    this.xrayActive = false;
+    this.xrayIndicators = [];
     this.timeLeft = this.params.timeLimitMs;
     this.input.enabled = true;
 
@@ -148,11 +155,19 @@ export class GameScene extends Phaser.Scene {
     // the same freeze/thaw path as ads so the timer + taps stop.
     EventBus.on(EVT.PLATFORM_PAUSE, onAdStart);
     EventBus.on(EVT.PLATFORM_RESUME, onAdEnd);
+
+    const onVisChange = () => {
+      if (document.hidden) onAdStart();
+      else onAdEnd();
+    };
+    document.addEventListener('visibilitychange', onVisChange);
+
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       EventBus.off(EVT.AD_START, onAdStart);
       EventBus.off(EVT.AD_END, onAdEnd);
       EventBus.off(EVT.PLATFORM_PAUSE, onAdStart);
       EventBus.off(EVT.PLATFORM_RESUME, onAdEnd);
+      document.removeEventListener('visibilitychange', onVisChange);
     });
 
     const onConsumableUsed = (kind: ConsumableKind) => {
@@ -167,13 +182,16 @@ export class GameScene extends Phaser.Scene {
         case 'frenzy': this.frenzyActive = true; break;
         case 'lucky': this.luckyActive = true; break;
         case 'timeWarp': this.timeLeft += 10000; EventBus.emit(EVT.TIMER_TICK, this.timeLeft); break;
-        case 'multiTap': break;
+        case 'multiTap': this.multiTapActive = true; break;
+        case 'xray': this.xrayActive = true; this.showXrayIndicators(); break;
       }
     };
     const onConsumableExpired = (kind: ConsumableKind) => {
       switch (kind) {
         case 'freeze': this.freezeActive = false; break;
         case 'double': this.doublePointsActive = false; break;
+        case 'multiTap': this.multiTapActive = false; break;
+        case 'xray': this.xrayActive = false; this.hideXrayIndicators(); break;
         case 'shield': this.shieldActive = false; break;
         case 'slowmo': this.slowmoActive = false; break;
         case 'goldenTouch': this.goldenTouchActive = false; break;
@@ -277,6 +295,10 @@ export class GameScene extends Phaser.Scene {
     EventBus.emit(EVT.TIMER_TICK, this.timeLeft);
     if (this.timeLeft <= 0) { this.timeLeft = 0; this.endLevel(false); return; }
 
+    if (this.combo > 0 && time - this.lastHitTime > 3000) {
+      this.combo = 0;
+    }
+
     if (time >= this.nextSpawnAt) {
       const activeCount = this.raccoons.filter(r => !r.isAvailable()).length;
       if (activeCount < this.params.simultaneousMax) this.spawnOne();
@@ -318,6 +340,7 @@ export class GameScene extends Phaser.Scene {
         if (!rac.isAvailable()) rac.autoHit();
       });
     }
+    if (this.xrayActive) this.showXrayIndicators();
   }
 
   private onPartialHit(rac: Raccoon): void {
@@ -343,7 +366,7 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     this.combo++;
-    // Juice: screen shake + brief camera zoom-punch on hit
+    this.lastHitTime = this.time.now;
     const shakeIntensity = kind === 'boss' ? 0.010 : kind === 'golden' ? 0.006 : 0.004;
     this.cameras.main.shake(90, shakeIntensity);
     const comboMul = this.combo >= 8 ? 3 : this.combo >= 4 ? 2 : 1;
@@ -367,6 +390,14 @@ export class GameScene extends Phaser.Scene {
     EventBus.emit(EVT.COINS_CHANGED, Save.get().coins);
     EventBus.emit(EVT.SCORE_CHANGED, this.score, this.hits, this.params.scoreTarget);
     if (this.score >= this.params.scoreTarget) this.endLevel(true);
+
+    if (this.multiTapActive && this.levelActive) {
+      this.raccoons.forEach(r => {
+        if (r !== rac && !r.isAvailable() && r.getKind() !== 'bomb') {
+          r.autoHit();
+        }
+      });
+    }
   }
 
   private onRaccoonEscape(rac: Raccoon): void {
@@ -445,6 +476,7 @@ export class GameScene extends Phaser.Scene {
       new LevelCompletePopup(this, {
         level: this.level, stars, score: this.score,
         onNext: () => proceed(),
+        onRetry: () => this.restart(),
         onMenu: () => this.goMenu(),
       });
     } else if (outOfLives || Save.get().lives <= 0) {
@@ -527,6 +559,22 @@ export class GameScene extends Phaser.Scene {
       onRestart: () => { restoreIcons(); this.restart(); },
       onQuit: () => { restoreIcons(); this.goMenu(); },
     });
+  }
+
+  private showXrayIndicators(): void {
+    this.hideXrayIndicators();
+    this.holes.forEach((hole, i) => {
+      if (this.raccoons[i].isAvailable()) {
+        const glow = this.add.circle(hole.x, hole.y - 20, 40, 0x64ffda, 0.35).setDepth(hole.depth - 1);
+        this.tweens.add({ targets: glow, alpha: { from: 0.15, to: 0.45 }, scale: { from: 0.9, to: 1.1 }, yoyo: true, repeat: -1, duration: 600, ease: 'Sine.InOut' });
+        this.xrayIndicators.push(glow);
+      }
+    });
+  }
+
+  private hideXrayIndicators(): void {
+    this.xrayIndicators.forEach(g => { this.tweens.killTweensOf(g); g.destroy(); });
+    this.xrayIndicators = [];
   }
 
   private computeStars(): number {

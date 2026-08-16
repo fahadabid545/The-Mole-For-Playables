@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
-import { GAME_WIDTH, GAME_HEIGHT, COLORS } from '../config/GameConfig';
+import { GAME_WIDTH, GAME_HEIGHT } from '../config/GameConfig';
 import { ParallaxJungle } from '../objects/ParallaxJungle';
+import { spawnLeafParticles } from '../objects/LeafParticles';
 import { Button } from '../ui/Button';
 import { Save } from '../services/SaveService';
 import { Audio } from '../services/AudioService';
@@ -12,34 +13,55 @@ import { Popup } from '../ui/popups/Popup';
 import { Ads } from '../services/AdsService';
 import { EventBus, EVT } from '../utils/EventBus';
 
-// Settings hub. Volume slider, mute toggle, language chooser (store
-// build only), and a reset-progress button behind a confirmation.
 export class SettingsScene extends Phaser.Scene {
   constructor() { super('Settings'); }
 
   create(): void {
     new ParallaxJungle(this);
+    spawnLeafParticles(this);
 
-    this.add.image(GAME_WIDTH / 2, 130, TX.iconGear).setOrigin(0.5).setScale(0.9);
-    this.add.text(GAME_WIDTH / 2, 220, 'Settings', TS.title('#fff8e1')).setOrigin(0.5);
+    const signBg = this.add.image(GAME_WIDTH / 2, 100, TX.signHang).setOrigin(0.5);
+    this.add.text(GAME_WIDTH / 2, signBg.y + 14, I18n.t('settings'), TS.title()).setOrigin(0.5);
 
-    // Sound toggle
-    let y = 340;
-    this.add.text(80, y, 'Sound', TS.h2('#fff8e1')).setOrigin(0, 0.5);
+    let y = 260;
+
+    // --- Sound section ---
+    const sectionSound = this.add.text(80, y, 'Sound', TS.h2('#fff8e1')).setOrigin(0, 0.5);
+    y += 60;
+
+    const soundLabel = this.add.text(80, y, Audio.isMuted() ? 'Muted' : 'On',
+      TS.body('#ffe082')).setOrigin(0, 0.5);
+    const soundBg = this.add.circle(GAME_WIDTH - 100, y, 32, 0x263238, 0.85)
+      .setStrokeStyle(3, 0xffb300).setInteractive({ useHandCursor: true });
     const soundIcon = this.add.image(GAME_WIDTH - 100, y, Audio.isMuted() ? TX.soundOff : TX.soundOn)
-      .setOrigin(0.5).setInteractive({ useHandCursor: true });
-    soundIcon.on('pointerdown', () => {
+      .setOrigin(0.5).setScale(0.9);
+    soundBg.on('pointerdown', () => {
       const m = Audio.toggleMute();
       soundIcon.setTexture(m ? TX.soundOff : TX.soundOn);
+      soundLabel.setText(m ? 'Muted' : 'On');
+      Audio.play('click');
     });
+    soundBg.on('pointerover', () => this.tweens.add({ targets: soundIcon, scale: 1.05, duration: 100 }));
+    soundBg.on('pointerout', () => this.tweens.add({ targets: soundIcon, scale: 0.9, duration: 100 }));
 
-    // Language selector removed — game ships single-language for every
-    // portal build. Kept the local `y` cursor untouched so the Reset
-    // Progress button below stays where it was.
+    // --- Player info section ---
+    y += 100;
+    this.add.text(80, y, 'Player', TS.h2('#fff8e1')).setOrigin(0, 0.5);
+    y += 50;
+    const name = Save.get().playerName || 'Anonymous';
+    this.add.text(80, y, `Name: ${name}`, TS.body('#bcaaa4')).setOrigin(0, 0.5);
+    y += 40;
+    const stats = Save.get();
+    this.add.text(80, y, `Best Score: ${stats.bestScore}`, TS.body('#bcaaa4')).setOrigin(0, 0.5);
+    y += 40;
+    this.add.text(80, y, `Stars: ${stats.totalStars}`, TS.body('#bcaaa4')).setOrigin(0, 0.5);
+    y += 40;
+    this.add.text(80, y, `Coins: ${stats.coins}`, TS.body('#bcaaa4')).setOrigin(0, 0.5);
 
-    // Watch a rewarded ad for +1 life (also serves as a always-reachable
-    // trigger the QA tool can invoke).
-    y = 480;
+    // --- Ad buttons for QA ---
+    y += 80;
+    this.add.text(80, y, 'Rewards', TS.h2('#fff8e1')).setOrigin(0, 0.5);
+    y += 70;
     new Button(this, GAME_WIDTH / 2, y, {
       label: '+1 Life (Watch Ad)',
       onClick: async () => {
@@ -47,42 +69,33 @@ export class SettingsScene extends Phaser.Scene {
         if (r === 'reward') {
           Save.addLife(1);
           EventBus.emit(EVT.LIFE_CHANGED);
+          Audio.play('extraLife');
         }
       },
-      scale: 0.9, variant: 'ad',
-    });
-    // Trigger an interstitial ad for QA verification.
-    y = 600;
-    new Button(this, GAME_WIDTH / 2, y, {
-      label: 'Show Ad',
-      onClick: () => { void Ads.showInterstitial(); },
       scale: 0.85, variant: 'ad',
     });
 
-    // Reset progress
-    y = GAME_HEIGHT - 490;
+    // --- Reset progress ---
+    y += 140;
     new Button(this, GAME_WIDTH / 2, y, {
       label: 'Reset Progress',
       onClick: () => this.confirmReset(),
-      scale: 0.9, variant: 'ad',
+      scale: 0.85, variant: 'ad',
     });
 
-    // Credits
-    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 370,
-      'Jungle Mole v0.2\nBuilt with Phaser 3',
-      { ...TS.body('#fff8e1'), align: 'center', fontSize: '22px' }).setOrigin(0.5);
+    // --- Credits ---
+    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 280,
+      'Jungle Mole v0.3',
+      { ...TS.body('#8d6e63'), align: 'center', fontSize: '20px' }).setOrigin(0.5);
 
-    new Button(this, GAME_WIDTH / 2, GAME_HEIGHT - 240, {
-      label: I18n.t('back'), onClick: () => this.scene.start('Menu'), scale: 0.8,
+    new Button(this, GAME_WIDTH / 2, GAME_HEIGHT - 180, {
+      label: I18n.t('back'), onClick: () => this.scene.start('Menu'), scale: 0.85,
     });
 
     new AdBanner(this).show();
-    void COLORS;
   }
 
   private confirmReset(): void {
-    // Use the shared wooden signboard Popup so the confirm dialog matches
-    // the rest of the game (was previously a plain red-bordered box).
     const popup = new Popup(this);
     const title = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 140,
       'Reset ALL progress?',
