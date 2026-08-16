@@ -9,15 +9,13 @@ import { I18n } from '../services/I18nService';
 import { AdBanner } from '../ui/AdBanner';
 import { TS } from '../config/TextStyles';
 import { TX } from '../objects/TextureFactory';
+import { fadeIn } from '../utils/SceneTransition';
 
-// Landing page for BOTH daily + weekly challenges shown side by side
-// (vertically stacked cards). Selecting a card starts Game with that
-// challenge; the "come back later" state locks the play button and
-// shows a friendly message.
 export class ChallengesScene extends Phaser.Scene {
   constructor() { super('Challenges'); }
 
   create(): void {
+    fadeIn(this);
     new ParallaxJungle(this);
 
     this.add.text(GAME_WIDTH / 2, 150, I18n.t('challenges'), TS.title('#fff8e1'))

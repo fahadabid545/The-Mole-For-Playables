@@ -13,6 +13,7 @@ import { I18n } from '../services/I18nService';
 import { OutOfLivesPopup } from '../ui/popups/OutOfLivesPopup';
 import { allChallengesDone } from '../services/ChallengeService';
 import { TS } from '../config/TextStyles';
+import { fadeIn } from '../utils/SceneTransition';
 
 export class LevelSelectScene extends Phaser.Scene {
   private gridContainer!: Phaser.GameObjects.Container;
@@ -25,6 +26,7 @@ export class LevelSelectScene extends Phaser.Scene {
   constructor() { super('LevelSelect'); }
 
   create(): void {
+    fadeIn(this);
     new ParallaxJungle(this);
 
     // Hanging signboard title — pushed below browser top-chrome

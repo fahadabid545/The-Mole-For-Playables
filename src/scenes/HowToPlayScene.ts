@@ -7,6 +7,7 @@ import { I18n } from '../services/I18nService';
 import { TS } from '../config/TextStyles';
 import { TX } from '../objects/TextureFactory';
 import { AdBanner } from '../ui/AdBanner';
+import { fadeIn } from '../utils/SceneTransition';
 
 interface EnemyEntry {
   icon: string;
@@ -34,6 +35,7 @@ export class HowToPlayScene extends Phaser.Scene {
   constructor() { super('HowToPlay'); }
 
   create(): void {
+    fadeIn(this);
     new ParallaxJungle(this);
     spawnLeafParticles(this);
 

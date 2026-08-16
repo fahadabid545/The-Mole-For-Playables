@@ -8,6 +8,7 @@ import { I18n } from '../services/I18nService';
 import { TS } from '../config/TextStyles';
 import { TX } from '../objects/TextureFactory';
 import { AdBanner } from '../ui/AdBanner';
+import { fadeIn } from '../utils/SceneTransition';
 
 export class AchievementsScene extends Phaser.Scene {
   private listContainer!: Phaser.GameObjects.Container;
@@ -20,6 +21,7 @@ export class AchievementsScene extends Phaser.Scene {
   constructor() { super('Achievements'); }
 
   create(): void {
+    fadeIn(this);
     new ParallaxJungle(this);
     this.add.image(GAME_WIDTH / 2, 160, TX.signHang).setOrigin(0.5).setDepth(99);
     this.add.text(GAME_WIDTH / 2, 168, 'Achievements', TS.title('#fff5c9')).setOrigin(0.5).setDepth(100);

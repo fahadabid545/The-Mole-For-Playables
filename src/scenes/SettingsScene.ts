@@ -12,11 +12,13 @@ import { AdBanner } from '../ui/AdBanner';
 import { Popup } from '../ui/popups/Popup';
 import { Ads } from '../services/AdsService';
 import { EventBus, EVT } from '../utils/EventBus';
+import { fadeIn } from '../utils/SceneTransition';
 
 export class SettingsScene extends Phaser.Scene {
   constructor() { super('Settings'); }
 
   create(): void {
+    fadeIn(this);
     new ParallaxJungle(this);
     spawnLeafParticles(this);
 

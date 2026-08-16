@@ -10,11 +10,13 @@ import { I18n } from '../services/I18nService';
 import { TS } from '../config/TextStyles';
 import { CONSUMABLES, CONSUMABLE_KINDS, type ConsumableKind } from '../config/ConsumableConfig';
 import { spawnScorePopup } from '../objects/ScorePopup';
+import { fadeIn } from '../utils/SceneTransition';
 
 export class ShopScene extends Phaser.Scene {
   constructor() { super('Shop'); }
 
   create(): void {
+    fadeIn(this);
     new ParallaxJungle(this);
     spawnLeafParticles(this);
 

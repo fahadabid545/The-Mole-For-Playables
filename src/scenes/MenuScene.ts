@@ -16,11 +16,13 @@ import { MagicBoxPopup } from '../ui/popups/MagicBoxPopup';
 import { allChallengesDone } from '../services/ChallengeService';
 import { TS } from '../config/TextStyles';
 import { IS_PORTAL } from '../config/BuildFlags';
+import { fadeIn } from '../utils/SceneTransition';
 
 export class MenuScene extends Phaser.Scene {
   constructor() { super('Menu'); }
 
   create(): void {
+    fadeIn(this);
     I18n.init(Save.get().lang);
     new ParallaxJungle(this);
     spawnLeafParticles(this);
