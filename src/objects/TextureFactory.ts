@@ -70,6 +70,7 @@ export const TX = {
   iconLucky: 'tx-icon-lucky',
   iconChest: 'tx-icon-chest',
   iconShop: 'tx-icon-shop',
+  arrowDown: 'tx-arrow-down',
 } as const;
 
 function makeTexture(scene: Phaser.Scene, key: string, w: number, h: number, draw: (g: Phaser.GameObjects.Graphics) => void): void {
@@ -136,6 +137,7 @@ export function buildAllTextures(scene: Phaser.Scene): void {
   buildIconMedal(scene);
   buildCoin(scene);
   buildConsumableIcons(scene);
+  buildArrowDown(scene);
 }
 
 // ----- individual builders -----
@@ -1396,5 +1398,13 @@ function buildConsumableIcons(scene: Phaser.Scene): void {
   simple(TX.iconShop, 0x4527a0, g => {
     g.fillStyle(0xffffff, 0.9); g.fillRoundedRect(18, 28, 28, 20, 3);
     g.fillStyle(0xce93d8, 0.9); g.fillRoundedRect(20, 16, 24, 16, 8);
+  });
+}
+
+function buildArrowDown(scene: Phaser.Scene) {
+  makeTexture(scene, TX.arrowDown, 48, 48, g => {
+    g.fillStyle(0xfffde7, 0.9);
+    g.fillTriangle(24, 42, 8, 18, 40, 18);
+    g.fillRect(18, 6, 12, 16);
   });
 }

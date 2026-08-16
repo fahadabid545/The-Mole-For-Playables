@@ -80,16 +80,19 @@ export class LevelSelectScene extends Phaser.Scene {
         this.gridContainer.add(st);
       }
 
-      if (unlocked) {
-        tile.setInteractive({ useHandCursor: true });
-        let downX = 0, downY = 0;
-        tile.on('pointerdown', (p: Phaser.Input.Pointer) => { downX = p.x; downY = p.y; });
-        tile.on('pointerup', (p: Phaser.Input.Pointer) => {
-          if (Math.hypot(p.x - downX, p.y - downY) > 10) return; // drag, not tap
+      tile.setInteractive({ useHandCursor: unlocked });
+      let downX = 0, downY = 0;
+      tile.on('pointerdown', (p: Phaser.Input.Pointer) => { downX = p.x; downY = p.y; });
+      tile.on('pointerup', (p: Phaser.Input.Pointer) => {
+        if (Math.hypot(p.x - downX, p.y - downY) > 10) return;
+        if (unlocked) {
           Audio.play('click');
           this.tryStartLevel(level);
-        });
-      }
+        } else {
+          Audio.play('miss');
+          this.tweens.add({ targets: [tileImg, numOrLock], x: x - 6, duration: 40, yoyo: true, repeat: 2 });
+        }
+      });
     }
 
     const rows = Math.ceil(FLAGS.totalLevels / cols);
@@ -115,6 +118,16 @@ export class LevelSelectScene extends Phaser.Scene {
     });
     this.input.on('pointerup', () => { this.dragging = false; });
     this.input.on('wheel', (_: unknown, __: unknown, ___: number, dy: number) => this.scrollBy(-dy));
+
+    // Scroll indicator — small bouncing arrow at bottom of grid area
+    if (contentH > clipH) {
+      const arrow = this.add.image(GAME_WIDTH / 2, topClip + clipH - 20, TX.arrowDown)
+        .setOrigin(0.5).setScale(0.6).setAlpha(0.8);
+      this.tweens.add({ targets: arrow, y: arrow.y + 8, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+      this.input.once('pointerdown', () => {
+        this.tweens.add({ targets: arrow, alpha: 0, duration: 300, onComplete: () => arrow.destroy() });
+      });
+    }
 
     new Button(this, GAME_WIDTH / 2, GAME_HEIGHT - 220, {
       label: I18n.t('back'), onClick: () => this.scene.start('Menu'), scale: 0.8,
