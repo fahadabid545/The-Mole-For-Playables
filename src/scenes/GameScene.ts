@@ -548,17 +548,23 @@ export class GameScene extends Phaser.Scene {
       if (this.timeLeft / this.params.timeLimitMs > 0.5) checkProgress('speed', 1);
       if (this.params.isBoss) checkProgress('boss', 1);
       if (this.combo >= 10) checkProgress('combo', 10);
-      if (!Save.get().playerName && !IS_PORTAL) {
-        new NamePromptPopup(this, '', (n) => { Save.setPlayerName(n); });
-      }
-
       const proceed = () => {
+        const afterExtras = () => {
+          if (!Save.get().playerName && !IS_PORTAL) {
+            new NamePromptPopup(this, '', (n) => {
+              Save.setPlayerName(n);
+              this.postCompleteInterstitial();
+            });
+          } else {
+            this.postCompleteInterstitial();
+          }
+        };
         if (this.level % FLAGS.extraLifeEveryNLevels === 0 && this.level < FLAGS.totalLevels) {
           Save.addLife(1);
           EventBus.emit(EVT.LIFE_CHANGED);
-          new ExtraLifePopup(this, () => this.postCompleteInterstitial());
+          new ExtraLifePopup(this, afterExtras);
         } else {
-          this.postCompleteInterstitial();
+          afterExtras();
         }
       };
 
