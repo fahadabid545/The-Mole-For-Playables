@@ -3,6 +3,7 @@ import { Audio } from '../services/AudioService';
 import { Portal } from '../services/Portal';
 import { hydrateFromBridge } from '../services/SaveService';
 import { EventBus, EVT } from '../utils/EventBus';
+import { Analytics } from '../services/AnalyticsService';
 
 export class BootScene extends Phaser.Scene {
   constructor() { super('Boot'); }
@@ -29,6 +30,7 @@ export class BootScene extends Phaser.Scene {
       new Promise(r => setTimeout(r, 3000)),
     ]);
     Audio.init();
+    Analytics.init();
     this.scene.start('Preload');
   }
 }

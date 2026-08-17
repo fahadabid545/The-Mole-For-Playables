@@ -7,6 +7,7 @@ import { TX } from '../objects/TextureFactory';
 import { TS } from '../config/TextStyles';
 import { AdBanner } from '../ui/AdBanner';
 import { fadeIn, fadeTo } from '../utils/SceneTransition';
+import { Analytics } from '../services/AnalyticsService';
 import { Save } from '../services/SaveService';
 import { EventBus, EVT } from '../utils/EventBus';
 import {
@@ -98,6 +99,7 @@ export class QuestBoardScene extends Phaser.Scene {
         label: 'Claim',
         onClick: () => {
           Audio.play('extraLife');
+          Analytics.questClaimed(`${kind}_${index}`, kind);
           const reward = claimQuest(kind, index);
           if (reward > 0) {
             EventBus.emit(EVT.COINS_CHANGED, Save.get().coins);

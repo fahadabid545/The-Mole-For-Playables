@@ -25,6 +25,7 @@ import type { ConsumableKind } from '../config/ConsumableConfig';
 import { attachAchievementToast } from '../ui/AchievementToast';
 import { checkProgress } from '../services/AchievementService';
 import { recordQuestProgress, type LevelResult } from '../services/QuestService';
+import { Analytics } from '../services/AnalyticsService';
 import { LevelFailedPopup } from '../ui/popups/LevelFailedPopup';
 import { OutOfLivesPopup } from '../ui/popups/OutOfLivesPopup';
 import { ExtraLifePopup } from '../ui/popups/ExtraLifePopup';
@@ -75,6 +76,7 @@ export class GameScene extends Phaser.Scene {
   private lvlFrozen = 0;
   private lvlBombs = 0;
   private lvlMaxCombo = 0;
+  private levelStartTime = 0;
 
   constructor() { super('Game'); }
 
@@ -387,11 +389,13 @@ export class GameScene extends Phaser.Scene {
 
   private startLevel(): void {
     this.levelActive = true;
+    this.levelStartTime = Date.now();
     this.timerLast = this.time.now;
     this.nextSpawnAt = this.time.now + 300;
     this.showTutorialHint();
     Portal.gameplayStart();
     Save.recordGamePlayed();
+    Analytics.levelStart(this.category, this.level);
   }
 
   update(time: number): void {
@@ -568,6 +572,11 @@ export class GameScene extends Phaser.Scene {
     Portal.gameplayStop();
 
     const stars = won ? this.computeStars() : 0;
+    Analytics.levelEnd({
+      category: this.category, level: this.level, won, score: this.score,
+      stars, combo: this.lvlMaxCombo, misses: this.misses,
+      durationMs: Date.now() - this.levelStartTime,
+    });
     const questResult: LevelResult = {
       raccoonsHit: this.lvlRaccoons,
       goldensHit: this.lvlGoldens,
@@ -654,12 +663,16 @@ export class GameScene extends Phaser.Scene {
       new OutOfLivesPopup(this, {
         levelToUnlock: this.level + 1 <= this.catDef.levels ? this.level + 1 : undefined,
         onWatchAdForLife: async () => {
+          Analytics.adRequested('rewarded', 'out_of_lives');
           const r = await Ads.showRewarded();
+          Analytics.adCompleted('rewarded', r);
           if (r === 'reward') { Save.addLife(1); EventBus.emit(EVT.LIFE_CHANGED); this.restart(); }
           else this.goMenu();
         },
         onWatchAdToUnlock: async () => {
+          Analytics.adRequested('rewarded', 'unlock_level');
           const r = await Ads.showRewarded();
+          Analytics.adCompleted('rewarded', r);
           if (r === 'reward') {
             Save.unlockCategoryUpTo(this.category, this.level + 1);
             Save.addLife(1);
@@ -676,7 +689,9 @@ export class GameScene extends Phaser.Scene {
         level: this.level,
         onRetry: () => this.restart(),
         onWatchAdForLife: async () => {
+          Analytics.adRequested('rewarded', 'level_failed');
           const r = await Ads.showRewarded();
+          Analytics.adCompleted('rewarded', r);
           if (r === 'reward') { Save.addLife(1); EventBus.emit(EVT.LIFE_CHANGED); }
           this.restart();
         },
@@ -690,7 +705,8 @@ export class GameScene extends Phaser.Scene {
     const next = this.level + 1;
     if (next > this.catDef.levels) { this.goMenu(); return; }
     if (Ads.shouldShowInterstitialForLevel(this.level)) {
-      Ads.showInterstitial().finally(() => this.goNext(next));
+      Analytics.adRequested('interstitial', 'level_complete');
+      Ads.showInterstitial().finally(() => { Analytics.adCompleted('interstitial', 'reward'); this.goNext(next); });
     } else {
       this.goNext(next);
     }
@@ -704,7 +720,9 @@ export class GameScene extends Phaser.Scene {
     if (Save.get().lives <= 0) {
       new OutOfLivesPopup(this, {
         onWatchAdForLife: async () => {
+          Analytics.adRequested('rewarded', 'restart_no_lives');
           const r = await Ads.showRewarded();
+          Analytics.adCompleted('rewarded', r);
           if (r === 'reward') { Save.addLife(1); EventBus.emit(EVT.LIFE_CHANGED); this.restart(); }
           else this.goMenu();
         },

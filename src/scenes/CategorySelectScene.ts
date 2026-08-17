@@ -10,6 +10,7 @@ import { I18n } from '../services/I18nService';
 import { TS } from '../config/TextStyles';
 import { CATEGORIES, CATEGORY_DEFS, isCategoryUnlocked, type Category } from '../config/CategoryConfig';
 import { fadeIn, fadeTo } from '../utils/SceneTransition';
+import { Analytics } from '../services/AnalyticsService';
 
 export class CategorySelectScene extends Phaser.Scene {
   constructor() { super('CategorySelect'); }
@@ -88,6 +89,7 @@ export class CategorySelectScene extends Phaser.Scene {
           label: lvl > 1 ? 'Continue' : 'Play',
           onClick: () => {
             Audio.play('click');
+            Analytics.categorySelected(catId);
             fadeTo(this, 'LevelSelect', { category: catId });
           },
           scale: 0.65,

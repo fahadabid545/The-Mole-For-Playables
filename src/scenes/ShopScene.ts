@@ -12,6 +12,7 @@ import { CONSUMABLES, CONSUMABLE_KINDS, type ConsumableKind } from '../config/Co
 import { SKINS } from '../config/SkinConfig';
 import { spawnScorePopup } from '../objects/ScorePopup';
 import { fadeIn, fadeTo } from '../utils/SceneTransition';
+import { Analytics } from '../services/AnalyticsService';
 
 type Tab = 'items' | 'skins';
 
@@ -110,6 +111,7 @@ export class ShopScene extends Phaser.Scene {
         if (Save.spendCoins(def.cost)) {
           Save.addConsumable(kind);
           Audio.play('extraLife');
+          Analytics.shopPurchase(kind, def.cost, 'consumable');
           if (coinText) coinText.setText(`${Save.get().coins}`);
           ownedText.setText(`x${Save.getConsumableCount(kind)}`);
           spawnScorePopup(this, cx, cy - 30, `+1 ${def.name}`, '#a5d6a7');
@@ -163,6 +165,7 @@ export class ShopScene extends Phaser.Scene {
           onClick: () => {
             Audio.play('click');
             Save.setActiveSkin(skin.id);
+            Analytics.skinEquip(skin.id);
             buildSkinTextures(this, skin.id);
             this.scene.restart({ tab: 'skins' });
           },
@@ -180,6 +183,7 @@ export class ShopScene extends Phaser.Scene {
           onClick: () => {
             if (Save.buySkin(skin.id, skin.cost)) {
               Audio.play('extraLife');
+              Analytics.shopPurchase(skin.id, skin.cost, 'skin');
               buildSkinTextures(this, skin.id);
               this.scene.restart({ tab: 'skins' });
             } else {
