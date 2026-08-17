@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { buildAllTextures } from '../objects/TextureFactory';
+import { buildAllTextures, buildSkinTextures } from '../objects/TextureFactory';
 import { GAME_WIDTH, GAME_HEIGHT, COLORS } from '../config/GameConfig';
 import { I18n } from '../services/I18nService';
 import { Save } from '../services/SaveService';
@@ -25,6 +25,7 @@ export class PreloadScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     buildAllTextures(this);
+    buildSkinTextures(this, Save.getActiveSkin());
 
     // Signal readiness to the portal as soon as textures are built so
     // Playgama's 30-second init watchdog is satisfied even if the intro

@@ -60,6 +60,7 @@ export interface SaveData {
   ratePromptCount?: number;
   categories: Record<Category, CategoryProgress>;
   activeSkin?: string;
+  ownedSkins?: string[];
   questProgress: Record<string, { progress: number; claimed: boolean }>;
   medals: number;
 }
@@ -132,6 +133,7 @@ function migrate(d: SaveData): SaveData {
   d.stats = s;
   if (!d.questProgress) d.questProgress = {};
   if (d.medals === undefined) d.medals = 0;
+  if (!d.ownedSkins) d.ownedSkins = ['default'];
   return d;
 }
 
@@ -403,6 +405,27 @@ export const Save = {
     const d = read();
     d.medals = (d.medals || 0) + 1;
     write();
+  },
+
+  getActiveSkin(): string { return read().activeSkin || 'default'; },
+  setActiveSkin(id: string): void {
+    const d = read();
+    d.activeSkin = id;
+    write();
+  },
+  getOwnedSkins(): string[] {
+    const d = read();
+    return d.ownedSkins ?? ['default'];
+  },
+  buySkin(id: string, cost: number): boolean {
+    const d = read();
+    if ((d.coins || 0) < cost) return false;
+    d.coins -= cost;
+    if (!d.ownedSkins) d.ownedSkins = ['default'];
+    if (!d.ownedSkins.includes(id)) d.ownedSkins.push(id);
+    d.activeSkin = id;
+    write();
+    return true;
   },
 
   reset(): void { cache = defaults(); write(); },

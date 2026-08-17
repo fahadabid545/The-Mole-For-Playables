@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { COLORS } from '../config/GameConfig';
+import { getSkinDef, type SkinDef } from '../config/SkinConfig';
 
 // All textures are generated at runtime with Phaser.Graphics — no binary assets.
 // Real art can later be dropped into public/assets and loaded in PreloadScene
@@ -144,6 +145,30 @@ export function buildAllTextures(scene: Phaser.Scene): void {
   buildCoin(scene);
   buildConsumableIcons(scene);
   buildArrowDown(scene);
+}
+
+export function buildSkinTextures(scene: Phaser.Scene, skinId: string): void {
+  const skin = getSkinDef(skinId);
+  if (skin.id === 'default') return;
+  forceTexture(scene, TX.raccoon, 200, 200, g => drawRaccoonBody(g, skin.raccoonBody, skin.raccoonFur, false));
+  forceTexture(scene, TX.raccoonHit, 200, 200, g => drawRaccoonBody(g, skin.raccoonBody, skin.raccoonFur, true));
+  forceTexture(scene, TX.hammer, 200, 220, g => drawHammerBody(g, skin.hammerHead, skin.hammerHeadDark, skin.hammerHandle));
+}
+
+export function buildSkinPreview(scene: Phaser.Scene, skinId: string): string {
+  const skin = getSkinDef(skinId);
+  const key = `tx-skin-preview-${skinId}`;
+  forceTexture(scene, key, 200, 200, g => drawRaccoonBody(g, skin.raccoonBody, skin.raccoonFur, false));
+  return key;
+}
+
+function forceTexture(scene: Phaser.Scene, key: string, w: number, h: number, draw: (g: Phaser.GameObjects.Graphics) => void): void {
+  if (scene.textures.exists(key)) scene.textures.remove(key);
+  const g = scene.add.graphics({ x: 0, y: 0 });
+  g.clear();
+  draw(g);
+  g.generateTexture(key, w, h);
+  g.destroy();
 }
 
 // ----- individual builders -----
@@ -518,87 +543,73 @@ function buildLogHoleShadow(scene: Phaser.Scene) {
   });
 }
 
-function buildRaccoon(scene: Phaser.Scene, key: string, bodyColor: number, furColor: number, dizzy: boolean) {
-  makeTexture(scene, key, 200, 200, g => {
-    // Drop shadow
-    g.fillStyle(0x000000, 0.25);
-    g.fillEllipse(100, 175, 130, 20);
-    // Body (rounder mole)
-    g.fillStyle(bodyColor, 1);
-    g.fillEllipse(100, 120, 150, 130);
-    // Body shading (bottom darker)
-    g.fillStyle(0x000000, 0.15);
-    g.fillEllipse(100, 155, 130, 40);
-    // Belly (lighter cream)
-    g.fillStyle(furColor, 1);
-    g.fillEllipse(100, 140, 92, 74);
-    // Head
-    g.fillStyle(bodyColor, 1);
-    g.fillEllipse(100, 78, 130, 108);
-    // Head shading
-    g.fillStyle(0x000000, 0.10);
-    g.fillEllipse(100, 108, 118, 30);
-    // Ears (rounder, less pointy)
-    g.fillStyle(bodyColor, 1);
-    g.fillCircle(45, 42, 22);
-    g.fillCircle(155, 42, 22);
-    g.fillStyle(0x000000, 0.35);
-    g.fillCircle(45, 46, 14);
-    g.fillCircle(155, 46, 14);
-    g.fillStyle(COLORS.raccoonNose, 0.85);
-    g.fillCircle(45, 44, 10);
-    g.fillCircle(155, 44, 10);
-    // Cheek blush (cuteness)
-    g.fillStyle(0xff8a80, 0.55);
-    g.fillEllipse(52, 96, 22, 12);
-    g.fillEllipse(148, 96, 22, 12);
-    // Mask around eyes
-    g.fillStyle(COLORS.raccoonMask, 1);
-    g.fillEllipse(72, 76, 44, 30);
-    g.fillEllipse(128, 76, 44, 30);
-    // Snout / muzzle (light)
-    g.fillStyle(0xfff5c9, 1);
-    g.fillEllipse(100, 102, 54, 32);
-    // Nose (heart-like triangle)
-    g.fillStyle(COLORS.raccoonNose, 1);
-    g.fillTriangle(90, 88, 110, 88, 100, 100);
-    g.fillCircle(100, 89, 6);
-    // Eyes
-    if (dizzy) {
-      g.lineStyle(4, 0xffffff, 1);
-      g.strokeCircle(72, 76, 11);
-      g.strokeCircle(128, 76, 11);
-      g.lineStyle(3, 0xffffff, 1);
-      g.beginPath(); g.moveTo(64, 68); g.lineTo(80, 84); g.moveTo(80, 68); g.lineTo(64, 84); g.strokePath();
-      g.beginPath(); g.moveTo(120, 68); g.lineTo(136, 84); g.moveTo(136, 68); g.lineTo(120, 84); g.strokePath();
-    } else {
-      g.fillStyle(0xffffff, 1);
-      g.fillCircle(72, 76, 10);
-      g.fillCircle(128, 76, 10);
-      g.fillStyle(0x1a0f08, 1);
-      g.fillCircle(74, 78, 7);
-      g.fillCircle(130, 78, 7);
-      // Eye shine
-      g.fillStyle(0xffffff, 1);
-      g.fillCircle(76, 76, 2.5);
-      g.fillCircle(132, 76, 2.5);
-    }
-    // Smile
-    g.lineStyle(3, COLORS.raccoonMask, 1);
-    g.beginPath();
-    g.moveTo(85, 112);
-    g.lineTo(100, 120);
-    g.lineTo(115, 112);
-    g.strokePath();
-    // Tiny front teeth (cute)
+function drawRaccoonBody(g: Phaser.GameObjects.Graphics, bodyColor: number, furColor: number, dizzy: boolean): void {
+  g.fillStyle(0x000000, 0.25);
+  g.fillEllipse(100, 175, 130, 20);
+  g.fillStyle(bodyColor, 1);
+  g.fillEllipse(100, 120, 150, 130);
+  g.fillStyle(0x000000, 0.15);
+  g.fillEllipse(100, 155, 130, 40);
+  g.fillStyle(furColor, 1);
+  g.fillEllipse(100, 140, 92, 74);
+  g.fillStyle(bodyColor, 1);
+  g.fillEllipse(100, 78, 130, 108);
+  g.fillStyle(0x000000, 0.10);
+  g.fillEllipse(100, 108, 118, 30);
+  g.fillStyle(bodyColor, 1);
+  g.fillCircle(45, 42, 22);
+  g.fillCircle(155, 42, 22);
+  g.fillStyle(0x000000, 0.35);
+  g.fillCircle(45, 46, 14);
+  g.fillCircle(155, 46, 14);
+  g.fillStyle(COLORS.raccoonNose, 0.85);
+  g.fillCircle(45, 44, 10);
+  g.fillCircle(155, 44, 10);
+  g.fillStyle(0xff8a80, 0.55);
+  g.fillEllipse(52, 96, 22, 12);
+  g.fillEllipse(148, 96, 22, 12);
+  g.fillStyle(COLORS.raccoonMask, 1);
+  g.fillEllipse(72, 76, 44, 30);
+  g.fillEllipse(128, 76, 44, 30);
+  g.fillStyle(0xfff5c9, 1);
+  g.fillEllipse(100, 102, 54, 32);
+  g.fillStyle(COLORS.raccoonNose, 1);
+  g.fillTriangle(90, 88, 110, 88, 100, 100);
+  g.fillCircle(100, 89, 6);
+  if (dizzy) {
+    g.lineStyle(4, 0xffffff, 1);
+    g.strokeCircle(72, 76, 11);
+    g.strokeCircle(128, 76, 11);
+    g.lineStyle(3, 0xffffff, 1);
+    g.beginPath(); g.moveTo(64, 68); g.lineTo(80, 84); g.moveTo(80, 68); g.lineTo(64, 84); g.strokePath();
+    g.beginPath(); g.moveTo(120, 68); g.lineTo(136, 84); g.moveTo(136, 68); g.lineTo(120, 84); g.strokePath();
+  } else {
     g.fillStyle(0xffffff, 1);
-    g.fillRect(95, 118, 4, 5);
-    g.fillRect(101, 118, 4, 5);
-    // Tiny paws in front
-    g.fillStyle(furColor, 1);
-    g.fillEllipse(56, 156, 28, 14);
-    g.fillEllipse(144, 156, 28, 14);
-  });
+    g.fillCircle(72, 76, 10);
+    g.fillCircle(128, 76, 10);
+    g.fillStyle(0x1a0f08, 1);
+    g.fillCircle(74, 78, 7);
+    g.fillCircle(130, 78, 7);
+    g.fillStyle(0xffffff, 1);
+    g.fillCircle(76, 76, 2.5);
+    g.fillCircle(132, 76, 2.5);
+  }
+  g.lineStyle(3, COLORS.raccoonMask, 1);
+  g.beginPath();
+  g.moveTo(85, 112);
+  g.lineTo(100, 120);
+  g.lineTo(115, 112);
+  g.strokePath();
+  g.fillStyle(0xffffff, 1);
+  g.fillRect(95, 118, 4, 5);
+  g.fillRect(101, 118, 4, 5);
+  g.fillStyle(furColor, 1);
+  g.fillEllipse(56, 156, 28, 14);
+  g.fillEllipse(144, 156, 28, 14);
+}
+
+function buildRaccoon(scene: Phaser.Scene, key: string, bodyColor: number, furColor: number, dizzy: boolean) {
+  makeTexture(scene, key, 200, 200, g => drawRaccoonBody(g, bodyColor, furColor, dizzy));
 }
 
 function buildBomb(scene: Phaser.Scene) {
@@ -624,26 +635,25 @@ function buildBomb(scene: Phaser.Scene) {
   });
 }
 
+function drawHammerBody(g: Phaser.GameObjects.Graphics, head: number, headDark: number, handle: number): void {
+  g.fillStyle(handle, 1);
+  g.fillRoundedRect(85, 70, 30, 150, 8);
+  g.fillStyle(COLORS.woodDark, 1);
+  g.fillRoundedRect(85, 200, 30, 14, 4);
+  g.fillStyle(headDark, 1);
+  g.fillRoundedRect(20, 20, 160, 80, 16);
+  g.fillStyle(head, 1);
+  g.fillRoundedRect(28, 24, 144, 60, 12);
+  g.fillStyle(0xffffff, 0.5);
+  g.fillRoundedRect(40, 32, 60, 12, 6);
+  g.fillStyle(headDark, 1);
+  g.fillCircle(40, 60, 5);
+  g.fillCircle(160, 60, 5);
+}
+
 function buildHammer(scene: Phaser.Scene) {
-  makeTexture(scene, TX.hammer, 200, 220, g => {
-    // Handle
-    g.fillStyle(COLORS.hammerHandle, 1);
-    g.fillRoundedRect(85, 70, 30, 150, 8);
-    g.fillStyle(COLORS.woodDark, 1);
-    g.fillRoundedRect(85, 200, 30, 14, 4);
-    // Head plate
-    g.fillStyle(COLORS.hammerHeadDark, 1);
-    g.fillRoundedRect(20, 20, 160, 80, 16);
-    g.fillStyle(COLORS.hammerHead, 1);
-    g.fillRoundedRect(28, 24, 144, 60, 12);
-    // Shine
-    g.fillStyle(0xffffff, 0.5);
-    g.fillRoundedRect(40, 32, 60, 12, 6);
-    // Rivets
-    g.fillStyle(COLORS.hammerHeadDark, 1);
-    g.fillCircle(40, 60, 5);
-    g.fillCircle(160, 60, 5);
-  });
+  makeTexture(scene, TX.hammer, 200, 220, g =>
+    drawHammerBody(g, COLORS.hammerHead, COLORS.hammerHeadDark, COLORS.hammerHandle));
 }
 
 function buildSpark(scene: Phaser.Scene) {
