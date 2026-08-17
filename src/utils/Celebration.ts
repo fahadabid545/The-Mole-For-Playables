@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT } from '../config/GameConfig';
 import { TX } from '../objects/TextureFactory';
 import { Audio } from '../services/AudioService';
-import { Save } from '../services/SaveService';
+import { Haptic } from '../services/HapticService';
 
 export function spawnConfetti(scene: Phaser.Scene, x = GAME_WIDTH / 2, y = GAME_HEIGHT / 2 - 200): void {
   const em = scene.add.particles(x, y, TX.confetti, {
@@ -26,7 +26,7 @@ export function celebrateBossDown(scene: Phaser.Scene, x: number, y: number): vo
   spawnConfetti(scene, x, y - 100);
   Audio.play('win');
   scene.cameras.main.shake(200, 0.015);
-  if (navigator.vibrate && !Save.isHapticDisabled()) navigator.vibrate([40, 30, 60]);
+  Haptic.vibrate([40, 30, 60]);
 }
 
 export function celebrateLevelMilestone(scene: Phaser.Scene, level: number, totalLevels: number): void {
@@ -54,7 +54,7 @@ export function celebrateLevelMilestone(scene: Phaser.Scene, level: number, tota
     scene.time.delayedCall(500, () => spawnConfetti(scene, GAME_WIDTH / 2 + 150, GAME_HEIGHT / 2 - 200));
   }
   scene.cameras.main.shake(250, isFinal ? 0.018 : 0.010);
-  if (navigator.vibrate && !Save.isHapticDisabled()) navigator.vibrate(isFinal ? [50, 30, 80, 30, 50] : [40, 30, 60]);
+  Haptic.vibrate(isFinal ? [50, 30, 80, 30, 50] : [40, 30, 60]);
   Audio.play('win');
 }
 

@@ -11,6 +11,7 @@ import { TX } from '../objects/TextureFactory';
 import { AdBanner } from '../ui/AdBanner';
 import { Popup } from '../ui/popups/Popup';
 import { Ads } from '../services/AdsService';
+import { Haptic } from '../services/HapticService';
 import { EventBus, EVT } from '../utils/EventBus';
 import { fadeIn, fadeTo } from '../utils/SceneTransition';
 
@@ -53,7 +54,7 @@ export class SettingsScene extends Phaser.Scene {
     makeToggle('Music', () => Audio.isMusicMuted(), () => Audio.toggleMusicMute(), y);
 
     // --- Haptic section ---
-    if (navigator.vibrate) {
+    if (Haptic.isSupported()) {
       y += 70;
       const hapticLabel = () => Save.isHapticDisabled() ? 'Off' : 'On';
       const hapTxt = this.add.text(80, y, `Vibration: ${hapticLabel()}`,
@@ -64,7 +65,7 @@ export class SettingsScene extends Phaser.Scene {
         const now = !Save.isHapticDisabled();
         Save.setHapticDisabled(now);
         hapTxt.setText(`Vibration: ${now ? 'Off' : 'On'}`);
-        if (!now) navigator.vibrate(20);
+        if (!now) Haptic.vibrate(20);
         Audio.play('click');
       });
     }

@@ -46,7 +46,7 @@ class CrazyGamesAdsService implements AdsService {
   async showInterstitial(): Promise<void> {
     const ad = this.sdk?.ad;
     if (!ad?.requestAd) return;
-    await new Promise<void>((resolve) => {
+    return withAdLifecycle(() => new Promise<void>((resolve) => {
       const done = () => resolve();
       try {
         ad.requestAd('midgame', {
@@ -55,14 +55,14 @@ class CrazyGamesAdsService implements AdsService {
           adError:    done,
         });
       } catch { done(); }
-      setTimeout(done, 8000); // safety timeout
-    });
+      setTimeout(done, 8000);
+    }));
   }
 
   async showRewarded(): Promise<AdOutcome> {
     const ad = this.sdk?.ad;
     if (!ad?.requestAd) return 'skipped';
-    return new Promise<AdOutcome>((resolve) => {
+    return withAdLifecycle(() => new Promise<AdOutcome>((resolve) => {
       let outcome: AdOutcome = 'skipped';
       try {
         ad.requestAd('rewarded', {
@@ -72,7 +72,7 @@ class CrazyGamesAdsService implements AdsService {
         });
       } catch { resolve('error'); }
       setTimeout(() => resolve(outcome), 30000);
-    });
+    }));
   }
 
   shouldShowInterstitialForLevel(level: number): boolean {
@@ -90,16 +90,20 @@ class PokiAdsService implements AdsService {
   async showInterstitial(): Promise<void> {
     const s = this.sdk;
     if (!s?.commercialBreak) return;
-    try { await s.commercialBreak(); } catch { /* ignore */ }
+    return withAdLifecycle(async () => {
+      try { await s.commercialBreak(); } catch { /* ignore */ }
+    });
   }
 
   async showRewarded(): Promise<AdOutcome> {
     const s = this.sdk;
     if (!s?.rewardedBreak) return 'skipped';
-    try {
-      const success = await s.rewardedBreak();
-      return success ? 'reward' : 'skipped';
-    } catch { return 'error'; }
+    return withAdLifecycle(async () => {
+      try {
+        const success = await s.rewardedBreak();
+        return success ? 'reward' : 'skipped';
+      } catch { return 'error' as AdOutcome; }
+    });
   }
 
   shouldShowInterstitialForLevel(level: number): boolean {
