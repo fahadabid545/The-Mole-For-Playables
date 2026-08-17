@@ -27,7 +27,7 @@ import { LevelFailedPopup } from '../ui/popups/LevelFailedPopup';
 import { OutOfLivesPopup } from '../ui/popups/OutOfLivesPopup';
 import { ExtraLifePopup } from '../ui/popups/ExtraLifePopup';
 import { PausePopup } from '../ui/popups/PausePopup';
-import { celebrateBossDown, celebrateComboMilestone } from '../utils/Celebration';
+import { celebrateBossDown, celebrateComboMilestone, celebrateLevelMilestone } from '../utils/Celebration';
 
 export class GameScene extends Phaser.Scene {
   private params!: LevelParams;
@@ -560,6 +560,8 @@ export class GameScene extends Phaser.Scene {
           this.postCompleteInterstitial();
         }
       };
+
+      celebrateLevelMilestone(this, this.level, FLAGS.totalLevels);
 
       new LevelCompletePopup(this, {
         level: this.level, stars, score: this.score,

@@ -29,6 +29,35 @@ export function celebrateBossDown(scene: Phaser.Scene, x: number, y: number): vo
   if (navigator.vibrate && !Save.isHapticDisabled()) navigator.vibrate([40, 30, 60]);
 }
 
+export function celebrateLevelMilestone(scene: Phaser.Scene, level: number, totalLevels: number): void {
+  const isFinal = level >= totalLevels;
+  const isMilestone = level % 10 === 0;
+  if (!isMilestone && !isFinal) return;
+
+  const label = isFinal ? 'ALL LEVELS COMPLETE!' : `${level} LEVELS CLEARED!`;
+  const color = isFinal ? '#ffd54f' : '#66bb6a';
+  const fontSize = isFinal ? '48px' : '40px';
+
+  const t = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 140, label, {
+    fontFamily: '"Luckiest Guy", Impact, sans-serif',
+    fontSize, color,
+    stroke: '#1b5e20', strokeThickness: 6,
+  }).setOrigin(0.5).setDepth(21500).setAlpha(0).setScale(0.3);
+
+  scene.tweens.add({ targets: t, alpha: 1, scale: 1.3, duration: 300, ease: 'Back.Out' });
+  scene.tweens.add({ targets: t, alpha: 0, y: t.y - 80, delay: 2000, duration: 500,
+    onComplete: () => t.destroy() });
+
+  spawnConfetti(scene);
+  if (isFinal) {
+    scene.time.delayedCall(300, () => spawnConfetti(scene, GAME_WIDTH / 2 - 150, GAME_HEIGHT / 2 - 200));
+    scene.time.delayedCall(500, () => spawnConfetti(scene, GAME_WIDTH / 2 + 150, GAME_HEIGHT / 2 - 200));
+  }
+  scene.cameras.main.shake(250, isFinal ? 0.018 : 0.010);
+  if (navigator.vibrate && !Save.isHapticDisabled()) navigator.vibrate(isFinal ? [50, 30, 80, 30, 50] : [40, 30, 60]);
+  Audio.play('win');
+}
+
 export function celebrateComboMilestone(scene: Phaser.Scene, combo: number): void {
   if (combo !== 5 && combo !== 10 && combo !== 15 && combo !== 20) return;
   const label = `${combo}x COMBO!`;
