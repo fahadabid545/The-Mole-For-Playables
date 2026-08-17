@@ -1,9 +1,11 @@
 import { FLAGS } from '../config/BuildFlags';
 import type { Lang } from './I18nService';
 import type { ConsumableKind } from '../config/ConsumableConfig';
+import type { Category } from '../config/CategoryConfig';
+import { CATEGORY_DEFS } from '../config/CategoryConfig';
 
 const KEY = 'mole.v1';
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 const LIVES_REGEN_MS = 10 * 60 * 1000;
 
 export type ConsumableInventory = Partial<Record<ConsumableKind, number>>;
@@ -14,9 +16,17 @@ export interface GameStats {
   bossesHit: number;
   bombsHit: number;
   frozenHit: number;
+  catsHit: number;
+  goatsHit: number;
   escapes: number;
   bestCombo: number;
   totalGamesPlayed: number;
+}
+
+export interface CategoryProgress {
+  highestUnlockedLevel: number;
+  perLevelStars: Record<number, number>;
+  totalStars: number;
 }
 
 export interface SaveData {
@@ -48,6 +58,8 @@ export interface SaveData {
   lastStreakRewardDate?: string;
   rated?: boolean;
   ratePromptCount?: number;
+  categories: Record<Category, CategoryProgress>;
+  activeSkin?: string;
 }
 
 const defaultStats = (): GameStats => ({
@@ -56,9 +68,23 @@ const defaultStats = (): GameStats => ({
   bossesHit: 0,
   bombsHit: 0,
   frozenHit: 0,
+  catsHit: 0,
+  goatsHit: 0,
   escapes: 0,
   bestCombo: 0,
   totalGamesPlayed: 0,
+});
+
+const defaultCategoryProgress = (): CategoryProgress => ({
+  highestUnlockedLevel: 1,
+  perLevelStars: {},
+  totalStars: 0,
+});
+
+const defaultCategories = (): Record<Category, CategoryProgress> => ({
+  easy: defaultCategoryProgress(),
+  hard: defaultCategoryProgress(),
+  superHard: defaultCategoryProgress(),
 });
 
 const defaults = (): SaveData => ({
@@ -77,6 +103,7 @@ const defaults = (): SaveData => ({
   achievements: [],
   stats: defaultStats(),
   playStreak: 0,
+  categories: defaultCategories(),
 });
 
 let cache: SaveData | null = null;
@@ -86,11 +113,27 @@ function bridgeStorage(): any {
   return b?.storage;
 }
 
+function migrate(d: SaveData): SaveData {
+  if (!d.categories) {
+    d.categories = defaultCategories();
+    d.categories.easy = {
+      highestUnlockedLevel: d.highestUnlockedLevel || 1,
+      perLevelStars: { ...(d.perLevelStars || {}) },
+      totalStars: d.totalStars || 0,
+    };
+  }
+  const s = d.stats || defaultStats();
+  if (s.catsHit === undefined) s.catsHit = 0;
+  if (s.goatsHit === undefined) s.goatsHit = 0;
+  d.stats = s;
+  return d;
+}
+
 function read(): SaveData {
   if (cache) return cache;
   try {
     const raw = localStorage.getItem(KEY);
-    cache = raw ? { ...defaults(), ...JSON.parse(raw) } : defaults();
+    cache = raw ? migrate({ ...defaults(), ...JSON.parse(raw) }) : defaults();
   } catch {
     cache = defaults();
   }
@@ -155,6 +198,45 @@ export const Save = {
       d.totalStars += stars - prev;
       write();
     }
+  },
+
+  getCategoryProgress(cat: Category): CategoryProgress {
+    const d = read();
+    if (!d.categories[cat]) d.categories[cat] = defaultCategoryProgress();
+    return d.categories[cat];
+  },
+
+  unlockCategoryUpTo(cat: Category, level: number): void {
+    const d = read();
+    if (!d.categories[cat]) d.categories[cat] = defaultCategoryProgress();
+    const cp = d.categories[cat];
+    const maxLvl = CATEGORY_DEFS[cat].levels;
+    if (level > cp.highestUnlockedLevel) {
+      cp.highestUnlockedLevel = Math.min(maxLvl, level);
+      write();
+    }
+  },
+
+  recordCategoryStars(cat: Category, level: number, stars: number): void {
+    const d = read();
+    if (!d.categories[cat]) d.categories[cat] = defaultCategoryProgress();
+    const cp = d.categories[cat];
+    const prev = cp.perLevelStars[level] ?? 0;
+    if (stars > prev) {
+      cp.perLevelStars[level] = stars;
+      cp.totalStars += stars - prev;
+      d.totalStars += stars - prev;
+      write();
+    }
+  },
+
+  getAllStars(): number {
+    const d = read();
+    let total = 0;
+    for (const cat of ['easy', 'hard', 'superHard'] as Category[]) {
+      if (d.categories[cat]) total += d.categories[cat].totalStars;
+    }
+    return total;
   },
 
   setMuted(m: boolean): void { const d = read(); d.muted = m; write(); },
@@ -248,7 +330,7 @@ export const Save = {
     write();
   },
 
-  recordHit(kind: 'normal' | 'golden' | 'boss' | 'bomb' | 'frozen'): void {
+  recordHit(kind: 'normal' | 'golden' | 'boss' | 'bomb' | 'frozen' | 'cat' | 'goat'): void {
     const d = read();
     d.stats = d.stats || defaultStats();
     if (kind === 'normal') d.stats.raccoonsHit++;
@@ -256,6 +338,8 @@ export const Save = {
     else if (kind === 'boss') d.stats.bossesHit++;
     else if (kind === 'bomb') d.stats.bombsHit++;
     else if (kind === 'frozen') d.stats.frozenHit++;
+    else if (kind === 'cat') d.stats.catsHit++;
+    else if (kind === 'goat') d.stats.goatsHit++;
     write();
   },
   recordEscape(): void {

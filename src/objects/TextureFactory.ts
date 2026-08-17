@@ -71,6 +71,10 @@ export const TX = {
   iconChest: 'tx-icon-chest',
   iconShop: 'tx-icon-shop',
   arrowDown: 'tx-arrow-down',
+  cat: 'tx-cat',
+  goat: 'tx-goat',
+  iconCat: 'tx-icon-cat',
+  iconGoat: 'tx-icon-goat',
 } as const;
 
 function makeTexture(scene: Phaser.Scene, key: string, w: number, h: number, draw: (g: Phaser.GameObjects.Graphics) => void): void {
@@ -104,6 +108,8 @@ export function buildAllTextures(scene: Phaser.Scene): void {
   buildRaccoon(scene, TX.raccoonGolden, COLORS.gold, 0xfff59d, false);
   buildRaccoon(scene, TX.raccoonFrozen, 0x81d4fa, 0xe1f5fe, false);
   buildBossRaccoon(scene);
+  buildCat(scene);
+  buildGoat(scene);
   buildBomb(scene);
   buildHammer(scene);
   buildSpark(scene);
@@ -1039,6 +1045,148 @@ function buildBossRaccoon(scene: Phaser.Scene) {
     g.fillStyle(0xffffff, 1);
     g.fillTriangle(118, 138, 122, 138, 120, 152);
     g.fillTriangle(138, 138, 142, 138, 140, 152);
+  });
+}
+
+function buildCat(scene: Phaser.Scene) {
+  makeTexture(scene, TX.cat, 200, 200, g => {
+    g.fillStyle(0x000000, 0.25);
+    g.fillEllipse(100, 175, 130, 20);
+    g.fillStyle(0xff8a65, 1);
+    g.fillEllipse(100, 120, 150, 130);
+    g.fillStyle(0x000000, 0.12);
+    g.fillEllipse(100, 155, 130, 40);
+    g.fillStyle(0xffccbc, 1);
+    g.fillEllipse(100, 140, 92, 74);
+    g.fillStyle(0xff8a65, 1);
+    g.fillEllipse(100, 78, 130, 108);
+    // Pointy ears
+    g.fillStyle(0xff8a65, 1);
+    g.fillTriangle(35, 60, 50, 10, 75, 55);
+    g.fillTriangle(165, 60, 150, 10, 125, 55);
+    g.fillStyle(0xffab91, 1);
+    g.fillTriangle(42, 55, 52, 22, 68, 52);
+    g.fillTriangle(158, 55, 148, 22, 132, 52);
+    // Tiger stripes
+    g.fillStyle(0xd84315, 0.6);
+    g.fillEllipse(50, 80, 20, 8);
+    g.fillEllipse(150, 80, 20, 8);
+    g.fillEllipse(55, 100, 16, 6);
+    g.fillEllipse(145, 100, 16, 6);
+    // Cheeks
+    g.fillStyle(0xff80ab, 0.45);
+    g.fillEllipse(55, 100, 22, 12);
+    g.fillEllipse(145, 100, 22, 12);
+    // Snout
+    g.fillStyle(0xfff5c9, 1);
+    g.fillEllipse(100, 102, 50, 30);
+    // Nose (upside-down triangle)
+    g.fillStyle(0xf06292, 1);
+    g.fillTriangle(92, 92, 108, 92, 100, 102);
+    // Eyes (slit pupils)
+    g.fillStyle(0xc8e6c9, 1);
+    g.fillCircle(72, 76, 11);
+    g.fillCircle(128, 76, 11);
+    g.fillStyle(0x1a0f08, 1);
+    g.fillEllipse(74, 78, 5, 10);
+    g.fillEllipse(130, 78, 5, 10);
+    g.fillStyle(0xffffff, 1);
+    g.fillCircle(76, 74, 2.5);
+    g.fillCircle(132, 74, 2.5);
+    // Whiskers
+    g.lineStyle(2, 0x5d4037, 0.5);
+    g.beginPath(); g.moveTo(60, 102); g.lineTo(20, 95); g.strokePath();
+    g.beginPath(); g.moveTo(60, 108); g.lineTo(22, 112); g.strokePath();
+    g.beginPath(); g.moveTo(140, 102); g.lineTo(180, 95); g.strokePath();
+    g.beginPath(); g.moveTo(140, 108); g.lineTo(178, 112); g.strokePath();
+    // Mouth
+    g.lineStyle(2, 0x5d4037, 1);
+    g.beginPath(); g.moveTo(92, 112); g.lineTo(100, 118); g.lineTo(108, 112); g.strokePath();
+    // Paws
+    g.fillStyle(0xffccbc, 1);
+    g.fillEllipse(56, 156, 28, 14);
+    g.fillEllipse(144, 156, 28, 14);
+  });
+
+  makeTexture(scene, TX.iconCat, 48, 48, g => {
+    g.fillStyle(0xff8a65, 1);
+    g.fillCircle(24, 28, 18);
+    g.fillTriangle(8, 20, 14, 4, 20, 18);
+    g.fillTriangle(40, 20, 34, 4, 28, 18);
+    g.fillStyle(0xc8e6c9, 1);
+    g.fillCircle(17, 26, 4);
+    g.fillCircle(31, 26, 4);
+    g.fillStyle(0xf06292, 1);
+    g.fillTriangle(21, 28, 27, 28, 24, 32);
+  });
+}
+
+function buildGoat(scene: Phaser.Scene) {
+  makeTexture(scene, TX.goat, 200, 200, g => {
+    g.fillStyle(0x000000, 0.25);
+    g.fillEllipse(100, 175, 130, 20);
+    g.fillStyle(0xe0e0e0, 1);
+    g.fillEllipse(100, 120, 150, 130);
+    g.fillStyle(0x000000, 0.10);
+    g.fillEllipse(100, 155, 130, 40);
+    g.fillStyle(0xf5f5f5, 1);
+    g.fillEllipse(100, 140, 92, 74);
+    g.fillStyle(0xe0e0e0, 1);
+    g.fillEllipse(100, 78, 130, 108);
+    // Horns
+    g.fillStyle(0x8d6e63, 1);
+    g.beginPath(); g.moveTo(48, 50); g.lineTo(30, 10); g.lineTo(58, 38); g.closePath(); g.fillPath();
+    g.beginPath(); g.moveTo(152, 50); g.lineTo(170, 10); g.lineTo(142, 38); g.closePath(); g.fillPath();
+    g.fillStyle(0xa1887f, 1);
+    g.beginPath(); g.moveTo(50, 48); g.lineTo(36, 18); g.lineTo(54, 40); g.closePath(); g.fillPath();
+    g.beginPath(); g.moveTo(150, 48); g.lineTo(164, 18); g.lineTo(146, 40); g.closePath(); g.fillPath();
+    // Floppy ears
+    g.fillStyle(0xbdbdbd, 1);
+    g.fillEllipse(38, 88, 24, 36);
+    g.fillEllipse(162, 88, 24, 36);
+    g.fillStyle(0xffab91, 0.5);
+    g.fillEllipse(38, 90, 14, 22);
+    g.fillEllipse(162, 90, 14, 22);
+    // Snout (long)
+    g.fillStyle(0xf5f5f5, 1);
+    g.fillEllipse(100, 108, 60, 36);
+    // Nose
+    g.fillStyle(0x9e9e9e, 1);
+    g.fillEllipse(90, 100, 8, 6);
+    g.fillEllipse(110, 100, 8, 6);
+    // Eyes (rectangular pupils)
+    g.fillStyle(0xffd54f, 1);
+    g.fillCircle(72, 72, 11);
+    g.fillCircle(128, 72, 11);
+    g.fillStyle(0x1a0f08, 1);
+    g.fillRoundedRect(69, 68, 10, 6, 1);
+    g.fillRoundedRect(125, 68, 10, 6, 1);
+    g.fillStyle(0xffffff, 1);
+    g.fillCircle(76, 70, 2);
+    g.fillCircle(132, 70, 2);
+    // Goatee beard
+    g.fillStyle(0xbdbdbd, 1);
+    g.fillTriangle(88, 120, 112, 120, 100, 150);
+    // Mouth
+    g.lineStyle(2, 0x757575, 1);
+    g.beginPath(); g.moveTo(88, 116); g.lineTo(100, 122); g.lineTo(112, 116); g.strokePath();
+    // Paws
+    g.fillStyle(0xbdbdbd, 1);
+    g.fillEllipse(56, 156, 28, 14);
+    g.fillEllipse(144, 156, 28, 14);
+  });
+
+  makeTexture(scene, TX.iconGoat, 48, 48, g => {
+    g.fillStyle(0xe0e0e0, 1);
+    g.fillCircle(24, 28, 18);
+    g.fillStyle(0x8d6e63, 1);
+    g.beginPath(); g.moveTo(12, 20); g.lineTo(6, 4); g.lineTo(16, 16); g.closePath(); g.fillPath();
+    g.beginPath(); g.moveTo(36, 20); g.lineTo(42, 4); g.lineTo(32, 16); g.closePath(); g.fillPath();
+    g.fillStyle(0xffd54f, 1);
+    g.fillCircle(17, 26, 4);
+    g.fillCircle(31, 26, 4);
+    g.fillStyle(0xbdbdbd, 1);
+    g.fillTriangle(20, 34, 28, 34, 24, 44);
   });
 }
 

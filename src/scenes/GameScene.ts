@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
-import { GAME_WIDTH, GAME_HEIGHT, GRID } from '../config/GameConfig';
+import { GAME_WIDTH, GAME_HEIGHT, GRID, getGridForCategory, type GridLayout } from '../config/GameConfig';
 import { getLevelParams, LevelParams } from '../config/LevelConfig';
 import { FLAGS, IS_PORTAL } from '../config/BuildFlags';
+import { type Category, type CategoryDef, CATEGORY_DEFS } from '../config/CategoryConfig';
 import { ParallaxJungle } from '../objects/ParallaxJungle';
 import { spawnLeafParticles } from '../objects/LeafParticles';
 import { Hole } from '../objects/Hole';
@@ -64,10 +65,13 @@ export class GameScene extends Phaser.Scene {
   private xrayActive = false;
   private xrayIndicators: Phaser.GameObjects.Arc[] = [];
   private grantRandomPowerup: (() => void) | null = null;
+  private category: Category = 'easy';
+  private catDef!: CategoryDef;
+  private grid!: GridLayout;
 
   constructor() { super('Game'); }
 
-  create(data: { level: number; challenge?: Challenge }): void {
+  create(data: { level: number; challenge?: Challenge; category?: Category }): void {
     // CRITICAL: Phaser recycles the scene instance on restart, so class-field
     // initialisers only run once. Any array/reference set on `this` from a
     // previous life is still there. Reset everything here so level N+1
@@ -78,8 +82,11 @@ export class GameScene extends Phaser.Scene {
     this.time.removeAllEvents();
 
     this.challenge = data.challenge ?? null;
-    this.level = Math.max(1, Math.min(FLAGS.totalLevels, data.level ?? 1));
-    this.params = this.challenge ? this.challenge.params : getLevelParams(this.level);
+    this.category = data.category ?? 'easy';
+    this.catDef = CATEGORY_DEFS[this.category];
+    this.grid = getGridForCategory(this.catDef.cols, this.catDef.rows);
+    this.level = Math.max(1, Math.min(this.catDef.levels, data.level ?? 1));
+    this.params = this.challenge ? this.challenge.params : getLevelParams(this.level, this.category);
     this.hits = 0;
     this.score = 0;
     this.misses = 0;
@@ -215,14 +222,15 @@ export class GameScene extends Phaser.Scene {
   }
 
   private buildGrid(): void {
-    const cellW = (GAME_WIDTH - GRID.paddingX * 2) / GRID.cols;
-    const usableH = GAME_HEIGHT - GRID.paddingTop - GRID.paddingBottom;
-    const cellH = usableH / GRID.rows;
+    const g = this.grid;
+    const cellW = (GAME_WIDTH - g.paddingX * 2) / g.cols;
+    const usableH = GAME_HEIGHT - g.paddingTop - g.paddingBottom;
+    const cellH = usableH / g.rows;
     let idx = 0;
-    for (let r = 0; r < GRID.rows; r++) {
-      for (let c = 0; c < GRID.cols; c++) {
-        const x = GRID.paddingX + cellW / 2 + c * cellW;
-        const y = GRID.paddingTop + cellH / 2 + r * cellH;
+    for (let r = 0; r < g.rows; r++) {
+      for (let c = 0; c < g.cols; c++) {
+        const x = g.paddingX + cellW / 2 + c * cellW;
+        const y = g.paddingTop + cellH / 2 + r * cellH;
         const hole = new Hole(this, x, y, idx);
         const rac = new Raccoon(this, x, y);
         this.holes.push(hole);
@@ -267,17 +275,23 @@ export class GameScene extends Phaser.Scene {
   private showNewEnemyIntro(): number {
     interface EnemyIntro { icon: string; name: string; desc: string; }
     const intros: EnemyIntro[] = [];
-    if (this.level === FLAGS.goldenRaccoonFromLevel) {
+    if (this.level === this.catDef.goldenFromLevel) {
       intros.push({ icon: TX.raccoonGolden, name: 'Golden Raccoon', desc: 'Rare and fast. Worth triple!' });
     }
-    if (this.level === FLAGS.bombsFromLevel) {
+    if (this.level === this.catDef.bombsFromLevel) {
       intros.push({ icon: TX.bomb, name: 'Bomb', desc: 'Do NOT tap! You lose a life.' });
     }
-    if (this.level === FLAGS.bossEveryNLevels && this.level === FLAGS.bombsFromLevel) {
+    if (this.level === this.catDef.bossEveryN && this.level === this.catDef.bombsFromLevel) {
       intros.push({ icon: TX.raccoonBoss, name: 'Boss Raccoon', desc: 'Tough (3 HP), huge reward!' });
     }
-    if (this.level === FLAGS.frozenFromLevel) {
+    if (this.level === this.catDef.frozenFromLevel) {
       intros.push({ icon: TX.raccoonFrozen, name: 'Frozen Raccoon', desc: 'Takes 2 hits to defeat.' });
+    }
+    if (this.catDef.hasCat && this.level === 1) {
+      intros.push({ icon: TX.cat, name: 'Cat', desc: 'Penalty! -2s and -10 score.' });
+    }
+    if (this.catDef.hasGoat && this.level === 1) {
+      intros.push({ icon: TX.goat, name: 'Goat', desc: 'Penalty! -2s and -10 score.' });
     }
     if (intros.length === 0) return 0;
 
@@ -317,7 +331,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private showTutorialHint(): void {
-    if (this.level > FLAGS.frozenFromLevel) return;
+    if (this.level > this.catDef.frozenFromLevel) return;
 
     const showFloating = (text: string, color: string, delay = 0) => {
       this.time.delayedCall(delay, () => {
@@ -349,11 +363,11 @@ export class GameScene extends Phaser.Scene {
         },
       });
       showFloating('Hit raccoons before\nthey escape!', '#fff176', 4000);
-    } else if (this.level === FLAGS.goldenRaccoonFromLevel) {
+    } else if (this.level === this.catDef.goldenFromLevel) {
       showFloating('Golden raccoons\nare worth triple!', '#ffd54f', 2000);
-    } else if (this.level === FLAGS.bombsFromLevel) {
+    } else if (this.level === this.catDef.bombsFromLevel) {
       showFloating('Avoid the bombs!\nYou lose a life.', '#ff5252', 2000);
-    } else if (this.level === FLAGS.frozenFromLevel) {
+    } else if (this.level === this.catDef.frozenFromLevel) {
       showFloating('Frozen raccoons\nneed 2 hits!', '#81d4fa', 2000);
     }
   }
@@ -403,9 +417,13 @@ export class GameScene extends Phaser.Scene {
       const bombEnd = this.params.bombChance;
       const goldenEnd = bombEnd + this.params.goldenChance;
       const frozenEnd = goldenEnd + this.params.frozenChance;
+      const catEnd = frozenEnd + this.params.catChance;
+      const goatEnd = catEnd + this.params.goatChance;
       if (roll < bombEnd) kind = 'bomb';
       else if (roll < goldenEnd) kind = 'golden';
       else if (roll < frozenEnd) kind = 'frozen';
+      else if (roll < catEnd) kind = 'cat';
+      else if (roll < goatEnd) kind = 'goat';
     }
 
     if (this.bombDefuseActive && kind === 'bomb') kind = 'normal';
@@ -447,6 +465,21 @@ export class GameScene extends Phaser.Scene {
       this.combo = 0;
       EventBus.emit(EVT.COMBO_CHANGED, 0);
       this.applyBombPenalty();
+      return;
+    }
+    if (kind === 'cat' || kind === 'goat') {
+      const label = kind === 'cat' ? 'Cat' : 'Goat';
+      spawnScorePopup(this, rac.x, rac.y - 60, `-2s -10`, '#ff5252');
+      spawnScorePopup(this, rac.x, rac.y - 110, `${label}!`, '#ffab91');
+      Audio.play('lifeLost');
+      this.cameras.main.shake(120, 0.008);
+      Haptic.vibrate(20);
+      this.timeLeft = Math.max(0, this.timeLeft - 2000);
+      EventBus.emit(EVT.TIMER_TICK, this.timeLeft);
+      this.score = Math.max(0, this.score - 10);
+      this.combo = 0;
+      EventBus.emit(EVT.COMBO_CHANGED, 0);
+      EventBus.emit(EVT.SCORE_CHANGED, this.score, this.hits, this.params.scoreTarget);
       return;
     }
     this.combo++;
@@ -539,8 +572,8 @@ export class GameScene extends Phaser.Scene {
         });
         return;
       }
-      Save.recordStars(this.level, stars);
-      Save.unlockUpTo(this.level + 1);
+      Save.recordCategoryStars(this.category, this.level, stars);
+      Save.unlockCategoryUpTo(this.category, this.level + 1);
       Save.setBestScore(this.score);
       // Achievement hooks
       checkProgress('levelClear', this.level);
@@ -559,7 +592,7 @@ export class GameScene extends Phaser.Scene {
             this.postCompleteInterstitial();
           }
         };
-        if (this.level % FLAGS.extraLifeEveryNLevels === 0 && this.level < FLAGS.totalLevels) {
+        if (this.level % this.catDef.extraLifeEveryN === 0 && this.level < this.catDef.levels) {
           Save.addLife(1);
           EventBus.emit(EVT.LIFE_CHANGED);
           new ExtraLifePopup(this, afterExtras);
@@ -568,7 +601,7 @@ export class GameScene extends Phaser.Scene {
         }
       };
 
-      celebrateLevelMilestone(this, this.level, FLAGS.totalLevels);
+      celebrateLevelMilestone(this, this.level, this.catDef.levels);
 
       new LevelCompletePopup(this, {
         level: this.level, stars, score: this.score,
@@ -578,7 +611,7 @@ export class GameScene extends Phaser.Scene {
       });
     } else if (outOfLives || Save.get().lives <= 0) {
       new OutOfLivesPopup(this, {
-        levelToUnlock: this.level + 1 <= FLAGS.totalLevels ? this.level + 1 : undefined,
+        levelToUnlock: this.level + 1 <= this.catDef.levels ? this.level + 1 : undefined,
         onWatchAdForLife: async () => {
           const r = await Ads.showRewarded();
           if (r === 'reward') { Save.addLife(1); EventBus.emit(EVT.LIFE_CHANGED); this.restart(); }
@@ -587,11 +620,11 @@ export class GameScene extends Phaser.Scene {
         onWatchAdToUnlock: async () => {
           const r = await Ads.showRewarded();
           if (r === 'reward') {
-            Save.unlockUpTo(this.level + 1);
+            Save.unlockCategoryUpTo(this.category, this.level + 1);
             Save.addLife(1);
             EventBus.emit(EVT.LIFE_CHANGED);
             this.scene.stop('HUD');
-            this.scene.start('Game', { level: this.level + 1 });
+            this.scene.start('Game', { level: this.level + 1, category: this.category });
           } else this.goMenu();
         },
         onChallenges: () => { this.scene.stop('HUD'); this.scene.start('Challenges'); },
@@ -614,7 +647,7 @@ export class GameScene extends Phaser.Scene {
 
   private postCompleteInterstitial(): void {
     const next = this.level + 1;
-    if (next > FLAGS.totalLevels) { this.goMenu(); return; }
+    if (next > this.catDef.levels) { this.goMenu(); return; }
     if (Ads.shouldShowInterstitialForLevel(this.level)) {
       Ads.showInterstitial().finally(() => this.goNext(next));
     } else {
@@ -624,7 +657,7 @@ export class GameScene extends Phaser.Scene {
 
   private goNext(next: number): void {
     this.scene.stop('HUD');
-    this.scene.start('Game', { level: next });
+    this.scene.start('Game', { level: next, category: this.category });
   }
   private restart(): void {
     if (Save.get().lives <= 0) {
@@ -639,7 +672,7 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     this.scene.stop('HUD');
-    this.scene.start('Game', { level: this.level });
+    this.scene.start('Game', { level: this.level, category: this.category });
   }
   private goMenu(): void {
     this.scene.stop('HUD');

@@ -51,3 +51,24 @@ export const GRID = {
   paddingBottom: 220,
   holeRadius: 90,
 };
+
+export interface GridLayout {
+  cols: number;
+  rows: number;
+  paddingX: number;
+  paddingTop: number;
+  paddingBottom: number;
+  holeRadius: number;
+}
+
+export function getGridForCategory(cols: number, rows: number): GridLayout {
+  if (cols === 3 && rows === 3) return GRID;
+  return {
+    cols,
+    rows,
+    paddingX: 60,
+    paddingTop: 360,
+    paddingBottom: 200,
+    holeRadius: 75,
+  };
+}

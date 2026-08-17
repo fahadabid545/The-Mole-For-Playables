@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { TX } from './TextureFactory';
 import { Audio } from '../services/AudioService';
 
-export type RaccoonKind = 'normal' | 'golden' | 'bomb' | 'frozen' | 'boss';
+export type RaccoonKind = 'normal' | 'golden' | 'bomb' | 'frozen' | 'boss' | 'cat' | 'goat';
 
 export interface RaccoonHitResult {
   kind: RaccoonKind;
@@ -11,7 +11,7 @@ export interface RaccoonHitResult {
 }
 
 const HP_FOR: Record<RaccoonKind, number> = {
-  normal: 1, golden: 1, bomb: 1, frozen: 2, boss: 3,
+  normal: 1, golden: 1, bomb: 1, frozen: 2, boss: 3, cat: 1, goat: 1,
 };
 
 const TEXTURE_FOR: Record<RaccoonKind, string> = {
@@ -20,6 +20,8 @@ const TEXTURE_FOR: Record<RaccoonKind, string> = {
   bomb: TX.bomb,
   frozen: TX.raccoonFrozen,
   boss: TX.raccoonBoss,
+  cat: TX.cat,
+  goat: TX.goat,
 };
 
 export class Raccoon extends Phaser.GameObjects.Container {
@@ -121,11 +123,11 @@ export class Raccoon extends Phaser.GameObjects.Container {
   private hit(): void {
     if (this.popState !== 'up') return;
 
-    if (this.kind === 'bomb') {
+    if (this.kind === 'bomb' || this.kind === 'cat' || this.kind === 'goat') {
       this.popState = 'hit';
       this.clearTimers();
-      Audio.play('bomb');
-      this.onHitCb?.({ kind: 'bomb', points: 0, finished: true });
+      Audio.play(this.kind === 'bomb' ? 'bomb' : 'miss');
+      this.onHitCb?.({ kind: this.kind, points: 0, finished: true });
       this.scene.tweens.add({ targets: this.sprite, scaleY: 0.7, scaleX: 1.15, duration: 80, yoyo: true,
         onComplete: () => this.hide() });
       return;
@@ -156,7 +158,8 @@ export class Raccoon extends Phaser.GameObjects.Container {
   private escape(): void {
     if (this.popState !== 'up') return;
     this.popState = 'escaping';
-    if (this.kind !== 'bomb') Audio.play('laugh');
+    const isPenalty = this.kind === 'bomb' || this.kind === 'cat' || this.kind === 'goat';
+    if (!isPenalty) Audio.play('laugh');
     this.scene.tweens.add({
       targets: this.sprite,
       y: 120,
@@ -165,7 +168,7 @@ export class Raccoon extends Phaser.GameObjects.Container {
       onComplete: () => {
         this.setVisible(false);
         this.popState = 'hidden';
-        if (this.kind !== 'bomb') this.onEscapeCb?.();
+        if (!isPenalty) this.onEscapeCb?.();
       },
     });
   }

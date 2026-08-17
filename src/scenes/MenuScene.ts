@@ -7,13 +7,9 @@ import { Save } from '../services/SaveService';
 import { Audio } from '../services/AudioService';
 import { TX } from '../objects/TextureFactory';
 import { AdBanner } from '../ui/AdBanner';
-import { Ads } from '../services/AdsService';
-import { EventBus, EVT } from '../utils/EventBus';
 import { I18n } from '../services/I18nService';
 import { NamePromptPopup } from '../ui/popups/NamePromptPopup';
-import { OutOfLivesPopup } from '../ui/popups/OutOfLivesPopup';
 import { MagicBoxPopup } from '../ui/popups/MagicBoxPopup';
-import { allChallengesDone } from '../services/ChallengeService';
 import { TS } from '../config/TextStyles';
 import { IS_PORTAL, FLAGS } from '../config/BuildFlags';
 import { fadeIn, fadeTo } from '../utils/SceneTransition';
@@ -40,9 +36,10 @@ export class MenuScene extends Phaser.Scene {
     this.tweens.add({ targets: mascot, angle: -6, yoyo: true, repeat: -1, duration: 900, ease: 'Sine.InOut' });
 
     const stats = Save.get();
+    const allStars = Save.getAllStars();
     const statsY = 420;
     const starIcon = this.add.image(GAME_WIDTH / 2 - 180, statsY, TX.star).setOrigin(0.5).setScale(0.45);
-    this.add.text(starIcon.x + 22, statsY, `${stats.totalStars}`,
+    this.add.text(starIcon.x + 22, statsY, `${allStars}`,
       { fontFamily: '"Luckiest Guy", Impact, sans-serif', fontSize: '22px', color: '#ffd54f' }).setOrigin(0, 0.5);
     this.add.text(GAME_WIDTH / 2 - 30, statsY, `Best: ${stats.bestScore}`,
       { fontFamily: '"Luckiest Guy", Impact, sans-serif', fontSize: '22px', color: '#bcaaa4' }).setOrigin(0, 0.5);
@@ -52,27 +49,17 @@ export class MenuScene extends Phaser.Scene {
         { fontFamily: '"Luckiest Guy", Impact, sans-serif', fontSize: '22px', color: '#ff8f00' }).setOrigin(0, 0.5);
     }
 
-    const highest = Save.get().highestUnlockedLevel;
-    const playLabel = highest > 1 ? I18n.t('continue') : I18n.t('play');
-
-    // Main CTA (full-size). Lifted a touch so the whole button column
-    // fits comfortably above the bottom foreground foliage.
     new Button(this, GAME_WIDTH / 2, 750, {
-      label: playLabel,
-      onClick: () => this.tryStartLevel(highest),
+      label: I18n.t('play'),
+      onClick: () => fadeTo(this, 'CategorySelect'),
     });
 
-    // Secondary options — same full size as the main CTA. Leaderboard
-    // was removed (Playables single-HTML can't reach a shared backend,
-    // so a truly universal leaderboard isn't possible here). Challenges
-    // takes its slot as the highlighted rewards path.
     const gap = 118;
     const secY = 870;
-    new Button(this, GAME_WIDTH / 2, secY,           { label: I18n.t('levels'),     onClick: () => fadeTo(this, 'LevelSelect') });
-    new Button(this, GAME_WIDTH / 2, secY + gap,     { label: I18n.t('challenges'), onClick: () => fadeTo(this, 'Challenges'), variant: 'ad' });
-    new Button(this, GAME_WIDTH / 2, secY + gap * 2, { label: 'Achievements',       onClick: () => fadeTo(this, 'Achievements') });
-    new Button(this, GAME_WIDTH / 2, secY + gap * 3, { label: 'Stats',             onClick: () => fadeTo(this, 'Stats') });
-    new Button(this, GAME_WIDTH / 2, secY + gap * 4, { label: I18n.t('shop'),      onClick: () => fadeTo(this, 'Shop') });
+    new Button(this, GAME_WIDTH / 2, secY,           { label: I18n.t('challenges'), onClick: () => fadeTo(this, 'Challenges'), variant: 'ad' });
+    new Button(this, GAME_WIDTH / 2, secY + gap,     { label: 'Achievements',       onClick: () => fadeTo(this, 'Achievements') });
+    new Button(this, GAME_WIDTH / 2, secY + gap * 2, { label: 'Stats',             onClick: () => fadeTo(this, 'Stats') });
+    new Button(this, GAME_WIDTH / 2, secY + gap * 3, { label: I18n.t('shop'),      onClick: () => fadeTo(this, 'Shop') });
 
     const topPad = 110;
 
@@ -183,29 +170,10 @@ export class MenuScene extends Phaser.Scene {
       return 'Your Magic Box is ready to open!';
     if (d.playStreak >= 3)
       return `${d.playStreak}-day streak! Keep playing to earn more coins.`;
-    if (d.highestUnlockedLevel > 1 && d.highestUnlockedLevel < FLAGS.totalLevels)
-      return `Level ${d.highestUnlockedLevel} awaits -- keep going!`;
+    const easyLvl = Save.getCategoryProgress('easy').highestUnlockedLevel;
+    if (easyLvl > 1 && easyLvl < 50)
+      return `Easy Level ${easyLvl} awaits -- keep going!`;
     return null;
   }
 
-  private tryStartLevel(level: number): void {
-    Save.tryRegenLives(allChallengesDone());
-    if (Save.get().lives > 0) {
-      this.scene.start('Game', { level });
-      return;
-    }
-    new OutOfLivesPopup(this, {
-      onWatchAdForLife: async () => {
-        const r = await Ads.showRewarded();
-        if (r === 'reward') {
-          Save.addLife(1);
-          EventBus.emit(EVT.LIFE_CHANGED);
-          this.scene.start('Game', { level });
-        }
-      },
-      onChallenges: () => this.scene.start('Challenges'),
-      onLivesRefilled: () => this.scene.start('Game', { level }),
-      onMenu: () => { /* stay on menu */ },
-    });
-  }
 }

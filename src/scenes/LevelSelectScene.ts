@@ -1,8 +1,7 @@
 import Phaser from 'phaser';
-import { GAME_WIDTH, GAME_HEIGHT, COLORS } from '../config/GameConfig';
+import { GAME_WIDTH, GAME_HEIGHT } from '../config/GameConfig';
 import { ParallaxJungle } from '../objects/ParallaxJungle';
 import { Save } from '../services/SaveService';
-import { FLAGS } from '../config/BuildFlags';
 import { TX } from '../objects/TextureFactory';
 import { Button } from '../ui/Button';
 import { Audio } from '../services/AudioService';
@@ -14,6 +13,7 @@ import { OutOfLivesPopup } from '../ui/popups/OutOfLivesPopup';
 import { allChallengesDone } from '../services/ChallengeService';
 import { TS } from '../config/TextStyles';
 import { fadeIn, fadeTo } from '../utils/SceneTransition';
+import { type Category, CATEGORY_DEFS } from '../config/CategoryConfig';
 
 export class LevelSelectScene extends Phaser.Scene {
   private gridContainer!: Phaser.GameObjects.Container;
@@ -22,28 +22,28 @@ export class LevelSelectScene extends Phaser.Scene {
   private maxY = 0;
   private dragging = false;
   private lastY = 0;
+  private category: Category = 'easy';
 
   constructor() { super('LevelSelect'); }
 
-  create(): void {
+  create(data?: { category?: Category }): void {
+    this.category = data?.category ?? 'easy';
+    const catDef = CATEGORY_DEFS[this.category];
+    const totalLevels = catDef.levels;
+    const progress = Save.getCategoryProgress(this.category);
+
     fadeIn(this);
     new ParallaxJungle(this);
 
-    // Hanging signboard title — pushed below browser top-chrome
     this.add.image(GAME_WIDTH / 2, 160, TX.signHang).setOrigin(0.5, 0.5).setDepth(99);
-    this.add.text(GAME_WIDTH / 2, 168, I18n.t('levels'), TS.title('#fff5c9')).setOrigin(0.5).setDepth(100);
+    this.add.text(GAME_WIDTH / 2, 168, `${catDef.name} Levels`, TS.title('#fff5c9')).setOrigin(0.5).setDepth(100);
 
-    // Grid area clipped between title (bottom) and BACK button (top).
-    // Extra top padding so the first row of tiles isn't chopped off by
-    // the hanging signboard (signboard ends at ~y=230, we start well
-    // below that).
     const topClip = 300;
     const bottomClip = 260;
     const clipH = GAME_HEIGHT - topClip - bottomClip;
 
     this.gridContainer = this.add.container(0, topClip);
 
-    const save = Save.get();
     const cols = 5;
     const size = 110;
     const gap = 20;
@@ -51,17 +51,13 @@ export class LevelSelectScene extends Phaser.Scene {
     const startX = (GAME_WIDTH - totalW) / 2 + size / 2;
     const rowH = size + gap;
 
-    for (let i = 0; i < FLAGS.totalLevels; i++) {
+    for (let i = 0; i < totalLevels; i++) {
       const level = i + 1;
       const c = i % cols, r = Math.floor(i / cols);
       const x = startX + c * (size + gap);
-      // Extra headroom inside the container so the first row's tiles
-      // (and their stars underneath) sit clearly below the signboard.
       const y = 70 + r * rowH;
-      const unlocked = level <= save.highestUnlockedLevel;
+      const unlocked = level <= progress.highestUnlockedLevel;
 
-      // Wooden tile background (with locked variant showing leaf overlay).
-      // Texture is 130x130; scale to fit `size` without distorting.
       const tileKey = unlocked ? TX.tileWood : TX.tileWoodLocked;
       const scale = size / 130;
       const tileImg = this.add.image(x, y, tileKey).setOrigin(0.5).setScale(scale);
@@ -72,10 +68,9 @@ export class LevelSelectScene extends Phaser.Scene {
         numOrLock = this.add.image(x, y, TX.iconLock).setOrigin(0.5).setScale(0.85);
       }
       this.gridContainer.add([tileImg, numOrLock]);
-      // Reassign name so pointer hookup below uses the image
       const tile = tileImg;
 
-      const stars = save.perLevelStars[level] ?? 0;
+      const stars = progress.perLevelStars[level] ?? 0;
       for (let s = 0; s < 3; s++) {
         const st = this.add.image(x - 24 + s * 24, y + 38, TX.star).setOrigin(0.5).setScale(0.28);
         if (s >= stars) st.setAlpha(0.3);
@@ -97,18 +92,16 @@ export class LevelSelectScene extends Phaser.Scene {
       });
     }
 
-    const rows = Math.ceil(FLAGS.totalLevels / cols);
+    const rows = Math.ceil(totalLevels / cols);
     const contentH = 60 + rows * rowH;
     this.minY = Math.min(topClip, GAME_HEIGHT - bottomClip - contentH);
     this.maxY = topClip;
 
-    // Rectangle mask so scrolled tiles are clipped inside the viewport.
     const maskShape = this.make.graphics({ x: 0, y: 0 }).fillStyle(0xffffff)
       .fillRect(0, topClip, GAME_WIDTH, clipH);
     const mask = maskShape.createGeometryMask();
     this.gridContainer.setMask(mask);
 
-    // Scroll: pointer drag + mouse wheel
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
       if (p.y >= topClip && p.y <= topClip + clipH) { this.dragging = true; this.lastY = p.y; }
     });
@@ -121,7 +114,6 @@ export class LevelSelectScene extends Phaser.Scene {
     this.input.on('pointerup', () => { this.dragging = false; });
     this.input.on('wheel', (_: unknown, __: unknown, ___: number, dy: number) => this.scrollBy(-dy));
 
-    // Scroll indicator — small bouncing arrow at bottom of grid area
     if (contentH > clipH) {
       const arrow = this.add.image(GAME_WIDTH / 2, topClip + clipH - 20, TX.arrowDown)
         .setOrigin(0.5).setScale(0.6).setAlpha(0.8);
@@ -132,7 +124,7 @@ export class LevelSelectScene extends Phaser.Scene {
     }
 
     new Button(this, GAME_WIDTH / 2, GAME_HEIGHT - 220, {
-      label: I18n.t('back'), onClick: () => fadeTo(this, 'Menu'), scale: 0.8,
+      label: I18n.t('back'), onClick: () => fadeTo(this, 'CategorySelect'), scale: 0.8,
     });
 
     new AdBanner(this).show();
@@ -141,7 +133,7 @@ export class LevelSelectScene extends Phaser.Scene {
   private tryStartLevel(level: number): void {
     Save.tryRegenLives(allChallengesDone());
     if (Save.get().lives > 0) {
-      this.scene.start('Game', { level });
+      this.scene.start('Game', { level, category: this.category });
       return;
     }
     new OutOfLivesPopup(this, {
@@ -150,11 +142,11 @@ export class LevelSelectScene extends Phaser.Scene {
         if (r === 'reward') {
           Save.addLife(1);
           EventBus.emit(EVT.LIFE_CHANGED);
-          this.scene.start('Game', { level });
+          this.scene.start('Game', { level, category: this.category });
         }
       },
       onChallenges: () => this.scene.start('Challenges'),
-      onLivesRefilled: () => this.scene.start('Game', { level }),
+      onLivesRefilled: () => this.scene.start('Game', { level, category: this.category }),
       onMenu: () => this.scene.start('Menu'),
     });
   }
