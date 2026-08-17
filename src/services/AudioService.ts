@@ -10,7 +10,8 @@ type SfxKind =
 // deterministically wandering so it never feels loopy.
 class AudioServiceImpl {
   private ctx: AudioContext | null = null;
-  private muted = false;
+  private userMuted = false;
+  private portalMuted = false;
   private sfxMuted = false;
   private musicMuted = false;
   private masterGain: GainNode | null = null;
@@ -18,9 +19,11 @@ class AudioServiceImpl {
   private musicGain: GainNode | null = null;
   private ambientStarted = false;
 
+  private get muted(): boolean { return this.userMuted || this.portalMuted; }
+
   init(): void {
     const d = Save.get();
-    this.muted = d.muted;
+    this.userMuted = d.muted;
     this.sfxMuted = d.sfxMuted ?? false;
     this.musicMuted = d.musicMuted ?? false;
     const unlock = () => {
@@ -48,18 +51,22 @@ class AudioServiceImpl {
     window.addEventListener('keydown', unlock, { once: false, passive: true });
   }
 
+  private applyMasterGain(): void {
+    if (this.masterGain) this.masterGain.gain.value = this.muted ? 0 : 0.55;
+  }
+
   setMuted(m: boolean): void {
-    this.muted = m;
+    this.userMuted = m;
     Save.setMuted(m);
-    if (this.masterGain) this.masterGain.gain.value = m ? 0 : 0.55;
+    this.applyMasterGain();
   }
 
   setMutedByPortal(m: boolean): void {
-    this.muted = m;
-    if (this.masterGain) this.masterGain.gain.value = m ? 0 : 0.55;
+    this.portalMuted = m;
+    this.applyMasterGain();
   }
 
-  toggleMute(): boolean { this.setMuted(!this.muted); return this.muted; }
+  toggleMute(): boolean { this.setMuted(!this.userMuted); return this.muted; }
   isMuted(): boolean { return this.muted; }
 
   setSfxMuted(m: boolean): void {
