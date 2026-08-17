@@ -60,6 +60,8 @@ export interface SaveData {
   ratePromptCount?: number;
   categories: Record<Category, CategoryProgress>;
   activeSkin?: string;
+  questProgress: Record<string, { progress: number; claimed: boolean }>;
+  medals: number;
 }
 
 const defaultStats = (): GameStats => ({
@@ -104,6 +106,8 @@ const defaults = (): SaveData => ({
   stats: defaultStats(),
   playStreak: 0,
   categories: defaultCategories(),
+  questProgress: {},
+  medals: 0,
 });
 
 let cache: SaveData | null = null;
@@ -126,6 +130,8 @@ function migrate(d: SaveData): SaveData {
   if (s.catsHit === undefined) s.catsHit = 0;
   if (s.goatsHit === undefined) s.goatsHit = 0;
   d.stats = s;
+  if (!d.questProgress) d.questProgress = {};
+  if (d.medals === undefined) d.medals = 0;
   return d;
 }
 
@@ -382,6 +388,22 @@ export const Save = {
     return reward;
   },
   getStats(): GameStats { const d = read(); return d.stats || defaultStats(); },
+
+  getQuestProgress(): Record<string, { progress: number; claimed: boolean }> {
+    const d = read();
+    return d.questProgress || {};
+  },
+  setQuestProgress(id: string, progress: number, claimed: boolean): void {
+    const d = read();
+    if (!d.questProgress) d.questProgress = {};
+    d.questProgress[id] = { progress, claimed };
+    write();
+  },
+  addMedal(): void {
+    const d = read();
+    d.medals = (d.medals || 0) + 1;
+    write();
+  },
 
   reset(): void { cache = defaults(); write(); },
 };

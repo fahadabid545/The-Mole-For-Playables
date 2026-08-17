@@ -24,6 +24,7 @@ import type { PowerupKind } from '../ui/PowerupBar';
 import type { ConsumableKind } from '../config/ConsumableConfig';
 import { attachAchievementToast } from '../ui/AchievementToast';
 import { checkProgress } from '../services/AchievementService';
+import { recordQuestProgress, type LevelResult } from '../services/QuestService';
 import { LevelFailedPopup } from '../ui/popups/LevelFailedPopup';
 import { OutOfLivesPopup } from '../ui/popups/OutOfLivesPopup';
 import { ExtraLifePopup } from '../ui/popups/ExtraLifePopup';
@@ -68,6 +69,12 @@ export class GameScene extends Phaser.Scene {
   private category: Category = 'easy';
   private catDef!: CategoryDef;
   private grid!: GridLayout;
+  private lvlRaccoons = 0;
+  private lvlGoldens = 0;
+  private lvlBosses = 0;
+  private lvlFrozen = 0;
+  private lvlBombs = 0;
+  private lvlMaxCombo = 0;
 
   constructor() { super('Game'); }
 
@@ -106,6 +113,12 @@ export class GameScene extends Phaser.Scene {
     this.multiTapActive = false;
     this.xrayActive = false;
     this.xrayIndicators = [];
+    this.lvlRaccoons = 0;
+    this.lvlGoldens = 0;
+    this.lvlBosses = 0;
+    this.lvlFrozen = 0;
+    this.lvlBombs = 0;
+    this.lvlMaxCombo = 0;
     this.timeLeft = this.params.timeLimitMs;
     this.input.enabled = true;
 
@@ -450,6 +463,11 @@ export class GameScene extends Phaser.Scene {
   private onRaccoonHit(rac: Raccoon, kind: RaccoonKind, points: number): void {
     if (!this.levelActive) return;
     Save.recordHit(kind);
+    if (kind === 'normal') this.lvlRaccoons++;
+    else if (kind === 'golden') this.lvlGoldens++;
+    else if (kind === 'boss') this.lvlBosses++;
+    else if (kind === 'frozen') this.lvlFrozen++;
+    else if (kind === 'bomb') this.lvlBombs++;
     if (kind === 'bomb') {
       if (this.shieldActive) {
         this.shieldActive = false;
@@ -483,6 +501,7 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     this.combo++;
+    if (this.combo > this.lvlMaxCombo) this.lvlMaxCombo = this.combo;
     Save.recordCombo(this.combo);
     EventBus.emit(EVT.COMBO_CHANGED, this.combo);
     this.lastHitTime = this.time.now;
@@ -548,6 +567,29 @@ export class GameScene extends Phaser.Scene {
     this.raccoons.forEach(r => r.forceHide());
     Portal.gameplayStop();
 
+    const stars = won ? this.computeStars() : 0;
+    const questResult: LevelResult = {
+      raccoonsHit: this.lvlRaccoons,
+      goldensHit: this.lvlGoldens,
+      bossesHit: this.lvlBosses,
+      frozenHit: this.lvlFrozen,
+      bombsHit: this.lvlBombs,
+      starsEarned: stars,
+      maxCombo: this.lvlMaxCombo,
+      misses: this.misses,
+      won,
+    };
+    const completedQuests = recordQuestProgress(questResult);
+    if (completedQuests.length > 0) {
+      Audio.play('combo');
+      const qText = this.add.text(GAME_WIDTH / 2, 200,
+        `Quest Complete!`,
+        { ...TS.title('#66bb6a'), fontSize: '32px' }).setOrigin(0.5).setAlpha(0).setDepth(6000);
+      this.tweens.add({ targets: qText, alpha: 1, y: 180, duration: 400, ease: 'Back.Out' });
+      this.tweens.add({ targets: qText, alpha: 0, y: 160, delay: 2000, duration: 500,
+        onComplete: () => qText.destroy() });
+    }
+
     if (!won && !outOfLives) {
       Save.loseLife();
       EventBus.emit(EVT.LIFE_CHANGED);
@@ -556,7 +598,6 @@ export class GameScene extends Phaser.Scene {
     }
 
     if (won) {
-      const stars = this.computeStars();
       if (this.challenge) {
         // Challenge win path: grant reward, mark done, return to Challenge card.
         if (this.challenge.rewardLives > 0) Save.addLife(this.challenge.rewardLives);

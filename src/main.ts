@@ -16,6 +16,7 @@ import { ShopScene } from './scenes/ShopScene';
 import { HowToPlayScene } from './scenes/HowToPlayScene';
 import { StatsScene } from './scenes/StatsScene';
 import { CategorySelectScene } from './scenes/CategorySelectScene';
+import { QuestBoardScene } from './scenes/QuestBoardScene';
 
 // iOS Safari's WebGL context creation sometimes hangs or silently fails
 // inside portal iframes (CrazyGames player, embedded webviews), leaving
@@ -37,7 +38,7 @@ const config: Phaser.Types.Core.GameConfig = {
   },
   input: { activePointers: 2 },
   render: { antialias: true, pixelArt: false, roundPixels: false },
-  scene: [BootScene, PreloadScene, MenuScene, CategorySelectScene, LevelSelectScene, GameScene, HUDScene, ChallengesScene, AchievementsScene, SettingsScene, ShopScene, HowToPlayScene, StatsScene],
+  scene: [BootScene, PreloadScene, MenuScene, CategorySelectScene, LevelSelectScene, GameScene, HUDScene, ChallengesScene, AchievementsScene, SettingsScene, ShopScene, HowToPlayScene, StatsScene, QuestBoardScene],
 };
 
 let booted = false;

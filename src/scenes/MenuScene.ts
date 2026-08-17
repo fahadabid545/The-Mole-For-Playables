@@ -15,6 +15,7 @@ import { IS_PORTAL, FLAGS } from '../config/BuildFlags';
 import { fadeIn, fadeTo } from '../utils/SceneTransition';
 import { RateUsPopup, shouldPromptRateUs } from '../ui/popups/RateUsPopup';
 import { getChallenge } from '../services/ChallengeService';
+import { getUnclaimedCount } from '../services/QuestService';
 
 export class MenuScene extends Phaser.Scene {
   constructor() { super('Menu'); }
@@ -54,12 +55,23 @@ export class MenuScene extends Phaser.Scene {
       onClick: () => fadeTo(this, 'CategorySelect'),
     });
 
-    const gap = 118;
+    const gap = 110;
     const secY = 870;
     new Button(this, GAME_WIDTH / 2, secY,           { label: I18n.t('challenges'), onClick: () => fadeTo(this, 'Challenges'), variant: 'ad' });
-    new Button(this, GAME_WIDTH / 2, secY + gap,     { label: 'Achievements',       onClick: () => fadeTo(this, 'Achievements') });
-    new Button(this, GAME_WIDTH / 2, secY + gap * 2, { label: 'Stats',             onClick: () => fadeTo(this, 'Stats') });
-    new Button(this, GAME_WIDTH / 2, secY + gap * 3, { label: I18n.t('shop'),      onClick: () => fadeTo(this, 'Shop') });
+    new Button(this, GAME_WIDTH / 2, secY + gap,     { label: 'Quests',            onClick: () => fadeTo(this, 'QuestBoard') });
+    new Button(this, GAME_WIDTH / 2, secY + gap * 2, { label: 'Achievements',       onClick: () => fadeTo(this, 'Achievements') });
+    new Button(this, GAME_WIDTH / 2, secY + gap * 3, { label: 'Stats',             onClick: () => fadeTo(this, 'Stats') });
+    new Button(this, GAME_WIDTH / 2, secY + gap * 4, { label: I18n.t('shop'),      onClick: () => fadeTo(this, 'Shop') });
+
+    const unclaimed = getUnclaimedCount();
+    if (unclaimed > 0) {
+      const badgeX = GAME_WIDTH / 2 + 120;
+      const badgeY = secY + gap - 20;
+      this.add.circle(badgeX, badgeY, 18, 0xf44336, 1).setDepth(5000);
+      this.add.text(badgeX, badgeY, `${unclaimed}`,
+        { fontFamily: '"Luckiest Guy", Impact, sans-serif', fontSize: '22px', color: '#ffffff' })
+        .setOrigin(0.5).setDepth(5001);
+    }
 
     const topPad = 110;
 
@@ -162,6 +174,9 @@ export class MenuScene extends Phaser.Scene {
     const daily = getChallenge('daily');
     const weekly = getChallenge('weekly');
 
+    const uncl = getUnclaimedCount();
+    if (uncl > 0)
+      return `${uncl} quest reward${uncl > 1 ? 's' : ''} ready to claim!`;
     if (!daily.alreadyDone)
       return 'Daily Challenge available -- earn a free life!';
     if (!weekly.alreadyDone)
