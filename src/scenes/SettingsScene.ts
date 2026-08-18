@@ -70,8 +70,26 @@ export class SettingsScene extends Phaser.Scene {
       });
     }
 
+    // --- Accessibility section ---
+    y += 80;
+    this.add.text(80, y, 'Accessibility', TS.h2('#fff8e1')).setOrigin(0, 0.5);
+    y += 60;
+    {
+      const rmLabel = () => Save.isReducedMotion() ? 'On' : 'Off';
+      const rmTxt = this.add.text(80, y, `Reduced Motion: ${rmLabel()}`,
+        TS.body('#ffe082')).setOrigin(0, 0.5);
+      const rmBg = this.add.circle(GAME_WIDTH - 100, y, 32, 0x263238, 0.85)
+        .setStrokeStyle(3, 0xffb300).setInteractive({ useHandCursor: true });
+      rmBg.on('pointerdown', () => {
+        const now = !Save.isReducedMotion();
+        Save.setReducedMotion(now);
+        rmTxt.setText(`Reduced Motion: ${now ? 'On' : 'Off'}`);
+        Audio.play('click');
+      });
+    }
+
     // --- Player info section ---
-    y += 100;
+    y += 80;
     this.add.text(80, y, 'Player', TS.h2('#fff8e1')).setOrigin(0, 0.5);
     y += 50;
     const name = Save.get().playerName || 'Anonymous';
@@ -101,12 +119,18 @@ export class SettingsScene extends Phaser.Scene {
       scale: 0.85, variant: 'ad',
     });
 
-    // --- Reset progress ---
-    y += 140;
+    // --- Reset options ---
+    y += 120;
     new Button(this, GAME_WIDTH / 2, y, {
-      label: 'Reset Progress',
+      label: 'Reset Stats Only',
+      onClick: () => this.confirmResetStats(),
+      scale: 0.75,
+    });
+    y += 100;
+    new Button(this, GAME_WIDTH / 2, y, {
+      label: 'Reset All Progress',
       onClick: () => this.confirmReset(),
-      scale: 0.85, variant: 'ad',
+      scale: 0.75, variant: 'ad',
     });
 
     // --- Credits ---
@@ -119,6 +143,24 @@ export class SettingsScene extends Phaser.Scene {
     });
 
     new AdBanner(this).show();
+  }
+
+  private confirmResetStats(): void {
+    const popup = new Popup(this);
+    const title = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 140,
+      'Reset Stats?',
+      { ...TS.title('#ff8f00'), fontSize: '44px' }).setOrigin(0.5);
+    const sub = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 60,
+      'Clears hit counters and\nbest score. Levels, stars,\ncoins and skins are kept.',
+      { ...TS.body('#3e2723'), align: 'center', fontSize: '24px' }).setOrigin(0.5);
+    const yes = new Button(this, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 70, {
+      label: 'Yes, reset stats',
+      onClick: () => popup.close(() => { Save.resetStats(); this.scene.restart(); }),
+    });
+    const no = new Button(this, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 180, {
+      label: 'Cancel', onClick: () => popup.close(), scale: 0.8,
+    });
+    popup.addContent(title, sub, yes, no);
   }
 
   private confirmReset(): void {

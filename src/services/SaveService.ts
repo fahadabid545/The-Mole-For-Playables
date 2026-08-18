@@ -37,6 +37,7 @@ export interface SaveData {
   sfxMuted?: boolean;
   musicMuted?: boolean;
   hapticDisabled?: boolean;
+  reducedMotion?: boolean;
   perLevelStars: Record<number, number>;
   totalStars: number;
   lang?: Lang;
@@ -426,6 +427,16 @@ export const Save = {
     d.activeSkin = id;
     write();
     return true;
+  },
+
+  isReducedMotion(): boolean { return read().reducedMotion ?? false; },
+  setReducedMotion(v: boolean): void { const d = read(); d.reducedMotion = v; write(); },
+
+  resetStats(): void {
+    const d = read();
+    d.stats = defaultStats();
+    d.bestScore = 0;
+    write();
   },
 
   reset(): void { cache = defaults(); write(); },

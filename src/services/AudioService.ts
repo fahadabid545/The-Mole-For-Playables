@@ -4,10 +4,6 @@ type SfxKind =
   | 'hit' | 'miss' | 'squeak' | 'laugh' | 'lifeLost' | 'extraLife'
   | 'win' | 'fail' | 'click' | 'bomb' | 'golden' | 'tick' | 'combo';
 
-// Audio is fully synthesized via the Web Audio API so the shipped
-// bundle contains no audio files. Ambient jungle is three parallel
-// layers (wind bed + river + bird chirps) with the bird pattern
-// deterministically wandering so it never feels loopy.
 class AudioServiceImpl {
   private ctx: AudioContext | null = null;
   private userMuted = false;
@@ -17,9 +13,12 @@ class AudioServiceImpl {
   private masterGain: GainNode | null = null;
   private sfxGain: GainNode | null = null;
   private musicGain: GainNode | null = null;
-  private ambientStarted = false;
+  private ambientActive = false;
+  private ambientNodes: { stop(): void }[] = [];
+  private ambientTimers: ReturnType<typeof setTimeout>[] = [];
 
   private get muted(): boolean { return this.userMuted || this.portalMuted; }
+  private get ambientShouldRun(): boolean { return !this.muted && !this.musicMuted; }
 
   init(): void {
     const d = Save.get();
@@ -40,7 +39,7 @@ class AudioServiceImpl {
           this.musicGain = this.ctx.createGain();
           this.musicGain.gain.value = this.musicMuted ? 0 : 1;
           this.musicGain.connect(this.masterGain);
-          this.startAmbient();
+          this.syncAmbient();
         } catch { /* ignore */ }
       } else if (this.ctx.state === 'suspended') {
         this.ctx.resume();
@@ -53,6 +52,7 @@ class AudioServiceImpl {
 
   private applyMasterGain(): void {
     if (this.masterGain) this.masterGain.gain.value = this.muted ? 0 : 0.55;
+    this.syncAmbient();
   }
 
   setMuted(m: boolean): void {
@@ -81,16 +81,41 @@ class AudioServiceImpl {
     this.musicMuted = m;
     Save.setMusicMuted(m);
     if (this.musicGain) this.musicGain.gain.value = m ? 0 : 1;
+    this.syncAmbient();
   }
   toggleMusicMute(): boolean { this.setMusicMuted(!this.musicMuted); return this.musicMuted; }
   isMusicMuted(): boolean { return this.musicMuted; }
 
+  private syncAmbient(): void {
+    if (this.ambientShouldRun && !this.ambientActive) this.startAmbient();
+    else if (!this.ambientShouldRun && this.ambientActive) this.stopAmbient();
+  }
+
+  private stopAmbient(): void {
+    if (!this.ambientActive) return;
+    this.ambientActive = false;
+    for (const timer of this.ambientTimers) clearTimeout(timer);
+    this.ambientTimers = [];
+    for (const node of this.ambientNodes) {
+      try { node.stop(); } catch { /* already stopped */ }
+    }
+    this.ambientNodes = [];
+  }
+
+  private trackNode(node: AudioBufferSourceNode | OscillatorNode): void {
+    this.ambientNodes.push(node);
+  }
+
+  private trackTimer(id: ReturnType<typeof setTimeout>): void {
+    this.ambientTimers.push(id);
+  }
+
   private startAmbient(): void {
-    if (this.ambientStarted || !this.ctx || !this.masterGain) return;
-    this.ambientStarted = true;
+    if (this.ambientActive || !this.ctx || !this.musicGain) return;
+    this.ambientActive = true;
     const ctx = this.ctx;
 
-    // Layer 1 — low-frequency wind bed (filtered noise)
+    const wind = ctx.createBufferSource();
     const windBuf = ctx.createBuffer(1, 2 * ctx.sampleRate, ctx.sampleRate);
     const wd = windBuf.getChannelData(0);
     let last = 0;
@@ -99,88 +124,79 @@ class AudioServiceImpl {
       last = (last + 0.015 * w) / 1.015;
       wd[i] = last * 3.5;
     }
-    const wind = ctx.createBufferSource(); wind.buffer = windBuf; wind.loop = true;
+    wind.buffer = windBuf; wind.loop = true;
     const wFilt = ctx.createBiquadFilter(); wFilt.type = 'lowpass'; wFilt.frequency.value = 380;
     const wGain = ctx.createGain(); wGain.gain.value = 0.06;
     wind.connect(wFilt).connect(wGain).connect(this.musicGain!);
     wind.start();
+    this.trackNode(wind);
 
-    // Layer 2 — river burble (band-passed brighter noise)
+    const riv = ctx.createBufferSource();
     const rivBuf = ctx.createBuffer(1, 2 * ctx.sampleRate, ctx.sampleRate);
     const rd = rivBuf.getChannelData(0);
     for (let i = 0; i < rd.length; i++) rd[i] = (Math.random() * 2 - 1) * 0.6;
-    const riv = ctx.createBufferSource(); riv.buffer = rivBuf; riv.loop = true;
+    riv.buffer = rivBuf; riv.loop = true;
     const rFilt = ctx.createBiquadFilter(); rFilt.type = 'bandpass'; rFilt.frequency.value = 1400; rFilt.Q.value = 1.2;
     const rGain = ctx.createGain(); rGain.gain.value = 0.035;
     riv.connect(rFilt).connect(rGain).connect(this.musicGain!);
     riv.start();
-    // Slowly modulate river frequency for gentle burbles
+    this.trackNode(riv);
+
     const lfo = ctx.createOscillator(); lfo.frequency.value = 0.15;
     const lfoGain = ctx.createGain(); lfoGain.gain.value = 200;
     lfo.connect(lfoGain).connect(rFilt.frequency);
     lfo.start();
+    this.trackNode(lfo);
 
-    // Layer 3 — gentle bamboo-flute melody (pentatonic, drifts, super calm)
-    const flutePool = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50]; // C5 D5 E5 G5 A5 C6
+    const flutePool = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50];
     let noteIdx = 0;
     const scheduleFlute = () => {
-      if (!this.ctx || !this.masterGain) return;
-      if (!this.muted) {
-        const t = this.ctx.currentTime + 0.02;
-        const freq = flutePool[noteIdx % flutePool.length];
-        noteIdx += 1 + Math.floor(Math.random() * 2);
-        const osc = this.ctx.createOscillator();
-        const g = this.ctx.createGain();
-        const filt = this.ctx.createBiquadFilter();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, t);
-        filt.type = 'lowpass';
-        filt.frequency.value = 2200;
-        g.gain.setValueAtTime(0.0001, t);
-        g.gain.exponentialRampToValueAtTime(0.045, t + 0.15);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
-        osc.connect(filt).connect(g).connect(this.musicGain!);
-        osc.start(t); osc.stop(t + 1.3);
-        const oh = this.ctx.createOscillator();
-        const gh = this.ctx.createGain();
-        oh.type = 'sine'; oh.frequency.setValueAtTime(freq * 2, t);
-        gh.gain.setValueAtTime(0.0001, t);
-        gh.gain.exponentialRampToValueAtTime(0.012, t + 0.15);
-        gh.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
-        oh.connect(gh).connect(this.musicGain!);
-        oh.start(t); oh.stop(t + 1.0);
-      }
-      setTimeout(scheduleFlute, 2200 + Math.random() * 1600);
+      if (!this.ambientActive || !this.ctx || !this.musicGain) return;
+      const t = this.ctx.currentTime + 0.02;
+      const freq = flutePool[noteIdx % flutePool.length];
+      noteIdx += 1 + Math.floor(Math.random() * 2);
+      const osc = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      const filt = this.ctx.createBiquadFilter();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t);
+      filt.type = 'lowpass'; filt.frequency.value = 2200;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.045, t + 0.15);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
+      osc.connect(filt).connect(g).connect(this.musicGain!);
+      osc.start(t); osc.stop(t + 1.3);
+      const oh = this.ctx.createOscillator();
+      const gh = this.ctx.createGain();
+      oh.type = 'sine'; oh.frequency.setValueAtTime(freq * 2, t);
+      gh.gain.setValueAtTime(0.0001, t);
+      gh.gain.exponentialRampToValueAtTime(0.012, t + 0.15);
+      gh.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
+      oh.connect(gh).connect(this.musicGain!);
+      oh.start(t); oh.stop(t + 1.0);
+      this.trackTimer(setTimeout(scheduleFlute, 2200 + Math.random() * 1600));
     };
-    setTimeout(scheduleFlute, 1200);
+    this.trackTimer(setTimeout(scheduleFlute, 1200));
 
-    // Layer 4 — soft frame drum every ~4s (heartbeat feel)
     const scheduleDrum = () => {
-      if (!this.ctx || !this.masterGain) return;
-      if (!this.muted) {
-        const t = this.ctx.currentTime + 0.02;
-        const osc = this.ctx.createOscillator();
-        const g = this.ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(140, t);
-        osc.frequency.exponentialRampToValueAtTime(60, t + 0.18);
-        g.gain.setValueAtTime(0.0001, t);
-        g.gain.exponentialRampToValueAtTime(0.09, t + 0.02);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
-        osc.connect(g).connect(this.musicGain!);
-        osc.start(t); osc.stop(t + 0.24);
-      }
-      setTimeout(scheduleDrum, 3600 + Math.random() * 900);
+      if (!this.ambientActive || !this.ctx || !this.musicGain) return;
+      const t = this.ctx.currentTime + 0.02;
+      const osc = this.ctx.createOscillator();
+      const g = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(140, t);
+      osc.frequency.exponentialRampToValueAtTime(60, t + 0.18);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.09, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+      osc.connect(g).connect(this.musicGain!);
+      osc.start(t); osc.stop(t + 0.24);
+      this.trackTimer(setTimeout(scheduleDrum, 3600 + Math.random() * 900));
     };
-    setTimeout(scheduleDrum, 2000);
+    this.trackTimer(setTimeout(scheduleDrum, 2000));
 
-    // Layer 5 — bird chirps scheduled 2–6s apart at random pitches.
-    // Keep the timer chain alive across mute/unmute (skip only the audio
-    // emission when muted) — matches how flute/drum handle it, so
-    // unmuting resumes the whole ambience.
     const scheduleBird = () => {
-      if (!this.ctx) return;
-      if (this.muted) { setTimeout(scheduleBird, 2000 + Math.random() * 4000); return; }
+      if (!this.ambientActive || !this.ctx) return;
       const t = this.ctx.currentTime + 0.01;
       const osc = this.ctx.createOscillator();
       const g = this.ctx.createGain();
@@ -206,9 +222,9 @@ class AudioServiceImpl {
         o2.connect(g2).connect(this.musicGain!);
         o2.start(t2); o2.stop(t2 + 0.13);
       }
-      setTimeout(scheduleBird, 2000 + Math.random() * 4000);
+      this.trackTimer(setTimeout(scheduleBird, 2000 + Math.random() * 4000));
     };
-    setTimeout(scheduleBird, 800);
+    this.trackTimer(setTimeout(scheduleBird, 800));
   }
 
   play(kind: SfxKind): void {
@@ -252,7 +268,6 @@ class AudioServiceImpl {
         beep(1400 + Math.random() * 400, 0.06, 'triangle', 0.14, 900, 60);
         break;
       case 'miss':
-        // Softer dust puff plus a low bonk
         noiseBurst(0.18, 0.25, 200, 1400);
         beep(140, 0.1, 'sine', 0.18, 80);
         break;

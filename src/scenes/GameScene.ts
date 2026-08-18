@@ -30,7 +30,7 @@ import { LevelFailedPopup } from '../ui/popups/LevelFailedPopup';
 import { OutOfLivesPopup } from '../ui/popups/OutOfLivesPopup';
 import { ExtraLifePopup } from '../ui/popups/ExtraLifePopup';
 import { PausePopup } from '../ui/popups/PausePopup';
-import { celebrateBossDown, celebrateComboMilestone, celebrateLevelMilestone } from '../utils/Celebration';
+import { celebrateBossDown, celebrateChampion, celebrateComboMilestone, celebrateLevelMilestone } from '../utils/Celebration';
 import { Haptic } from '../services/HapticService';
 
 export class GameScene extends Phaser.Scene {
@@ -622,9 +622,14 @@ export class GameScene extends Phaser.Scene {
         });
         return;
       }
+      const starsBefore = Save.getAllStars();
       Save.recordCategoryStars(this.category, this.level, stars);
       Save.unlockCategoryUpTo(this.category, this.level + 1);
       Save.setBestScore(this.score);
+      const starsAfter = Save.getAllStars();
+      if (starsBefore < 150 && starsAfter >= 150) {
+        this.time.delayedCall(600, () => celebrateChampion(this));
+      }
       // Achievement hooks
       checkProgress('levelClear', this.level);
       if (this.misses === 0) checkProgress('perfect', 1);

@@ -3,8 +3,10 @@ import { GAME_WIDTH, GAME_HEIGHT } from '../config/GameConfig';
 import { TX } from '../objects/TextureFactory';
 import { Audio } from '../services/AudioService';
 import { Haptic } from '../services/HapticService';
+import { Save } from '../services/SaveService';
 
 export function spawnConfetti(scene: Phaser.Scene, x = GAME_WIDTH / 2, y = GAME_HEIGHT / 2 - 200): void {
+  if (Save.isReducedMotion()) return;
   const em = scene.add.particles(x, y, TX.confetti, {
     x: { min: -200, max: 200 },
     y: 0,
@@ -25,7 +27,7 @@ export function spawnConfetti(scene: Phaser.Scene, x = GAME_WIDTH / 2, y = GAME_
 export function celebrateBossDown(scene: Phaser.Scene, x: number, y: number): void {
   spawnConfetti(scene, x, y - 100);
   Audio.play('win');
-  scene.cameras.main.shake(200, 0.015);
+  if (!Save.isReducedMotion()) scene.cameras.main.shake(200, 0.015);
   Haptic.vibrate([40, 30, 60]);
 }
 
@@ -53,7 +55,7 @@ export function celebrateLevelMilestone(scene: Phaser.Scene, level: number, tota
     scene.time.delayedCall(300, () => spawnConfetti(scene, GAME_WIDTH / 2 - 150, GAME_HEIGHT / 2 - 200));
     scene.time.delayedCall(500, () => spawnConfetti(scene, GAME_WIDTH / 2 + 150, GAME_HEIGHT / 2 - 200));
   }
-  scene.cameras.main.shake(250, isFinal ? 0.018 : 0.010);
+  if (!Save.isReducedMotion()) scene.cameras.main.shake(250, isFinal ? 0.018 : 0.010);
   Haptic.vibrate(isFinal ? [50, 30, 80, 30, 50] : [40, 30, 60]);
   Audio.play('win');
 }
@@ -74,6 +76,35 @@ export function celebrateComboMilestone(scene: Phaser.Scene, combo: number): voi
 
   if (combo >= 10) {
     spawnConfetti(scene);
-    scene.cameras.main.shake(120, 0.008);
+    if (!Save.isReducedMotion()) scene.cameras.main.shake(120, 0.008);
   }
+}
+
+export function celebrateChampion(scene: Phaser.Scene): void {
+  const t = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 160, 'CHAMPION!', {
+    fontFamily: '"Luckiest Guy", Impact, sans-serif',
+    fontSize: '56px',
+    color: '#ffd54f',
+    stroke: '#4e342e', strokeThickness: 7,
+  }).setOrigin(0.5).setDepth(21500).setAlpha(0).setScale(0.3);
+
+  const sub = scene.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 90, '150 Stars Collected!', {
+    fontFamily: '"Luckiest Guy", Impact, sans-serif',
+    fontSize: '32px',
+    color: '#ffab00',
+    stroke: '#3e2723', strokeThickness: 5,
+  }).setOrigin(0.5).setDepth(21500).setAlpha(0).setScale(0.3);
+
+  scene.tweens.add({ targets: t, alpha: 1, scale: 1.4, duration: 400, ease: 'Back.Out' });
+  scene.tweens.add({ targets: sub, alpha: 1, scale: 1.1, duration: 350, delay: 200, ease: 'Back.Out' });
+  scene.tweens.add({ targets: [t, sub], alpha: 0, y: '-=80', delay: 2800, duration: 600,
+    onComplete: () => { t.destroy(); sub.destroy(); } });
+
+  spawnConfetti(scene);
+  scene.time.delayedCall(250, () => spawnConfetti(scene, GAME_WIDTH / 2 - 160, GAME_HEIGHT / 2 - 200));
+  scene.time.delayedCall(450, () => spawnConfetti(scene, GAME_WIDTH / 2 + 160, GAME_HEIGHT / 2 - 200));
+
+  if (!Save.isReducedMotion()) scene.cameras.main.shake(300, 0.02);
+  Haptic.vibrate([60, 30, 80, 30, 60, 30, 80]);
+  Audio.play('win');
 }
