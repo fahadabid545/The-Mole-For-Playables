@@ -124,7 +124,7 @@ export class GameScene extends Phaser.Scene {
     this.timeLeft = this.params.timeLimitMs;
     this.input.enabled = true;
 
-    new ParallaxJungle(this, this.level);
+    new ParallaxJungle(this, this.level, this.category);
     spawnLeafParticles(this);
 
     this.buildGrid();
