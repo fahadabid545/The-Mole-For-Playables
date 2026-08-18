@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { TX } from './TextureFactory';
 import { Audio } from '../services/AudioService';
+import { getSeason } from '../utils/Seasonal';
 
 export type RaccoonKind = 'normal' | 'golden' | 'bomb' | 'frozen' | 'boss' | 'cat' | 'goat';
 
@@ -26,6 +27,7 @@ const TEXTURE_FOR: Record<RaccoonKind, string> = {
 
 export class Raccoon extends Phaser.GameObjects.Container {
   private sprite: Phaser.GameObjects.Image;
+  private hat: Phaser.GameObjects.Image | null = null;
   private hpText: Phaser.GameObjects.Text;
   private hpBarBg: Phaser.GameObjects.Rectangle;
   private hpBarFill: Phaser.GameObjects.Rectangle;
@@ -44,6 +46,13 @@ export class Raccoon extends Phaser.GameObjects.Container {
     this.sprite = scene.add.image(0, 0, TX.raccoon).setOrigin(0.5, 1);
     this.sprite.setY(30);
     this.add(this.sprite);
+
+    if (scene.textures.exists(TX.seasonalHat)) {
+      this.hat = scene.add.image(0, -60, TX.seasonalHat).setOrigin(0.5, 1).setScale(0.7);
+      const hatOffset = getSeason() === 'winter' ? -10 : 0;
+      this.hat.setY(-60 + hatOffset);
+      this.add(this.hat);
+    }
 
     this.hpText = scene.add.text(0, -140, '', {
       fontFamily: '"Luckiest Guy", Impact, sans-serif', fontSize: '28px',
@@ -84,6 +93,8 @@ export class Raccoon extends Phaser.GameObjects.Container {
     this.sprite.setScale(kind === 'boss' ? 1.2 : 1);
     this.sprite.setAngle(0);
     this.sprite.clearTint();
+    const showHat = kind !== 'bomb' && kind !== 'cat' && kind !== 'goat';
+    if (this.hat) this.hat.setVisible(showHat);
     this.updateHpBadge();
     this.setVisible(true);
     Audio.play(kind === 'golden' ? 'golden' : 'squeak');

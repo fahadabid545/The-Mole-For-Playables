@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { TX } from './TextureFactory';
 import { GAME_WIDTH, GAME_HEIGHT } from '../config/GameConfig';
+import { getSeason, SEASONAL_LEAF_TINTS } from '../utils/Seasonal';
 
 export function spawnLeafParticles(scene: Phaser.Scene): Phaser.GameObjects.Particles.ParticleEmitter {
   const emitter = scene.add.particles(0, -20, TX.leafParticle, {
@@ -12,6 +13,7 @@ export function spawnLeafParticles(scene: Phaser.Scene): Phaser.GameObjects.Part
     rotate: { start: 0, end: 360 },
     scale: { start: 0.7, end: 0.9 },
     alpha: { start: 0.9, end: 0.7 },
+    tint: SEASONAL_LEAF_TINTS[getSeason()],
     frequency: 900,
     gravityY: 6,
     bounds: new Phaser.Geom.Rectangle(0, -20, GAME_WIDTH, GAME_HEIGHT + 40),

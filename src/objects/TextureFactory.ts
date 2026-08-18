@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { COLORS } from '../config/GameConfig';
 import { getSkinDef, type SkinDef } from '../config/SkinConfig';
+import { getSeason } from '../utils/Seasonal';
 
 // All textures are generated at runtime with Phaser.Graphics — no binary assets.
 // Real art can later be dropped into public/assets and loaded in PreloadScene
@@ -76,6 +77,7 @@ export const TX = {
   goat: 'tx-goat',
   iconCat: 'tx-icon-cat',
   iconGoat: 'tx-icon-goat',
+  seasonalHat: 'tx-seasonal-hat',
 } as const;
 
 function makeTexture(scene: Phaser.Scene, key: string, w: number, h: number, draw: (g: Phaser.GameObjects.Graphics) => void): void {
@@ -145,6 +147,7 @@ export function buildAllTextures(scene: Phaser.Scene): void {
   buildCoin(scene);
   buildConsumableIcons(scene);
   buildArrowDown(scene);
+  buildSeasonalHat(scene);
 }
 
 export function buildSkinTextures(scene: Phaser.Scene, skinId: string): void {
@@ -1587,5 +1590,51 @@ function buildArrowDown(scene: Phaser.Scene) {
     g.fillStyle(0xfffde7, 0.9);
     g.fillTriangle(24, 42, 8, 18, 40, 18);
     g.fillRect(18, 6, 12, 16);
+  });
+}
+
+function buildSeasonalHat(scene: Phaser.Scene) {
+  const season = getSeason();
+  makeTexture(scene, TX.seasonalHat, 100, 80, g => {
+    switch (season) {
+      case 'winter':
+        g.fillStyle(0xd32f2f, 1);
+        g.fillTriangle(50, 4, 22, 60, 78, 60);
+        g.fillStyle(0xfafafa, 1);
+        g.fillEllipse(50, 60, 80, 20);
+        g.fillCircle(50, 8, 10);
+        break;
+      case 'spring':
+        g.fillStyle(0xf48fb1, 1);
+        g.fillEllipse(50, 50, 90, 26);
+        g.fillStyle(0xffffff, 0.9);
+        for (let i = 0; i < 5; i++) {
+          const a = (i / 5) * Math.PI * 2;
+          const fx = 50 + Math.cos(a) * 28;
+          const fy = 35 + Math.sin(a) * 12;
+          g.fillCircle(fx, fy, 9);
+        }
+        g.fillStyle(0xffeb3b, 1);
+        g.fillCircle(50, 35, 6);
+        break;
+      case 'summer':
+        g.fillStyle(0x795548, 1);
+        g.fillEllipse(50, 55, 94, 24);
+        g.fillStyle(0x5d4037, 1);
+        g.fillRoundedRect(25, 20, 50, 35, 6);
+        g.fillStyle(0xffb300, 1);
+        g.fillRect(24, 48, 52, 6);
+        break;
+      case 'autumn':
+        g.fillStyle(0xff6f00, 1);
+        g.fillEllipse(50, 50, 86, 22);
+        g.fillStyle(0xe65100, 1);
+        g.fillRoundedRect(28, 22, 44, 30, 6);
+        g.fillStyle(0x4e342e, 1);
+        g.fillRect(24, 44, 52, 5);
+        g.fillStyle(0x33691e, 1);
+        g.fillTriangle(60, 12, 55, 28, 68, 22);
+        break;
+    }
   });
 }
