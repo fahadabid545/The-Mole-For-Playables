@@ -149,10 +149,33 @@ export function buildAllTextures(scene: Phaser.Scene): void {
 
 export function buildSkinTextures(scene: Phaser.Scene, skinId: string): void {
   const skin = getSkinDef(skinId);
-  if (skin.id === 'default') return;
+  if (skin.id === 'default') {
+    restoreDefaultTextures(scene);
+    return;
+  }
   forceTexture(scene, TX.raccoon, 200, 200, g => drawRaccoonBody(g, skin.raccoonBody, skin.raccoonFur, false));
   forceTexture(scene, TX.raccoonHit, 200, 200, g => drawRaccoonBody(g, skin.raccoonBody, skin.raccoonFur, true));
-  forceTexture(scene, TX.hammer, 200, 220, g => drawHammerBody(g, skin.hammerHead, skin.hammerHeadDark, skin.hammerHandle));
+  const skinHammerKey = `tx-hammer-${skinId}`;
+  if (scene.textures.exists(skinHammerKey)) {
+    if (scene.textures.exists(TX.hammer)) scene.textures.remove(TX.hammer);
+    scene.textures.addImage(TX.hammer, scene.textures.get(skinHammerKey).getSourceImage() as HTMLImageElement);
+  } else {
+    forceTexture(scene, TX.hammer, 200, 220, g => drawHammerBody(g, skin.hammerHead, skin.hammerHeadDark, skin.hammerHandle));
+  }
+}
+
+function restoreDefaultTextures(scene: Phaser.Scene): void {
+  const pairs: [string, string][] = [
+    [TX.raccoon, 'tx-default-raccoon'],
+    [TX.raccoonHit, 'tx-default-raccoon-hit'],
+    [TX.hammer, 'tx-default-hammer'],
+  ];
+  for (const [active, backup] of pairs) {
+    if (scene.textures.exists(backup)) {
+      if (scene.textures.exists(active)) scene.textures.remove(active);
+      scene.textures.addImage(active, scene.textures.get(backup).getSourceImage() as HTMLImageElement);
+    }
+  }
 }
 
 export function buildSkinPreview(scene: Phaser.Scene, skinId: string): string {
